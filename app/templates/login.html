@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}登录 · CampusClaw{% endblock %}
+{% block body %}
+<header class="site-header"><div class="brand">Campus<span>Claw</span></div></header>
+<main class="login-shell">
+  <section class="login-intro">
+    <h1>欢迎使用 CampusClaw</h1>
+    <p>登录后查看本班教学材料。教师可上传资料，学生可阅读本班内容。</p>
+  </section>
+  <section class="login-panel" aria-label="登录">
+    <h2>账号登录</h2>
+    {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
+    <form method="post" action="{{ url_for('auth.login_page') }}">
+      <label for="username">用户名</label>
+      <input id="username" name="username" autocomplete="username" required>
+      <label for="password">密码</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required>
+      <button class="primary-button" type="submit">登录</button>
+    </form>
+  </section>
+</main>
+{% endblock %}

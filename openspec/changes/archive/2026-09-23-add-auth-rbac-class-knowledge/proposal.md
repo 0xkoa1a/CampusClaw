@@ -29,7 +29,7 @@ CampusClaw 面向校园教学材料管理。材料分散在群文件与网盘中
 - Apply 阶段将新增登录页、材料列表、教师上传接口和健康检查接口。
 - 将新增 SQLite 持久层、初始化脚本和双班样本数据。
 - 将新增 Flask 应用、依赖清单、Dockerfile、Docker Compose 配置和环境变量示例。
-- 本 change 只交付规约，具体实现留到后续 Apply 阶段。
+- 第 3 课在本 change 上完成 Apply、Verify 与 Archive；使用第二课已经选定的 Flask + SQLite 单体技术栈。
 
 ## Non-goals
 
@@ -39,3 +39,5 @@ CampusClaw 面向校园教学材料管理。材料分散在群文件与网盘中
 - 不实现注册、找回密码、OAuth/OIDC、SSO、短信或邮箱验证码登录。
 - 不实现多校区、多租户、Kubernetes、多副本高可用或完整 CI/CD。
 - 不使用前端隐藏按钮替代服务端权限检查和班级隔离。
+- 不实现平台超级管理员；它的跨班权限留待单独设计与审计。
+- 不解析 PDF、Word 或图片，不提供在线编辑与公网部署。

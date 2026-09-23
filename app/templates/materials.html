@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}本班材料 · CampusClaw{% endblock %}
+{% block body %}
+<header class="site-header">
+  <div class="header-left"><div class="brand">Campus<span>Claw</span></div><span class="header-divider"></span><span class="class-name">{{ g.user.class_name }}</span></div>
+  <div class="header-right"><span>{{ g.user.display_name }} · {{ "教师" if g.user.role == "teacher" else "学生" }}</span><form method="post" action="{{ url_for('auth.logout') }}"><button class="text-button" type="submit">退出登录</button></form></div>
+</header>
+<main class="workspace">
+  <h1>本班材料</h1>
+  <p class="intro">{{ "上传和管理本班的教学材料，供同学们查看和下载。" if g.user.role == "teacher" else "查看本班的教学材料。" }}</p>
+  <div class="columns">
+    <div class="left-column">
+      {% if g.user.role == "teacher" %}
+      <section class="upload-panel" aria-labelledby="upload-title">
+        <h2 id="upload-title">上传教学材料（.txt / .md）</h2>
+        <form id="upload-form" enctype="multipart/form-data">
+          <div class="upload-line"><input type="file" name="file" id="file" accept=".txt,.md" required><button class="primary-button" type="submit">上传</button></div>
+          <p class="help">支持 .txt、.md 格式，单个文件不超过 {{ (max_upload / 1024 / 1024)|round(1) }} MB。</p>
+          <p id="upload-result" class="upload-result" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+      {% endif %}
+      <section class="list-section" aria-labelledby="list-title">
+        <h2 id="list-title">材料列表（{{ g.user.class_name }}）</h2>
+        {% if rows %}
+        <div class="material-table">
+          <div class="table-head"><span>标题</span><span>上传时间</span><span></span></div>
+          {% for row in rows %}
+          <a class="material-row {% if selected and row.id == selected.id %}selected{% endif %}" href="{{ url_for('materials.page', id=row.id) }}">
+            <span class="row-title">{{ row.title }}</span><time>{{ row.created_at }}</time><span class="row-action">查看</span>
+          </a>
+          {% endfor %}
+        </div>
+        {% else %}<p class="empty-state">本班还没有材料。</p>{% endif %}
+      </section>
+    </div>
+    <section class="detail-panel" aria-label="材料详情">
+      {% if selected %}
+      <div class="detail-header"><div><h2>{{ selected.title }}</h2><p>上传时间：{{ selected.created_at }}</p></div>{% if selected.stored_name %}<a class="primary-button download-button" href="{{ url_for('materials.api_file', material_id=selected.id) }}">下载文件</a>{% endif %}</div>
+      <div class="detail-body"><h3>材料内容</h3><pre>{{ selected.body }}</pre></div>
+      {% else %}<p class="empty-state">选择一份材料查看内容。</p>{% endif %}
+    </section>
+  </div>
+</main>
+<script src="{{ url_for('static', filename='materials.js') }}" defer></script>
+{% endblock %}

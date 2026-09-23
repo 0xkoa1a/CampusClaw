@@ -29,6 +29,12 @@
 - **AND** 接口请求 MUST 返回 HTTP 401
 - **AND** 响应 MUST NOT 包含任何班级的材料标题、正文或文件路径
 
+#### Scenario: 登出使旧会话失效
+
+- **WHEN** 用户登出后使用登出前保存的 cookie 请求受保护接口
+- **THEN** 系统 MUST 返回 HTTP 401
+- **AND** 旧 cookie MUST NOT 恢复会话
+
 ### Requirement: 角色权限
 
 系统 MUST 根据会话中的角色执行服务端授权。教师可以上传和管理本班材料；学生只能查看本班材料；学生调用上传或管理接口时 MUST 被拒绝。
@@ -61,6 +67,12 @@
 - **WHEN** A 班用户通过 URL、接口路径或请求体指定 B 班材料 ID
 - **THEN** 系统 MUST 返回 HTTP 404
 - **AND** 响应 MUST NOT 包含 B 班材料的标题、正文、文件路径或存储键
+
+#### Scenario: 跨班下载与不存在资源同形
+
+- **WHEN** A 班用户分别请求 B 班材料文件与一个不存在的材料文件
+- **THEN** 两次请求 MUST 返回相同的 HTTP 404 响应
+- **AND** 文件 MUST NOT 从静态上传路径直接访问
 
 #### Scenario: A 班列表不泄露 B 班材料
 
@@ -97,6 +109,12 @@
 - **THEN** 系统 MUST 返回 HTTP 400
 - **AND** 材料表和知识库表 MUST NOT 留下不完整记录
 - **AND** 系统 MUST 清理已写入但未关联成功的文件
+
+#### Scenario: 超限上传被拒绝
+
+- **WHEN** 教师上传超过配置大小上限的文件
+- **THEN** 系统 MUST 返回 HTTP 413
+- **AND** 材料表、知识库表与上传目录 MUST 保持不变
 
 ### Requirement: 预置核心数据
 
