@@ -26,6 +26,14 @@ def create_app(test_config=None):
         SEED_STUDENT_A_PASSWORD=os.environ.get("SEED_STUDENT_A_PASSWORD"),
         SEED_STUDENT_B_PASSWORD=os.environ.get("SEED_STUDENT_B_PASSWORD"),
         MAX_UPLOAD_BYTES=int(os.environ.get("MAX_UPLOAD_BYTES", "1048576")),
+        EMBEDDING_BASE_URL=os.environ.get("EMBEDDING_BASE_URL", ""),
+        EMBEDDING_API_KEY=os.environ.get("EMBEDDING_API_KEY", ""),
+        EMBEDDING_MODEL=os.environ.get("EMBEDDING_MODEL", "course-embedding"),
+        EMBEDDING_DIM=int(os.environ.get("EMBEDDING_DIM", "2048")),
+        CHAT_MODEL=os.environ.get("CHAT_MODEL", "course-chat"),
+        AI_TIMEOUT_SECONDS=int(os.environ.get("AI_TIMEOUT_SECONDS", "30")),
+        QDRANT_URL=os.environ.get("QDRANT_URL", "http://qdrant:6333"),
+        QDRANT_COLLECTION=os.environ.get("QDRANT_COLLECTION", "campusclaw_chunks"),
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
         SESSION_COOKIE_SECURE=os.environ.get("COOKIE_SECURE") == "1",
@@ -71,7 +79,9 @@ def create_app(test_config=None):
 
     from .auth import bp as auth_bp
     from .materials import bp as materials_bp
+    from .search import bp as search_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(materials_bp)
+    app.register_blueprint(search_bp)
     return app

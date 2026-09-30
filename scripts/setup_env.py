@@ -22,7 +22,13 @@ def main():
             "SEED_STUDENT_B_PASSWORD",
         )
     }
-    values.update(MAX_UPLOAD_BYTES="1048576", PYTHON_IMAGE=args.python_image)
+    values.update(
+        MAX_UPLOAD_BYTES="1048576", PYTHON_IMAGE=args.python_image,
+        EMBEDDING_BASE_URL="https://ai-gateway.devops.hello1023.com/v1",
+        EMBEDDING_API_KEY="", EMBEDDING_MODEL="course-embedding",
+        EMBEDDING_DIM="2048", CHAT_MODEL="course-chat",
+        QDRANT_IMAGE="ghcr.io/qdrant/qdrant/qdrant:v1.19.1",
+    )
     try:
         fd = os.open(args.output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     except FileExistsError:

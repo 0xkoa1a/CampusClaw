@@ -14,6 +14,12 @@ services:
       MAX_UPLOAD_BYTES: ${MAX_UPLOAD_BYTES:-1048576}
       DATABASE_PATH: /app/data/campusclaw.sqlite3
       UPLOAD_DIR: /app/uploads
+      EMBEDDING_BASE_URL: ${EMBEDDING_BASE_URL:-}
+      EMBEDDING_API_KEY: ${EMBEDDING_API_KEY:-}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-course-embedding}
+      EMBEDDING_DIM: ${EMBEDDING_DIM:-2048}
+      CHAT_MODEL: ${CHAT_MODEL:-course-chat}
+      QDRANT_URL: http://qdrant:6333
     volumes:
       - campusclaw_data:/app/data
       - campusclaw_uploads:/app/uploads
@@ -22,7 +28,15 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    depends_on:
+      - qdrant
+
+  qdrant:
+    image: ${QDRANT_IMAGE:-ghcr.io/qdrant/qdrant/qdrant:v1.19.1}
+    volumes:
+      - campusclaw_vectors:/qdrant/storage
 
 volumes:
   campusclaw_data:
   campusclaw_uploads:
+  campusclaw_vectors:

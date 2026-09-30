@@ -8,6 +8,20 @@
 <main class="workspace">
   <h1>本班材料</h1>
   <p class="intro">{{ "上传和管理本班的教学材料，供同学们查看和下载。" if g.user.role == "teacher" else "查看本班的教学材料。" }}</p>
+  <section class="search-panel" aria-labelledby="search-title">
+    <h2 id="search-title">检索本班资料</h2>
+    <form id="search-form" class="search-controls">
+      <label class="sr-only" for="search-query">检索问题</label>
+      <input id="search-query" name="q" placeholder="输入关键词或自然语言问题" maxlength="500" required>
+      <label class="sr-only" for="search-mode">检索模式</label>
+      <select id="search-mode" name="mode"><option value="hybrid">混合检索</option><option value="keyword">关键词</option><option value="vector">语义向量</option></select>
+      <button class="primary-button" type="submit">检索</button>
+      <button class="secondary-button" id="ask-button" type="button">依据资料回答</button>
+    </form>
+    <p id="search-status" class="help" role="status" aria-live="polite"></p>
+    <div id="search-results" class="search-results"></div>
+    <div id="answer-result" class="answer-result" aria-live="polite"></div>
+  </section>
   <div class="columns">
     <div class="left-column">
       {% if g.user.role == "teacher" %}
@@ -37,10 +51,22 @@
     <section class="detail-panel" aria-label="材料详情">
       {% if selected %}
       <div class="detail-header"><div><h2>{{ selected.title }}</h2><p>上传时间：{{ selected.created_at }}</p></div>{% if selected.stored_name %}<a class="primary-button download-button" href="{{ url_for('materials.api_file', material_id=selected.id) }}">下载文件</a>{% endif %}</div>
-      <div class="detail-body"><h3>材料内容</h3><pre>{{ selected.body }}</pre></div>
+      {% if g.user.role == "teacher" %}
+      <form id="reindex-form" class="reindex-panel" data-material-id="{{ selected.id }}">
+        <span>索引状态：{{ {'pending':'待索引','ready':'已就绪','failed':'索引失败'}[selected.index_status] }}</span>
+        <select name="type" aria-label="切分策略"><option value="auto">自动切分</option><option value="delimiter">按分隔符</option><option value="markdown">按 Markdown 标题</option></select>
+        <input name="max_chars" type="number" min="100" max="2000" value="800" aria-label="切片字数上限">
+        <input name="overlap" type="number" min="0" value="80" aria-label="重叠字数">
+        <input name="delimiter" placeholder="自定义分隔符" aria-label="自定义分隔符">
+        <button type="submit" class="secondary-button">重建索引</button>
+        <p id="reindex-status" role="status" aria-live="polite"></p>
+      </form>
+      {% endif %}
+      <div class="detail-body"><h3>材料内容</h3><pre>{% if highlight %}{{ highlight[0] }}<mark id="source">{{ highlight[1] }}</mark>{{ highlight[2] }}{% else %}{{ selected.body }}{% endif %}</pre></div>
       {% else %}<p class="empty-state">选择一份材料查看内容。</p>{% endif %}
     </section>
   </div>
 </main>
 <script src="{{ url_for('static', filename='materials.js') }}" defer></script>
+<script src="{{ url_for('static', filename='search.js') }}" defer></script>
 {% endblock %}

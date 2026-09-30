@@ -1,8 +1,11 @@
 import sqlite3
+import uuid
 from pathlib import Path
 
 from flask import current_app, g
 from werkzeug.security import generate_password_hash
+
+from .chunking import split_text, terms
 
 
 SCHEMA = """
@@ -84,7 +87,71 @@ def init_app(app):
             )
         path.parent.mkdir(parents=True, exist_ok=True)
         initialize(path, passwords)
+    migrate(path)
     Path(app.config["UPLOAD_DIR"]).mkdir(parents=True, exist_ok=True)
+
+
+def migrate(path):
+    """Upgrade third-lesson volumes without touching the original material body."""
+    connection = connect(path)
+    try:
+        with connection:
+            columns = {row["name"] for row in connection.execute("PRAGMA table_info(materials)")}
+            if "index_status" not in columns:
+                connection.execute("ALTER TABLE materials ADD COLUMN index_status TEXT NOT NULL DEFAULT 'pending'")
+            if "index_error" not in columns:
+                connection.execute("ALTER TABLE materials ADD COLUMN index_error TEXT")
+            connection.executescript(
+                """
+                CREATE TABLE IF NOT EXISTS knowledge_chunks (
+                  id TEXT PRIMARY KEY, material_id INTEGER NOT NULL REFERENCES materials(id),
+                  class_id INTEGER NOT NULL REFERENCES classes(id), chunk_index INTEGER NOT NULL,
+                  start_offset INTEGER NOT NULL, end_offset INTEGER NOT NULL,
+                  heading TEXT NOT NULL DEFAULT '', body TEXT NOT NULL,
+                  index_status TEXT NOT NULL DEFAULT 'pending',
+                  UNIQUE(material_id, chunk_index)
+                );
+                CREATE INDEX IF NOT EXISTS idx_chunks_class ON knowledge_chunks(class_id);
+                CREATE INDEX IF NOT EXISTS idx_chunks_material ON knowledge_chunks(material_id);
+                CREATE TABLE IF NOT EXISTS chunk_terms (
+                  term TEXT NOT NULL, chunk_id TEXT NOT NULL REFERENCES knowledge_chunks(id) ON DELETE CASCADE,
+                  class_id INTEGER NOT NULL, frequency INTEGER NOT NULL,
+                  PRIMARY KEY(term, chunk_id)
+                );
+                CREATE INDEX IF NOT EXISTS idx_chunk_terms_class_term ON chunk_terms(class_id, term);
+                """
+            )
+            chunk_columns = {row["name"] for row in connection.execute("PRAGMA table_info(knowledge_chunks)")}
+            if "index_status" not in chunk_columns:
+                connection.execute("ALTER TABLE knowledge_chunks ADD COLUMN index_status TEXT NOT NULL DEFAULT 'pending'")
+            rows = connection.execute(
+                """SELECT k.material_id,k.class_id,k.body FROM knowledge_entries k
+                   WHERE NOT EXISTS (SELECT 1 FROM knowledge_chunks c WHERE c.material_id=k.material_id)"""
+            ).fetchall()
+            for row in rows:
+                insert_chunks(connection, row["material_id"], row["class_id"], row["body"])
+    finally:
+        connection.close()
+
+
+def insert_chunks(connection, material_id, class_id, body, strategy=None, prepared=None):
+    created = []
+    items = prepared or [(str(uuid.uuid4()), chunk) for chunk in split_text(body, strategy)]
+    for index, (chunk_id, chunk) in enumerate(items):
+        connection.execute(
+            """INSERT INTO knowledge_chunks
+               (id,material_id,class_id,chunk_index,start_offset,end_offset,heading,body)
+               VALUES (?,?,?,?,?,?,?,?)""",
+            (chunk_id, material_id, class_id, index, chunk.start_offset,
+             chunk.end_offset, chunk.heading, chunk.body),
+        )
+        connection.executemany(
+            "INSERT INTO chunk_terms(term,chunk_id,class_id,frequency) VALUES (?,?,?,?)",
+            [(term, chunk_id, class_id, frequency)
+             for term, frequency in terms(chunk.body).items()],
+        )
+        created.append(chunk_id)
+    return created
 
 
 def initialize(path, passwords):
@@ -128,7 +195,7 @@ def list_materials(class_id):
     return (
         get_db()
         .execute(
-            "SELECT id,title,created_at FROM materials WHERE class_id=? ORDER BY id DESC",
+            "SELECT id,title,created_at,index_status FROM materials WHERE class_id=? ORDER BY id DESC",
             (class_id,),
         )
         .fetchall()

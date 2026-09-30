@@ -16,7 +16,11 @@ from flask import (
 
 from .auth import require_user
 from .db import get_db, list_materials, material_with_body
+from .indexing import index_material
+from .gateway import GatewayUnavailable
 from .knowledge import parse_text
+from .vector import VectorUnavailable
+from .db import insert_chunks
 
 
 bp = Blueprint("materials", __name__)
@@ -47,10 +51,25 @@ def page():
         abort(404)
     if selected is None and rows:
         selected = _visible_material(rows[0]["id"])
+    highlight = None
+    chunk_id = request.args.get("chunk")
+    if selected is not None and chunk_id:
+        chunk = get_db().execute(
+            """SELECT start_offset,end_offset FROM knowledge_chunks
+               WHERE id=? AND material_id=? AND class_id=?""",
+            (chunk_id, selected["id"], g.user["class_id"]),
+        ).fetchone()
+        if chunk:
+            highlight = (
+                selected["body"][: chunk["start_offset"]],
+                selected["body"][chunk["start_offset"] : chunk["end_offset"]],
+                selected["body"][chunk["end_offset"] :],
+            )
     return render_template(
         "materials.html",
         rows=rows,
         selected=selected,
+        highlight=highlight,
         max_upload=current_app.config["MAX_UPLOAD_BYTES"],
     )
 
@@ -77,6 +96,7 @@ def api_detail(material_id):
         body=row["body"],
         class_id=row["class_id"],
         created_at=row["created_at"],
+        index_status=row["index_status"],
     )
 
 
@@ -138,8 +158,15 @@ def api_upload():
                 "INSERT INTO knowledge_entries(material_id,class_id,body) VALUES (?,?,?)",
                 (material_id, class_id, body),
             )
+            insert_chunks(connection, material_id, class_id, body)
     except (OSError, sqlite3.Error):
         path.unlink(missing_ok=True)
         current_app.logger.exception("material upload failed")
         return jsonify(error="上传失败"), 500
-    return jsonify(id=material_id), 201
+    try:
+        index_material(material_id, class_id)
+        status = "ready"
+    except (GatewayUnavailable, VectorUnavailable, ValueError):
+        current_app.logger.warning("material %s uploaded but vector indexing failed", material_id)
+        status = "failed"
+    return jsonify(id=material_id, index_status=status), 201
