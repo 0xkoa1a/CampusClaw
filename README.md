@@ -62,7 +62,7 @@ docker compose exec -T app python -m scripts.verify_deployment after
 
 网页登录现通过 JSON 请求 `auth_mode=bearer`，取得 JWT 并在 API 请求中发送 `Authorization: Bearer ...`。token 保存在当前标签页的 sessionStorage；Cookie 继续支持页面和普通下载链接。服务端校验 JWT 后还查询有效 session，权限来自数据库；退出时同时撤销旧 JWT 和 Cookie。API 登录省略 auth_mode 时仍使用 Cookie，没有 JavaScript 的表单登录也保留。实现与验收见 [Bearer 变更](openspec/changes/add-bearer-login/proposal.md)。
 
-课堂派十项作业的 [原文与示例说明](docs/classroom/requirements.md)、[上传／下载／API 实现分析](docs/classroom/implementation-analysis.md) 和 [截图提交对应表](docs/classroom/evidence.md) 已留档。截图按 `0923`、`0930` 作业分组，平台补交由学生本人处理；0930 课后 PDF 方案文档尚未生成。
+课堂派十项作业的 [原文与示例说明](docs/classroom/requirements.md)、[上传／下载／API 实现分析](docs/classroom/implementation-analysis.md) 和 [截图提交对应表](docs/classroom/evidence.md) 已留档。截图按 `0923`、`0930` 作业分组，平台补交由学生本人处理。0930 课后方案已生成 [Markdown](docs/classroom/0930/authentication-and-knowledge-qa.md)、[自包含 HTML](docs/classroom/0930/authentication-and-knowledge-qa.html) 和 [PDF](docs/classroom/0930/authentication-and-knowledge-qa.pdf)，制作与验证记录见 [报告目录](docs/classroom/0930/README.md)。
 
 第 4 课接口：`POST /api/search` 接受 `{"q":"...","mode":"keyword|vector|hybrid","limit":10,"offset":0}`，默认为混合检索；`POST /api/ask` 接受问题和可选 `history`；教师用 `POST /api/materials/<id>/reindex` 传入可选的 `strategy`（`type` 为 `auto`、`delimiter` 或 `markdown`，`max_chars` 为 100–2000，`overlap` 不超过 50%）。检索和回答只访问会话所属班级。网关或 Qdrant 故障时关键词检索仍能使用，向量、混合和回答返回 503。
 

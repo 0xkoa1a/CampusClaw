@@ -1,0 +1,2 @@
+# Preserve the VuePress export verbatim, including bundled JS template strings.
+docs/classroom/0930/authentication-and-knowledge-qa.html -whitespace linguist-generated=true

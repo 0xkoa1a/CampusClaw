@@ -1,0 +1,35 @@
+@media print {
+  @page { size: A4; margin: 16mm 15mm 18mm; }
+  :root { color-scheme: light; }
+  html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
+  body { color: #172b3a; font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; font-size: 10.5pt; line-height: 1.65; }
+  .vp-page, .vp-article-layout, .vp-article-main, [vp-content] {
+    display: block !important; width: 100% !important; max-width: none !important;
+    margin: 0 !important; padding: 0 !important;
+  }
+  .vp-toc-placeholder, .vp-page-meta, .vp-page-nav, .vp-back-to-top { display: none !important; }
+  .header-anchor::before { display: none !important; }
+  #content h1 { margin: 0 0 6mm; padding: 0; color: #153e56; font-size: 19pt; line-height: 1.4; }
+  #content h2 { margin: 0 0 3mm; padding: 0 0 2mm; color: #153e56; font-size: 15pt; line-height: 1.45; border-bottom: 1px solid #c8d8df; break-before: page; break-after: avoid; }
+  #content h2:first-of-type { margin-top: 6mm; break-before: auto; }
+  #content #实现与要求来源 { margin-top: 6mm; break-before: auto; }
+  #content #知识库回答, #content #原文溯源 { margin-top: 0; break-before: page; }
+  #content h3 { margin: 4mm 0 2mm; padding: 0; color: #153e56; font-size: 11.5pt; line-height: 1.5; break-after: avoid; }
+  #content p, #content li { font-size: 10.5pt; line-height: 1.65; orphans: 3; widows: 3; }
+  #content p { margin: 0 0 3mm; }
+  #content li { margin-bottom: 1mm; }
+  #content ol, #content ul { padding-left: 6mm; }
+  #content a { color: #195975; text-decoration: none; overflow-wrap: anywhere; }
+  #content code { padding: 0 1mm; border-radius: 2px; font-size: 8.5pt; color: #174a63; background: #eef4f6; overflow-wrap: anywhere; white-space: normal; }
+  #content table { display: table; width: 100%; border-collapse: collapse; margin: 3mm 0 5mm; table-layout: auto; font-size: 9pt; }
+  #content th, #content td { border: 1px solid #d5e0e5; padding: 2mm; font-size: 9pt; line-height: 1.5; overflow-wrap: anywhere; }
+  #content th { background: #eaf2f5; color: #153e56; text-align: left; }
+  #content tr { break-inside: avoid; }
+  #content thead { display: table-header-group; }
+  #content blockquote { margin: 3mm 0 4mm; padding: 2mm 3mm; border-left: 3px solid #739caf; color: #334d5c; background: #f4f8fa; break-inside: avoid; }
+  #content blockquote p { margin-bottom: 0; font-size: 9.5pt; }
+  #content img { display: inline-block; height: auto; width: auto; max-width: 100%; max-height: 155mm; object-fit: contain; }
+  #content p:has(> img) { text-align: center; break-inside: avoid; margin: 3mm 0 4mm; }
+  .mermaid-content { break-inside: avoid; margin: 2mm 0 4mm; }
+  .mermaid-content svg { width: 100% !important; max-width: 100% !important; max-height: 58mm !important; height: auto !important; }
+}
