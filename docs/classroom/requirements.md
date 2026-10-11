@@ -1,6 +1,6 @@
 # 课堂派作业要求留档
 
-采集时间：2026-10-11（北京时间）。来源：用户已登录 Chrome 中的[课程作业列表](https://w.ketangpai.com/courseHome?courseId=MDAwMDAwMDAwMLOcx5aH37ewhbVyoQ&courseRole=0&tabActive=4)。逐项打开十个活动，阅读所有正文和截图示例。下文引用块保留作业正文；示例部分描述图片实际内容，认证值和示例密码不留档。平台详情需要相应课程账号登录。
+来源：用户已登录 Chrome 中的[课程作业列表](https://w.ketangpai.com/courseHome?courseId=MDAwMDAwMDAwMLOcx5aH37ewhbVyoQ&courseRole=0&tabActive=4)。逐项打开十个活动，阅读所有正文和截图示例，按作业日期整理。下文引用块保留作业正文；示例部分描述图片实际内容，认证值和示例密码不留档。平台详情需要相应课程账号登录。
 
 每项均为个人作业，页面标示 100 分。采集时 0930 课后任务为“未提交”，其余九项为“已结束／未参与”。GitHub 留档与课堂派提交是两项操作，平台提交及补交由学生本人处理。
 
@@ -25,7 +25,7 @@
 
 > 直接发送一张教师登录后的首页截图
 
-示例：A 班教师 teacher_a 登录后的 CampusClaw 首页，含材料列表、正文、上传入口和下载原文件按钮。没有要求学生首页；已有 `docs/evidence/week03/peer-teacher-upload.png` 已覆盖教师身份、材料和上传功能。
+示例：A 班教师 teacher_a 登录后的 CampusClaw 首页，含材料列表、正文、上传入口和下载原文件按钮。没有要求学生首页；已有 `docs/evidence/classroom/0923/peer-verification/peer-teacher-upload.png` 已覆盖教师身份、材料和上传功能。
 
 ## 0923-系统登录时的请求参数以及响应结果以及HTTP响应完整内容
 
@@ -115,4 +115,4 @@
 
 ## 本次留档范围
 
-截图文件、对应作业和验证边界见 [证据索引](evidence-2026-10-11.md)；上传、下载与部署访问的分析见 [实现分析](implementation-analysis.md)。原页面的示例只记录内容说明，未把老师示例中的认证值、密码及签名资源 URL 提交到公开仓库。
+截图文件、对应作业和验证边界见 [证据索引](evidence.md)；上传、下载与部署访问的分析见 [实现分析](implementation-analysis.md)。原页面的示例只记录内容说明，未把老师示例中的认证值、密码及签名资源 URL 提交到公开仓库。

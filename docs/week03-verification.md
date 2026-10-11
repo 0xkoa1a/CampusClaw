@@ -56,10 +56,10 @@ Playwright 在 `http://127.0.0.1:8765` 的临时本机服务上验证了登录�
 - A 班访问 B 班详情、页面和文件均返回 404。
 - 应用重启后数据仍在；桌面和手机页面无运行错误。
 
-![教师上传成功](evidence/week03/peer-teacher-upload.png)
+![教师上传成功](evidence/classroom/0923/peer-verification/peer-teacher-upload.png)
 
-![A 班学生可见并可下载](evidence/week03/peer-student-a-mobile.png)
+![A 班学生可见并可下载](evidence/classroom/0923/peer-verification/peer-student-a-mobile.png)
 
-![B 班列表不含 A 班材料](evidence/week03/peer-student-b.png)
+![B 班列表不含 A 班材料](evidence/classroom/0923/peer-verification/peer-student-b.png)
 
 本次未重复 Compose 重建；容器持久化结果见上文“Compose 实测”。
