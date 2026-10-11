@@ -1,0 +1,7 @@
+用户登录成功后，浏览器通过 Cookie 中的 session 标识携带登录状态。配图中的 GET /api/materials 请求自动携带 Cookie: session=…，后端识别用户后返回其本班材料，状态码为 200。
+
+登录时，后端验证用户名和密码哈希，生成随机会话标识 sid，将关联用户和 12 小时有效期保存到 SQLite 的 sessions 表，并将 sid 放入经过签名的 session Cookie。
+
+后续请求到达时，Flask 验证 Cookie 签名，读取 sid，再查询未过期的会话，关联 users 和 classes 表取得用户 ID、角色与所属班级。材料列表接口按这个班级查询数据库，因此请求中的班级参数不能扩大访问范围。
+
+Cookie 设置 HttpOnly 和 SameSite=Lax。浏览器负责保存并随请求发送 Cookie，前端脚本无需读取 Cookie 来判断用户身份。退出时，后端删除会话并清空 Cookie；再次访问受保护 API 会返回 401。
