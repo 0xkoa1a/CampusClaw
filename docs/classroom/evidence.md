@@ -15,7 +15,7 @@
 | 0923 课后任务 | [公开仓库地址](https://github.com/0xkoa1a/CampusClaw) + [第四课变更](../../openspec/changes/archive/2026-09-30-add-traceable-vector-retrieval/proposal.md) | 该项交仓库地址；原有第四课变更已在仓库，本次新增内容仍需另行 push |
 | 0930 token 登录 | [Bearer 材料请求](../evidence/classroom/0930/01-bearer-materials.jpg)，可附 0923 组的请求参数与响应 JSON | 真实 Authorization: Bearer 请求与 200；按示例补了 JWT 实现 |
 | 0930 知识库 AI 问答 | [AI 回答](../evidence/classroom/0930/02-ai-answer.jpg)、[来源高亮](../evidence/classroom/0930/03-source-highlight.jpg) | 真实课程网关回答、引用材料、可点击的原文来源；不是模拟回答 |
-| 0930 课后方案整理 | [方案 PDF](0930/authentication-and-knowledge-qa.pdf)，截止 2026-10-15 00:00；另有 [Markdown](0930/authentication-and-knowledge-qa.md) 和 [HTML](0930/authentication-and-knowledge-qa.html) | 9 页 PDF 已生成并逐页检查；平台提交由学生本人处理 |
+| 0930 课后方案整理 | [方案 PDF](0930/authentication-and-knowledge-qa.pdf)，截止 2026-10-15 00:00；另有 [Markdown](0930/authentication-and-knowledge-qa.md) 和 [HTML](0930/authentication-and-knowledge-qa.html) | 6 页 PDF 已修订并逐页检查；平台提交由学生本人处理 |
 
 补充图 [B 班学生首页](../evidence/classroom/0923/07-student-b-home.jpg) 显示学生无上传入口、列表仅有 B 班材料。此图用于补充角色和班级隔离证据，本身不证明跨班下载状态码。原有第三课交叉验收的三张截图也归入 `0923/peer-verification/`，见[第三课验收记录](../week03-verification.md)。
 
