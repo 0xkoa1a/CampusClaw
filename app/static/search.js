@@ -4,7 +4,7 @@ const resultNode = document.querySelector('#search-results');
 const answerNode = document.querySelector('#answer-result');
 
 async function postJSON(path, payload) {
-  const response = await fetch(path, {
+  const response = await window.campusAuth.fetch(path, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
   });

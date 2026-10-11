@@ -60,6 +60,10 @@ docker compose exec -T app python -m scripts.verify_deployment after
 
 受保护接口为 `GET /api/me`、`GET/POST /api/materials`、`GET /api/materials/<id>`、`GET /api/materials/<id>/file`。登录使用 `POST /api/login`，登出使用 `POST /api/logout`。上传表单字段名为 `file`。未登录访问接口返回 401，未登录访问材料页面重定向到登录页。数据库故障时业务接口返回 503；`/health` 仍只检查进程存活。文件只能经鉴权接口下载，`uploads/` 不作为静态目录暴露。单文件上限由 `MAX_UPLOAD_BYTES` 控制。
 
+网页登录现通过 JSON 请求 `auth_mode=bearer`，取得 JWT 并在 API 请求中发送 `Authorization: Bearer ...`。token 保存在当前标签页的 sessionStorage；Cookie 继续支持页面和普通下载链接。服务端校验 JWT 后还查询有效 session，权限来自数据库；退出时同时撤销旧 JWT 和 Cookie。API 登录省略 auth_mode 时仍使用 Cookie，没有 JavaScript 的表单登录也保留。实现与验收见 [Bearer 变更](openspec/changes/add-bearer-login/proposal.md)。
+
+课堂派十项作业的 [原文与示例说明](docs/classroom/requirements-2026-10-11.md)、[上传／下载／API 实现分析](docs/classroom/implementation-analysis.md) 和 [截图提交对应表](docs/classroom/evidence-2026-10-11.md) 已留档。截图为 2026-10-11 补取，平台补交由学生本人处理；0930 课后 PDF 方案文档尚未生成。
+
 第 4 课接口：`POST /api/search` 接受 `{"q":"...","mode":"keyword|vector|hybrid","limit":10,"offset":0}`，默认为混合检索；`POST /api/ask` 接受问题和可选 `history`；教师用 `POST /api/materials/<id>/reindex` 传入可选的 `strategy`（`type` 为 `auto`、`delimiter` 或 `markdown`，`max_chars` 为 100–2000，`overlap` 不超过 50%）。检索和回答只访问会话所属班级。网关或 Qdrant 故障时关键词检索仍能使用，向量、混合和回答返回 503。
 
 本版本为单实例 Compose 演示。本学期不做家长端、多校区运营和学科交易市场；本次迭代不做第五课的长对话与流式输出、作业提交与批改、注册与 SSO、平台超级管理员、PDF/Word/图片解析、多副本或公网部署。

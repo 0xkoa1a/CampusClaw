@@ -9,5 +9,7 @@
 </head>
 <body>
   {% block body %}{% endblock %}
+  <script src="{{ url_for('static', filename='auth.js') }}" defer></script>
+  {% block scripts %}{% endblock %}
 </body>
 </html>

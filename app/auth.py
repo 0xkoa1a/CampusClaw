@@ -1,8 +1,13 @@
+import hashlib
+import hmac
 import secrets
 from datetime import datetime, timedelta, timezone
 
+import jwt
+
 from flask import (
     Blueprint,
+    current_app,
     g,
     jsonify,
     redirect,
@@ -18,14 +23,52 @@ from .db import get_db
 
 bp = Blueprint("auth", __name__)
 _DUMMY_HASH = generate_password_hash("invalid-password-for-timing")
+TOKEN_TTL = 12 * 60 * 60
+TOKEN_ISSUER = "campusclaw"
+TOKEN_AUDIENCE = "campusclaw-api"
+
+
+def _token_key():
+    return hmac.digest(
+        current_app.config["SECRET_KEY"].encode(), b"campusclaw-bearer-v1", hashlib.sha256
+    )
+
+
+def _issue_token(user_id, sid):
+    now = datetime.now(timezone.utc)
+    return jwt.encode(
+        {"sub": str(user_id), "jti": sid, "iat": now,
+         "exp": now + timedelta(seconds=TOKEN_TTL),
+         "iss": TOKEN_ISSUER, "aud": TOKEN_AUDIENCE},
+        _token_key(), algorithm="HS256",
+    )
 
 
 @bp.before_app_request
 def load_user():
     g.user = None
+    g.auth_sid = None
     if request.endpoint == "health":
         return
-    sid = session.get("sid")
+    authorization = request.headers.get("Authorization")
+    subject = None
+    if authorization is not None:
+        scheme, _, token = authorization.partition(" ")
+        if scheme.lower() != "bearer" or not token or len(token) > 4096:
+            return
+        try:
+            claims = jwt.decode(
+                token, _token_key(), algorithms=["HS256"],
+                issuer=TOKEN_ISSUER, audience=TOKEN_AUDIENCE,
+                options={"require": ["sub", "jti", "iat", "exp", "iss", "aud"]},
+            )
+        except jwt.InvalidTokenError:
+            return
+        sid, subject = claims["jti"], claims["sub"]
+        if not isinstance(sid, str) or not isinstance(subject, str):
+            return
+    else:
+        sid = session.get("sid")
     if not sid:
         return
     now = datetime.now(timezone.utc).isoformat()
@@ -39,7 +82,11 @@ def load_user():
         )
         .fetchone()
     )
-    if g.user is None:
+    if g.user is not None and subject is not None and str(g.user["id"]) != subject:
+        g.user = None
+    if g.user is not None:
+        g.auth_sid = sid
+    elif authorization is None:
         session.clear()
 
 
@@ -60,7 +107,7 @@ def _login(username, password):
     )
     if not user or not valid:
         return False
-    old_sid = session.get("sid")
+    old_sid = g.auth_sid or session.get("sid")
     new_sid = secrets.token_urlsafe(32)
     expires = (datetime.now(timezone.utc) + timedelta(hours=12)).isoformat()
     connection = get_db()
@@ -73,7 +120,7 @@ def _login(username, password):
         )
     session.clear()
     session["sid"] = new_sid
-    return True
+    return user
 
 
 @bp.route("/login", methods=["GET", "POST"])
@@ -91,23 +138,44 @@ def login_page():
 
 @bp.post("/api/login")
 def api_login():
-    data = request.get_json(silent=True) or request.form
-    if _login(str(data.get("username", "")).strip(), str(data.get("password", ""))):
-        return jsonify(ok=True)
+    data = request.get_json(silent=True)
+    if data is None:
+        data = request.form
+    if not hasattr(data, "get"):
+        return jsonify(error="需要 JSON 对象"), 400
+    mode = data.get("auth_mode", "cookie")
+    if not isinstance(mode, str) or mode not in {"cookie", "bearer"}:
+        return jsonify(error="不支持的认证方式"), 400
+    user = _login(str(data.get("username", "")).strip(), str(data.get("password", "")))
+    if user:
+        payload = {"ok": True, "username": user["username"],
+                   "role": user["role"], "class_id": user["class_id"]}
+        if mode == "bearer":
+            payload.update(access_token=_issue_token(user["id"], session["sid"]),
+                           token_type="Bearer", expires_in=TOKEN_TTL)
+        response = jsonify(payload)
+        response.headers["Cache-Control"] = "no-store"
+        return response
     return jsonify(error="账号或密码错误"), 401
 
 
 @bp.post("/api/logout")
 @bp.post("/logout")
 def logout():
-    sid = session.get("sid")
+    if request.path == "/api/logout":
+        denied = require_user()
+        if denied:
+            return denied
+    sid = g.auth_sid or (session.get("sid") if request.headers.get("Authorization") is None else None)
     if sid:
         with get_db():
             get_db().execute("DELETE FROM sessions WHERE sid=?", (sid,))
     session.clear()
     if request.path == "/logout":
         return redirect(url_for("auth.login_page"))
-    return jsonify(ok=True)
+    response = jsonify(ok=True)
+    response.headers["Cache-Control"] = "no-store"
+    return response
 
 
 @bp.get("/api/me")

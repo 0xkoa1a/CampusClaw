@@ -3,9 +3,10 @@
 {% block body %}
 <header class="site-header">
   <div class="header-left"><div class="brand">Campus<span>Claw</span></div><span class="header-divider"></span><span class="class-name">{{ g.user.class_name }}</span></div>
-  <div class="header-right"><span>{{ g.user.display_name }} · {{ "教师" if g.user.role == "teacher" else "学生" }}</span><form method="post" action="{{ url_for('auth.logout') }}"><button class="text-button" type="submit">退出登录</button></form></div>
+  <div class="header-right"><span>{{ g.user.display_name }} · {{ "教师" if g.user.role == "teacher" else "学生" }}</span><form id="logout-form" method="post" action="{{ url_for('auth.logout') }}"><button class="text-button" type="submit">退出登录</button></form></div>
 </header>
 <main class="workspace">
+  <p id="auth-status" class="form-error" role="alert"></p>
   <h1>本班材料</h1>
   <p class="intro">{{ "上传和管理本班的教学材料，供同学们查看和下载。" if g.user.role == "teacher" else "查看本班的教学材料。" }}</p>
   <section class="search-panel" aria-labelledby="search-title">
@@ -67,6 +68,8 @@
     </section>
   </div>
 </main>
+{% endblock %}
+{% block scripts %}
 <script src="{{ url_for('static', filename='materials.js') }}" defer></script>
 <script src="{{ url_for('static', filename='search.js') }}" defer></script>
 {% endblock %}

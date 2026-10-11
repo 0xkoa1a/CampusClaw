@@ -7,7 +7,7 @@ if (form) {
     button.disabled = true;
     result.textContent = '正在上传…';
     try {
-      const response = await fetch('/api/materials', { method: 'POST', body: new FormData(form) });
+      const response = await window.campusAuth.fetch('/api/materials', { method: 'POST', body: new FormData(form) });
       if (response.status === 401) {
         window.location.assign('/login');
         return;
