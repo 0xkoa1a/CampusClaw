@@ -1,0 +1,160 @@
+{
+  "version": 1,
+  "entries": [
+    {
+      "date": "0930",
+      "order": "01",
+      "title": "0930-课后任务-整理身份认证以及知识库问答的实现方案",
+      "files": [
+        {
+          "kind": "pdf",
+          "source": "docs/classroom/0930/authentication-and-knowledge-qa.pdf",
+          "target": "docs/classroom/提交材料/0930/01-0930-课后任务-整理身份认证以及知识库问答的实现方案.pdf"
+        }
+      ]
+    },
+    {
+      "date": "0930",
+      "order": "02",
+      "title": "0930-课堂任务-基于知识库的AI问答",
+      "files": [
+        {
+          "kind": "jpg",
+          "source": "docs/evidence/classroom/0930/02-ai-answer.jpg",
+          "target": "docs/classroom/提交材料/0930/02-0930-课堂任务-基于知识库的AI问答-01-问答效果.jpg"
+        },
+        {
+          "kind": "jpg",
+          "source": "docs/evidence/classroom/0930/03-source-highlight.jpg",
+          "target": "docs/classroom/提交材料/0930/02-0930-课堂任务-基于知识库的AI问答-02-原文溯源.jpg"
+        }
+      ]
+    },
+    {
+      "date": "0930",
+      "order": "03",
+      "title": "0930-课堂任务-toekn方案实现登录认证",
+      "files": [
+        {
+          "kind": "jpg",
+          "source": "docs/evidence/classroom/0930/01-bearer-materials.jpg",
+          "target": "docs/classroom/提交材料/0930/03-0930-课堂任务-toekn方案实现登录认证.jpg"
+        }
+      ]
+    },
+    {
+      "date": "0923",
+      "order": "01",
+      "title": "0923-课后任务",
+      "files": [
+        {
+          "kind": "txt",
+          "source": "docs/classroom/提交材料/0923/01-0923-课后任务.txt",
+          "target": "docs/classroom/提交材料/0923/01-0923-课后任务.txt",
+          "canonical": true
+        }
+      ]
+    },
+    {
+      "date": "0923",
+      "order": "02",
+      "title": "0923-后端（api）是否暴露给用户？如何通过浏览器直接访问后端接口",
+      "files": [
+        {
+          "kind": "jpg",
+          "source": "docs/evidence/classroom/0923/05-cookie-direct-api.jpg",
+          "target": "docs/classroom/提交材料/0923/02-0923-后端（api）是否暴露给用户？如何通过浏览器直接访问后端接口.jpg"
+        },
+        {
+          "kind": "txt",
+          "source": "docs/classroom/提交材料/0923/02-0923-后端（api）是否暴露给用户？如何通过浏览器直接访问后端接口.txt",
+          "target": "docs/classroom/提交材料/0923/02-0923-后端（api）是否暴露给用户？如何通过浏览器直接访问后端接口.txt",
+          "canonical": true
+        }
+      ]
+    },
+    {
+      "date": "0923",
+      "order": "03",
+      "title": "0923-文件下载是否需要权限？实现逻辑？",
+      "files": [
+        {
+          "kind": "jpg",
+          "source": "docs/evidence/classroom/0923/06-unauthorized-download.jpg",
+          "target": "docs/classroom/提交材料/0923/03-0923-文件下载是否需要权限？实现逻辑？.jpg"
+        },
+        {
+          "kind": "txt",
+          "source": "docs/classroom/提交材料/0923/03-0923-文件下载是否需要权限？实现逻辑？.txt",
+          "target": "docs/classroom/提交材料/0923/03-0923-文件下载是否需要权限？实现逻辑？.txt",
+          "canonical": true
+        }
+      ]
+    },
+    {
+      "date": "0923",
+      "order": "04",
+      "title": "0923-文件上传逻辑？支持哪种文件类型？txt, md以外文件是否支持？",
+      "files": [
+        {
+          "kind": "txt",
+          "source": "docs/classroom/提交材料/0923/04-0923-文件上传逻辑？支持哪种文件类型？txt, md以外文件是否支持？.txt",
+          "target": "docs/classroom/提交材料/0923/04-0923-文件上传逻辑？支持哪种文件类型？txt, md以外文件是否支持？.txt",
+          "canonical": true
+        }
+      ]
+    },
+    {
+      "date": "0923",
+      "order": "05",
+      "title": "0923-用户登录成功以后，用户身份识别方式",
+      "files": [
+        {
+          "kind": "jpg",
+          "source": "docs/evidence/classroom/0923/05-cookie-direct-api.jpg",
+          "target": "docs/classroom/提交材料/0923/05-0923-用户登录成功以后，用户身份识别方式.jpg"
+        },
+        {
+          "kind": "txt",
+          "source": "docs/classroom/提交材料/0923/05-0923-用户登录成功以后，用户身份识别方式.txt",
+          "target": "docs/classroom/提交材料/0923/05-0923-用户登录成功以后，用户身份识别方式.txt",
+          "canonical": true
+        }
+      ]
+    },
+    {
+      "date": "0923",
+      "order": "06",
+      "title": "0923-系统登录时的请求参数以及响应结果以及HTTP响应完整内容",
+      "files": [
+        {
+          "kind": "jpg",
+          "source": "docs/evidence/classroom/0923/02-login-payload.jpg",
+          "target": "docs/classroom/提交材料/0923/06-0923-系统登录时的请求参数以及响应结果以及HTTP响应完整内容-01-请求参数.jpg"
+        },
+        {
+          "kind": "jpg",
+          "source": "docs/evidence/classroom/0923/03-login-response.jpg",
+          "target": "docs/classroom/提交材料/0923/06-0923-系统登录时的请求参数以及响应结果以及HTTP响应完整内容-02-响应结果.jpg"
+        },
+        {
+          "kind": "jpg",
+          "source": "docs/evidence/classroom/0923/04-login-response-headers.jpg",
+          "target": "docs/classroom/提交材料/0923/06-0923-系统登录时的请求参数以及响应结果以及HTTP响应完整内容-03-完整响应头.jpg"
+        }
+      ]
+    },
+    {
+      "date": "0923",
+      "order": "07",
+      "title": "0923-系统运行截图",
+      "files": [
+        {
+          "kind": "jpg",
+          "source": "docs/evidence/classroom/0923/01-teacher-home.jpg",
+          "target": "docs/classroom/提交材料/0923/07-0923-系统运行截图.jpg"
+        }
+      ]
+    }
+  ]
+}

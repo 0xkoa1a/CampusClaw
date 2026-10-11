@@ -11,7 +11,7 @@
 
 ## 导出方法
 
-使用 `/Users/yangyixin03/Workspace/vuepress-notes-template` 的 `531b03d` 版本创建临时副本，复用已安装依赖。Markdown 放在 `notes/classroom/0930/`，图片放在 `notes/evidence/classroom/0930/`，打印样式通过全局 index.scss 引入。
+使用 `vuepress-notes-template` 的 `531b03d` 版本创建临时副本并安装依赖。Markdown 放在 `notes/classroom/0930/`，图片放在 `notes/evidence/classroom/0930/`，打印样式通过全局 index.scss 引入。
 
 在 Node 22.18.0、pnpm 11.19.0 环境中执行：
 
@@ -19,9 +19,9 @@
 make export PAGE=classroom/0930/authentication-and-knowledge-qa.md
 ```
 
-严格导出得到自包含 HTML，再用本地 Playwright Chromium 按打印样式生成 PDF。修订时只在临时副本中构建，原模板仓库的 Git 状态与已有修改保持一致。
+严格导出得到自包含 HTML，再用 Playwright Chromium 按打印样式生成 PDF。导出结果复制到本目录后，运行 `python3 scripts/prepare_classroom_submission.py` 更新提交用 PDF 副本。
 
-## 修订与验证
+## 报告导出时的验证记录
 
 - 删除课程、提交、日期、版本来源和部署免责声明；合并认证与权限说明，精简重复段落和图注。
 - 模板标题检查、类型检查、8 项单元测试、站点构建和 4 项离线导出回归通过。

@@ -66,7 +66,7 @@
 | 本班检索与内容溯源 | 第 4 课、0923 课后任务 | `openspec/specs/traceable-retrieval/spec.md`、`docs/week04-verification.md` | 已有变更、正式规格和真实服务验收记录 |
 | 0923 七项个人提交 | 课堂派 | [0923 提交目录](提交材料/0923/) | 文字与截图已按作业名整理；课后任务提交仓库地址 |
 | 0930 三项个人提交 | 课堂派 | [0930 提交目录](提交材料/0930/) | 问答、Bearer 截图与方案 PDF 已准备 |
-| Bearer 规约归档 | OpenSpec 验收流程 | `openspec/changes/add-bearer-login/` | tasks 已完成，change 仍活跃，尚未同步成正式 bearer-auth 规格 |
+| Bearer 规约归档 | OpenSpec 验收流程 | `openspec/specs/bearer-auth/spec.md`、`openspec/changes/archive/2026-10-12-add-bearer-login/` | 实现与验收完成，已同步正式规格并归档 |
 | 学期五项 AI 能力与互联网部署 | 学期项目说明 | 当前应用与 README | 当前阶段已做知识库、模型调用；智能体、业务技能、MCP 与最终互联网部署仍需后续计划 |
 
 表中“已有验收记录”表示检查了仓库记录，不表示本次重新启动 CLab 或重跑全部测试。各项提交的原文、示例和截止时间见下文。
@@ -182,4 +182,4 @@
 
 ## 本次留档范围
 
-截图文件、对应作业和验证边界见 [证据索引](evidence.md)；上传、下载与部署访问的分析见 [实现分析](implementation-analysis.md)。原页面的示例只记录内容说明，未把老师示例中的认证值、密码及签名资源 URL 提交到公开仓库。
+各项上传文件与文字答案见[提交材料](提交材料/README.md)，截图来源和验证边界见[采集记录](evidence.md)。原页面示例只记录内容说明，未保存老师的认证值、密码及签名资源 URL。
