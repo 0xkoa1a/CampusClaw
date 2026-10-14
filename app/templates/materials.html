@@ -8,6 +8,7 @@
 <main class="workspace">
   <p id="auth-status" class="form-error" role="alert"></p>
   <h1>本班材料</h1>
+  <p><a href="{{ url_for('conversations.page') }}">解题助手 · 多轮会话</a> · <a href="/swagger/">接口文档</a></p>
   <p class="intro">{{ "上传和管理本班的教学材料，供同学们查看和下载。" if g.user.role == "teacher" else "查看本班的教学材料。" }}</p>
   <section class="search-panel" aria-labelledby="search-title">
     <h2 id="search-title">检索本班资料</h2>

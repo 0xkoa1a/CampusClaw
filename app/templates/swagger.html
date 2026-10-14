@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>CampusClaw API</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/swagger/swagger-ui.css') }}">
+  </head>
+  <body>
+    <div id="swagger-ui"></div>
+    <script src="{{ url_for('static', filename='vendor/swagger/swagger-ui-bundle.js') }}"></script>
+    <script>
+      window.addEventListener("load", () => {
+        SwaggerUIBundle({
+          url: "{{ url_for('openapi_document') }}",
+          dom_id: "#swagger-ui",
+          validatorUrl: null,
+          persistAuthorization: false
+        });
+      });
+    </script>
+  </body>
+</html>

@@ -19,6 +19,7 @@ from flask import (
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from .db import get_db
+from .openapi import IDENTITY_SCHEMA, LOGIN_SCHEMA, OK_SCHEMA, api_doc
 
 
 bp = Blueprint("auth", __name__)
@@ -137,6 +138,7 @@ def login_page():
 
 
 @bp.post("/api/login")
+@api_doc({"post": {"summary": "账号登录，选择Bearer或Cookie", "security": [], "x-response-schema": LOGIN_SCHEMA, "x-error-statuses": ["400"], "requestBody": {"required": True, "content": {"application/json": {"schema": {"type": "object", "required": ["username", "password"], "properties": {"username": {"type": "string"}, "password": {"type": "string", "format": "password"}, "auth_mode": {"type": "string", "enum": ["cookie", "bearer"], "default": "cookie"}}}}}}}})
 def api_login():
     data = request.get_json(silent=True)
     if data is None:
@@ -161,6 +163,7 @@ def api_login():
 
 @bp.post("/api/logout")
 @bp.post("/logout")
+@api_doc({"post": {"summary": "撤销当前会话并退出", "x-response-schema": OK_SCHEMA}})
 def logout():
     if request.path == "/api/logout":
         denied = require_user()
@@ -179,6 +182,7 @@ def logout():
 
 
 @bp.get("/api/me")
+@api_doc({"get": {"summary": "读取当前身份", "x-response-schema": IDENTITY_SCHEMA}})
 def me():
     denied = require_user()
     if denied:

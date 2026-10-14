@@ -59,11 +59,16 @@ class QdrantStore:
         if ids:
             self._request("POST", self.path + "/points/delete?wait=true", {"points": ids})
 
-    def query(self, vector, class_id, limit):
+    def query(self, vector, class_id, limit, material_ids=None):
+        if material_ids == []:
+            return []
         self.ensure_collection()
+        filters = [{"key": "class_id", "match": {"value": class_id}}]
+        if material_ids is not None:
+            filters.append({"key": "material_id", "match": {"any": material_ids}})
         response = self._request("POST", self.path + "/points/query", {
             "query": vector,
-            "filter": {"must": [{"key": "class_id", "match": {"value": class_id}}]},
+            "filter": {"must": filters},
             "score_threshold": 0.35,
             "limit": limit,
             "with_payload": True,

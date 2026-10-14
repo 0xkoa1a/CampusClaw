@@ -25,6 +25,7 @@ docker compose exec -T app python -m scripts.reindex_all
 - [方案报告源文件与导出记录](docs/classroom/0930/README.md)：Markdown、HTML、PDF 和打印样式。
 - [截图采集记录](docs/classroom/evidence.md)：截图环境、认证值脱敏和验证记录。
 - [第三课验收](docs/week03-verification.md)、[第四课验收](docs/week04-verification.md)：各阶段的实际验证结果。
+- [第五课实现与验收](docs/week05-verification.md)：智能体、技能、多轮流式、Swagger 和接口测试；解题助手入口为 `/conversations`。
 
 ## 规约与目录
 
@@ -40,4 +41,4 @@ docker compose exec -T app python -m scripts.reindex_all
 | `docs/classroom/0930/` | 方案报告源文件及导出产物 |
 | `docs/evidence/` | 运行截图原件与仓库验证截图 |
 
-本学期范围不含家长端、多校区运营和学科交易市场。当前完成第三、四课；第五课材料已留档、实现待开展。智能体、业务技能、MCP 和互联网部署按[学期项目要求](docs/classroom/requirements.md#学期项目交付)继续规划。
+本学期范围不含家长端、多校区运营和学科交易市场。第三、四课已完成；第五课已实现并通过必要测试，正式部署与同学验收状态见上述记录。MCP 与互联网部署按[学期项目要求](docs/classroom/requirements.md#学期项目交付)继续规划。

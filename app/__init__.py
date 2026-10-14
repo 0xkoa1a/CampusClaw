@@ -1,5 +1,6 @@
 import os
 import sqlite3
+import threading
 from pathlib import Path
 
 from flask import (
@@ -84,4 +85,11 @@ def create_app(test_config=None):
     app.register_blueprint(auth_bp)
     app.register_blueprint(materials_bp)
     app.register_blueprint(search_bp)
+    from .agents import bp as agents_bp
+    from .conversations import bp as conversations_bp
+    from .openapi import install_openapi
+    app.extensions["conversation_locks"] = {"guard": threading.Lock(), "locks": {}}
+    app.register_blueprint(agents_bp)
+    app.register_blueprint(conversations_bp)
+    install_openapi(app)
     return app

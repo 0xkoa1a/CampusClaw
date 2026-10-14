@@ -130,6 +130,8 @@ def migrate(path):
             ).fetchall()
             for row in rows:
                 insert_chunks(connection, row["material_id"], row["class_id"], row["body"])
+        from .agent_store import migrate_week05
+        migrate_week05(connection)
     finally:
         connection.close()
 

@@ -21,6 +21,10 @@ from .gateway import GatewayUnavailable
 from .knowledge import parse_text
 from .vector import VectorUnavailable
 from .db import insert_chunks
+from .openapi import (
+    MATERIAL_DETAIL_SCHEMA, MATERIAL_LIST_SCHEMA,
+    MATERIAL_UPLOAD_SCHEMA, api_doc,
+)
 
 
 bp = Blueprint("materials", __name__)
@@ -75,6 +79,7 @@ def page():
 
 
 @bp.get("/api/materials")
+@api_doc({"get": {"summary": "列出本班材料", "x-response-schema": MATERIAL_LIST_SCHEMA}})
 def api_list():
     denied = require_user()
     if denied:
@@ -83,6 +88,7 @@ def api_list():
 
 
 @bp.get("/api/materials/<int:material_id>")
+@api_doc({"get": {"summary": "读取本班材料正文", "x-response-schema": MATERIAL_DETAIL_SCHEMA, "x-error-statuses": ["404"]}})
 def api_detail(material_id):
     denied = require_user()
     if denied:
@@ -101,6 +107,7 @@ def api_detail(material_id):
 
 
 @bp.get("/api/materials/<int:material_id>/file")
+@api_doc({"get": {"summary": "下载本班原文件", "x-error-statuses": ["404"], "responses": {"200": {"description": "原文件", "content": {"application/octet-stream": {"schema": {"type": "string", "format": "binary"}}}}}}})
 def api_file(material_id):
     denied = require_user()
     if denied:
@@ -119,6 +126,7 @@ def api_file(material_id):
 
 
 @bp.post("/api/materials")
+@api_doc({"post": {"summary": "教师上传UTF-8文本材料", "x-response-schema": MATERIAL_UPLOAD_SCHEMA, "x-error-statuses": ["400", "403", "413"], "requestBody": {"required": True, "content": {"multipart/form-data": {"schema": {"type": "object", "required": ["file"], "properties": {"file": {"type": "string", "format": "binary"}}}}}}, "responses": {"201": {"description": "已上传"}, "413": {"description": "文件过大"}}}})
 def api_upload():
     denied = require_user()
     if denied:

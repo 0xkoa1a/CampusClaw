@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}解题助手 · CampusClaw{% endblock %}
+{% block body %}
+<link rel="stylesheet" href="{{ url_for('static', filename='conversations.css') }}">
+<header class="site-header">
+  <div class="header-left"><div class="brand">Campus<span>Claw</span></div><span class="header-divider"></span><span class="class-name">{{ g.user.class_name }}</span></div>
+  <div class="header-right"><span>{{ g.user.display_name }} · {{ "教师" if g.user.role == "teacher" else "学生" }}</span><form id="logout-form" method="post" action="{{ url_for('auth.logout') }}"><button class="text-button" type="submit">退出登录</button></form></div>
+</header>
+<main class="workspace conversation-workspace" data-role="{{ g.user.role }}">
+  <p id="auth-status" class="form-error" role="alert"></p>
+  <h1>解题助手</h1>
+  <p class="intro">选择本班智能体，围绕课程材料逐步梳理解题思路。</p>
+  {% if g.user.role == "teacher" %}
+  <details class="config-panel" id="teacher-config">
+    <summary>教师配置：技能与智能体</summary>
+    <div class="config-grid">
+      <section class="config-card" aria-labelledby="skill-title">
+        <h2 id="skill-title">技能</h2>
+        <form id="skill-form">
+          <input type="hidden" name="id">
+          <label for="skill-name">技能名称</label><input id="skill-name" name="name" required maxlength="32">
+          <label for="skill-source">技能 source</label><textarea id="skill-source" name="source" required rows="10" aria-describedby="skill-import-help"></textarea>
+          <p id="skill-import-help" class="help">可直接编辑 source，或导入包含技能内容的 .txt / .md 文件。</p>
+          <label for="skill-file">导入技能文件</label><input id="skill-file" type="file" accept=".txt,.md">
+          <label class="check-line"><input name="enabled" type="checkbox" checked>启用（保存时同步写入 source）</label>
+          <div class="form-actions"><button class="primary-button" type="submit">保存技能</button><button class="secondary-button" id="skill-reset" type="button">新建</button><button class="danger-button" id="skill-delete" type="button" disabled>删除</button></div>
+          <p id="skill-status" role="status" aria-live="polite"></p>
+        </form>
+        <ul id="skill-list" class="config-list" aria-label="技能列表"></ul>
+      </section>
+      <section class="config-card" aria-labelledby="agent-title">
+        <h2 id="agent-title">智能体</h2>
+        <form id="agent-form">
+          <input type="hidden" name="id">
+          <label for="agent-name">智能体名称</label><input id="agent-name" name="name" required maxlength="64">
+          <label for="agent-prompt">角色提示词</label><textarea id="agent-prompt" name="role_prompt" rows="7" maxlength="2000"></textarea>
+          <label class="check-line"><input name="enabled" type="checkbox" checked>启用</label>
+          <fieldset><legend>绑定技能</legend><div id="agent-skills" class="choice-list"></div></fieldset>
+          <fieldset><legend>绑定材料</legend><div id="agent-materials" class="choice-list"></div></fieldset>
+          <div class="form-actions"><button class="primary-button" type="submit">保存智能体</button><button class="secondary-button" id="agent-reset" type="button">新建</button></div>
+          <p id="agent-status" role="status" aria-live="polite"></p>
+        </form>
+        <ul id="agent-list" class="config-list" aria-label="智能体列表"></ul>
+      </section>
+    </div>
+  </details>
+  {% endif %}
+  <div class="conversation-layout">
+    <aside class="conversation-sidebar" aria-label="会话列表">
+      <form id="new-conversation-form">
+        <label for="new-agent">新会话智能体</label><select id="new-agent" name="agent_id" required></select>
+        <button class="primary-button" type="submit">新建会话</button>
+      </form>
+      <h2>历史会话</h2><p id="conversation-list-status" class="help" role="status"></p>
+      <ul id="conversation-list" class="conversation-list"></ul>
+    </aside>
+    <section class="chat-panel" aria-label="解题对话">
+      <div class="chat-heading"><div><h2 id="conversation-title">选择或新建一个会话</h2><p id="locked-agent" class="help">会话创建后会固定使用所选智能体。</p></div><button id="delete-conversation" class="danger-button" type="button" disabled>删除会话</button></div>
+      <p id="chat-status" class="chat-status" role="status" aria-live="polite"></p>
+      <div id="message-list" class="message-list" aria-live="polite"></div>
+      <form id="message-form" class="message-form">
+        <label for="message-content">你的问题</label><textarea id="message-content" name="content" rows="3" maxlength="500" placeholder="描述你卡住的步骤，助手会带你逐步分析" required disabled></textarea>
+        <div class="composer-footer"><span class="help">回答会标明使用的技能与资料引用。</span><button class="primary-button" type="submit" disabled>发送</button></div>
+      </form>
+    </section>
+  </div>
+</main>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='conversations.js') }}" defer></script>{% endblock %}

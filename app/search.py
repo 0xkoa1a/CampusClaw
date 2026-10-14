@@ -11,6 +11,7 @@ from .gateway import GatewayUnavailable, chat_completion
 from .indexing import index_material
 from .retrieval import search
 from .vector import VectorUnavailable
+from .openapi import ASK_SCHEMA, REINDEX_SCHEMA, SEARCH_SCHEMA, api_doc
 
 
 bp = Blueprint("search", __name__)
@@ -26,6 +27,7 @@ def _question(payload):
 
 
 @bp.post("/api/search")
+@api_doc({"post": {"summary": "本班关键词、向量或混合检索", "x-response-schema": SEARCH_SCHEMA, "x-error-statuses": ["400"], "requestBody": {"required": True, "content": {"application/json": {"schema": {"type": "object", "required": ["q"], "properties": {"q": {"type": "string", "maxLength": 500}, "mode": {"type": "string", "enum": ["keyword", "vector", "hybrid"]}, "limit": {"type": "integer", "minimum": 1, "maximum": 30}, "offset": {"type": "integer", "minimum": 0, "maximum": 1000}}}}}}}})
 def api_search():
     denied = require_user()
     if denied:
@@ -53,6 +55,7 @@ def api_search():
 
 
 @bp.post("/api/ask")
+@api_doc({"post": {"summary": "第四课单次问答：无资料不调用模型", "x-response-schema": ASK_SCHEMA, "x-error-statuses": ["400"], "requestBody": {"required": True, "content": {"application/json": {"schema": {"type": "object", "required": ["q"], "properties": {"q": {"type": "string", "maxLength": 500}, "history": {"type": "array", "items": {"type": "object"}, "maxItems": 12}}}}}}}})
 def api_ask():
     denied = require_user()
     if denied:
@@ -93,6 +96,7 @@ def api_ask():
 
 
 @bp.post("/api/materials/<int:material_id>/reindex")
+@api_doc({"post": {"summary": "教师重建本班材料索引", "x-response-schema": REINDEX_SCHEMA, "x-error-statuses": ["400", "403", "404"], "requestBody": {"content": {"application/json": {"schema": {"type": "object", "properties": {"strategy": {"type": "object", "properties": {"type": {"type": "string", "enum": ["auto", "delimiter", "markdown"]}, "max_chars": {"type": "integer", "minimum": 100, "maximum": 2000}, "overlap": {"type": "integer", "minimum": 0}, "delimiter": {"type": "string"}}}}}}}}}})
 def api_reindex(material_id):
     denied = require_user()
     if denied:

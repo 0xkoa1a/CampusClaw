@@ -17,26 +17,33 @@ def _hit(row, score):
     }
 
 
-def keyword_search(question, class_id, limit=100):
+def keyword_search(question, class_id, limit=100, material_ids=None):
+    if material_ids == []:
+        return []
     query_terms = list(terms(question))
     if not query_terms:
         return []
     placeholders = ",".join("?" for _ in query_terms)
+    scope = "" if material_ids is None else " AND m.id IN (" + ",".join("?" for _ in material_ids) + ")"
     rows = get_db().execute(
         f"""SELECT c.*,m.title,SUM(t.frequency) AS rank_score
             FROM chunk_terms t JOIN knowledge_chunks c ON c.id=t.chunk_id
             JOIN materials m ON m.id=c.material_id
             WHERE t.class_id=? AND c.class_id=? AND m.class_id=?
               AND t.term IN ({placeholders})
+              {scope}
             GROUP BY c.id ORDER BY rank_score DESC,c.material_id,c.chunk_index LIMIT ?""",
-        (class_id, class_id, class_id, *query_terms, limit),
+        (class_id, class_id, class_id, *query_terms, *(material_ids or []), limit),
     ).fetchall()
     return [_hit(row, row["rank_score"]) for row in rows]
 
 
-def vector_search(question, class_id, limit=100):
+def vector_search(question, class_id, limit=100, material_ids=None):
+    if material_ids == []:
+        return []
     vector = embed_texts([question])[0]
-    points = get_store().query(vector, class_id, limit)
+    points = (get_store().query(vector, class_id, limit) if material_ids is None
+              else get_store().query(vector, class_id, limit, material_ids=material_ids))
     result = []
     for point in points:
         payload = point.get("payload") or {}
@@ -50,19 +57,19 @@ def vector_search(question, class_id, limit=100):
                  AND m.class_id=? AND m.id=?""",
             (point["id"], class_id, class_id, payload.get("material_id")),
         ).fetchone()
-        if row is not None:
+        if row is not None and (material_ids is None or row["material_id"] in material_ids):
             result.append(_hit(row, point["score"]))
     return result
 
 
-def search(question, class_id, mode="hybrid", limit=10, offset=0):
+def search(question, class_id, mode="hybrid", limit=10, offset=0, material_ids=None):
     if mode == "keyword":
-        hits = keyword_search(question, class_id)
+        hits = keyword_search(question, class_id, material_ids=material_ids)
     elif mode == "vector":
-        hits = vector_search(question, class_id)
+        hits = vector_search(question, class_id, material_ids=material_ids)
     else:
-        keyword = keyword_search(question, class_id)
-        vector = vector_search(question, class_id)
+        keyword = keyword_search(question, class_id, material_ids=material_ids)
+        vector = vector_search(question, class_id, material_ids=material_ids)
         candidates = {}
         for ranking in (keyword, vector):
             for rank, hit in enumerate(ranking, 1):
