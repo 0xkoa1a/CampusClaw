@@ -10,7 +10,7 @@
     chatStatus: $('#chat-status'), messages: $('#message-list'), messageForm: $('#message-form'),
     message: $('#message-content'), send: $('#message-form button[type="submit"]'),
   };
-  const state = { agents: [], skills: [], materials: [], conversations: [], activeId: null, streaming: false };
+  const state = { agents: [], skills: [], materials: [], conversations: [], activeId: null, streaming: false, ready: false, creating: false };
 
   function escapeText(value) { return value == null ? '' : String(value); }
   function appendText(parent, tag, value, className) {
@@ -95,12 +95,14 @@
     state.conversations.forEach((conversation) => {
       const item = document.createElement('li'); item.className = 'conversation-item';
       const button = document.createElement('button'); button.type = 'button'; button.className = 'conversation-open';
+      button.disabled = state.streaming || state.creating || !state.ready;
       button.setAttribute('aria-current', String(conversation.id) === String(state.activeId) ? 'true' : 'false');
       appendText(button, 'span', conversation.title || '新会话');
       appendText(button, 'small', formatDate(conversation.updated_at));
       button.addEventListener('click', () => loadConversation(conversation.id));
       item.append(button);
       const remove = appendText(item, 'button', '删除', 'mini-delete'); remove.type = 'button'; remove.setAttribute('aria-label', `删除会话：${conversation.title || '新会话'}`);
+      remove.disabled = state.streaming || state.creating || !state.ready;
       remove.addEventListener('click', () => deleteConversation(conversation.id));
       els.convList.append(item);
     });
@@ -148,9 +150,11 @@
     els.title.textContent = conversation ? (conversation.title || '新会话') : '选择或新建一个会话';
     const agent = conversation && agentById(conversation.agent_id);
     els.lockedAgent.textContent = conversation ? `固定智能体：${agent ? agent.name : `#${conversation.agent_id}`} · 会话创建后不能更换` : '会话创建后会固定使用所选智能体。';
-    els.deleteConv.disabled = !conversation || state.streaming;
-    els.message.disabled = !conversation || state.streaming;
-    els.send.disabled = !conversation || state.streaming;
+    const busy = state.streaming || state.creating || !state.ready;
+    els.deleteConv.disabled = !conversation || busy;
+    els.message.disabled = !conversation || busy;
+    els.send.disabled = !conversation || busy;
+    els.newConv.querySelector('button[type="submit"]').disabled = busy || !els.newAgent.value;
     renderConversations();
   }
   async function reloadConversations(selectId = state.activeId) {
@@ -183,15 +187,20 @@
   }
   async function createConversation(event) {
     event.preventDefault();
+    if (!state.ready || state.creating || state.streaming) return;
     const agentId = els.newAgent.value;
     if (!agentId) return;
-    const button = els.newConv.querySelector('button[type="submit"]'); button.disabled = true;
+    state.creating = true;
+    setActive(state.conversations.find((item) => String(item.id) === String(state.activeId)) || null);
     try {
       const data = await jsonRequest('/api/conversations', { method: 'POST', body: JSON.stringify({ agent_id: Number(agentId) }) });
       await reloadConversations(data.conversation.id);
       setStatus(els.chatStatus, '会话已创建。');
     } catch (error) { setStatus(els.chatStatus, error.message, true); }
-    finally { button.disabled = false; }
+    finally {
+      state.creating = false;
+      setActive(state.conversations.find((item) => String(item.id) === String(state.activeId)) || null);
+    }
   }
   function processSSEBlock(block, onEvent) {
     let event = 'message'; const data = [];
@@ -372,6 +381,8 @@
       }
       const requestedId = new URLSearchParams(window.location.search).get('id');
       await reloadConversations(requestedId && /^\d+$/.test(requestedId) ? Number(requestedId) : null);
+      state.ready = true;
+      setActive(state.conversations.find((item) => String(item.id) === String(state.activeId)) || null);
       if (!els.newAgent.value) setStatus(els.listStatus, '目前没有启用的智能体。');
     } catch (error) { setStatus(els.authStatus, error.message, true); }
   }
