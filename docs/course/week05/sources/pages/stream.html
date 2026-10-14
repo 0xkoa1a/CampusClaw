@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>流式输出与 SSE · 第 5 课 · 提示词、AI 技能与流式会话</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 5 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">预习</p>
+          <a href="preview.html">认证与知识库问答</a>
+          <p class="nav-label">本课</p>
+          <a href="../index.html">概览</a>
+          <a href="scope.html">本课重点</a>
+          <a href="session.html">会话与消息模型</a>
+          <a href="skill-model.html">智能体与技能的数据模型</a>
+          <a href="route.html">技能路由与消息组装</a>
+          <a href="stream.html" class="active">流式输出与 SSE</a>
+          <a href="answer.html">一次回答的链路</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="apply.html">实践步骤与验收</a>
+          <a href="think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">流式输出与 SSE</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>流式输出与 SSE</h1>
+          <p class="lead">第 4 课的问答接口要等整段回答生成完毕才一次性返回。本课改为服务端逐段推送：学生提交后显著降低首字延迟（time to first token），无需等待整段生成完毕。推送采用 SSE（Server-Sent Events，服务器推送事件）。</p>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">为什么选 SSE 而不是 WebSocket</span></h2>
+            <table>
+              <thead>
+                <tr><th>维度</th><th>SSE</th><th>WebSocket</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>方向</td><td>服务端到浏览器的单向推送</td><td>全双工，双方随时互发</td></tr>
+                <tr><td>承载</td><td>普通 HTTP 响应，长连接不关闭</td><td>先握手升级协议，之后不再是 HTTP</td></tr>
+                <tr><td>鉴权</td><td>沿用会话 Cookie 与既有中间件</td><td>握手阶段可带 Cookie，之后需自行维护会话</td></tr>
+                <tr><td>断线恢复</td><td>浏览器自动重连</td><td>需自行实现重连与续传</td></tr>
+                <tr><td>实现成本</td><td>浏览器只收不发，提交提问需另发一条普通 POST</td><td>多一条长连接与一套心跳机制</td></tr>
+              </tbody>
+            </table>
+            <div class="note">本课是「提交一次请求、接收一段响应流」的单向场景，且已有会话 Cookie 与反向代理。改用 WebSocket 需额外实现协议升级、心跳与重连，边际收益为零。</div>
+            <figure class="fig">
+              <svg viewBox="0 0 760 200" role="img" aria-label="提问走普通接口，回答沿同一条 HTTP 连接逐段推回，Nginx 关闭缓冲">
+                <defs><marker id="stA" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#7d736c"/></marker><marker id="stR" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#94070a"/></marker></defs>
+                <rect x="16" y="80" width="120" height="56" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="76" y="102" text-anchor="middle" font-size="13" font-weight="600" fill="#1c1917">浏览器</text>
+                <text x="76" y="122" text-anchor="middle" font-size="11" fill="#7d736c">fetch 提交提问</text>
+                <line x1="136" y1="96" x2="182" y2="96" stroke="#7d736c" stroke-width="1.5" marker-end="url(#stA)"/>
+                <rect x="188" y="68" width="120" height="56" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="248" y="90" text-anchor="middle" font-size="13" font-weight="600" fill="#1c1917">Nginx</text>
+                <text x="248" y="110" text-anchor="middle" font-size="11" fill="#94070a">关闭代理缓冲</text>
+                <line x1="308" y1="96" x2="354" y2="96" stroke="#7d736c" stroke-width="1.5" marker-end="url(#stA)"/>
+                <rect x="360" y="68" width="120" height="56" rx="8" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="420" y="90" text-anchor="middle" font-size="13" font-weight="600" fill="#1c1917">Go 检索模块</text>
+                <text x="420" y="110" text-anchor="middle" font-size="11" fill="#7d736c">先检索再生成</text>
+                <line x1="480" y1="96" x2="526" y2="96" stroke="#7d736c" stroke-width="1.5" marker-end="url(#stA)"/>
+                <rect x="532" y="68" width="212" height="56" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="638" y="90" text-anchor="middle" font-size="13" font-weight="600" fill="#1c1917">对话网关</text>
+                <text x="638" y="110" text-anchor="middle" font-size="11" fill="#7d736c">只在有切片时调用</text>
+                <line x1="638" y1="68" x2="638" y2="40" stroke="#94070a" stroke-width="1.5" marker-end="url(#stR)"/>
+                <rect x="532" y="12" width="212" height="28" rx="6" fill="#ffffff" stroke="#94070a"/>
+                <text x="638" y="31" text-anchor="middle" font-size="11" fill="#94070a">逐片产生文本</text>
+                <line x1="120" y1="150" x2="76" y2="150" stroke="#94070a" stroke-width="1.5" marker-end="url(#stR)"/>
+                <rect x="188" y="136" width="556" height="28" rx="6" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="466" y="155" text-anchor="middle" font-size="12" fill="#94070a">同一条连接推回 meta → delta × n → done</text>
+              </svg>
+              <figcaption>提问是一次普通 POST；回答沿这条连接逐段推回，连接直到 done 才关闭。</figcaption>
+            </figure>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">四类事件与帧格式</span></h2>
+            <p>每一帧由 <code>event:</code> 与 <code>data:</code> 两行组成，以一个空行结束。<code>data</code> 是 JSON。服务端按用途分四类事件。</p>
+            <table>
+              <thead>
+                <tr><th>事件</th><th>何时推送</th><th>载荷</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>meta</code></td><td>检索完成之后、生成之前，最先到达</td><td>状态、本次命中的技能、引用列表</td></tr>
+                <tr><td><code>delta</code></td><td>生成过程中多次推送</td><td>本次新增的文本片段，不是累计全文</td></tr>
+                <tr><td><code>done</code></td><td>助手消息落库之后</td><td>该条消息的编号</td></tr>
+                <tr><td><code>error</code></td><td>流已开始但后续失败</td><td>通用错误文案</td></tr>
+              </tbody>
+            </table>
+            <figure class="fig">
+              <svg viewBox="0 0 760 150" role="img" aria-label="一帧两行加空行：event 行写事件名，data 行写 JSON，空行结束">
+                <rect x="16" y="16" width="728" height="118" rx="10" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="40" y="46" font-size="12" fill="#1c1917">event: meta</text>
+                <text x="40" y="70" font-size="12" fill="#1c1917">data: {"status":"ok","skill":{"name":"数学解题引导"},"citations":[…]}</text>
+                <text x="40" y="98" font-size="12" fill="#1c1917">event: delta</text>
+                <text x="40" y="122" font-size="12" fill="#94070a">data: {"text":"先看这一步"}　←　两条帧之间用一个空行分隔</text>
+              </svg>
+              <figcaption>把各次 delta 的文本按顺序拼接，必须等于最终回答；任一条 delta 都不得是此前片段的累计全文。</figcaption>
+            </figure>
+          </section>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">三个工程实现细节</span></h2>
+            <article class="kp-card">
+              <h3>反向代理默认启用缓冲</h3>
+              <p>Nginx 默认开启代理缓冲（proxy buffering），会攒够一段再转发。流式传输必须显式禁用：<code>proxy_buffering off</code>、<code>proxy_cache off</code>，并将读超时放宽到 120 秒。服务端同时返回 <code>X-Accel-Buffering: no</code> 头，构成两层防护。否则浏览器仍要等整段生成结束才收到首字节。</p>
+            </article>
+            <article class="kp-card">
+              <h3>每帧都要显式 flush</h3>
+              <p>Go 的 <code>ResponseWriter</code> 同样有缓冲。每写入一帧必须调用 <code>http.Flusher</code> 的 <code>Flush</code> 把缓冲区刷到连接，否则片段滞留在服务端。响应头另需 <code>Content-Type: text/event-stream</code>、<code>Cache-Control: no-cache</code> 与 <code>Connection: keep-alive</code>。</p>
+            </article>
+            <article class="kp-card">
+              <h3>流一旦开始，状态码不可再变更</h3>
+              <p>服务端在第一个事件产生时才写响应头并返回 200——因为检索是否命中要等检索阶段完成才能确定。此后再出错已无法返回 4xx 或 5xx，只能以 <code>error</code> 事件收尾。检索前即可判定的失败（会话不存在、检索服务不可用）才返回真正的 404 与 503。</p>
+            </article>
+            <div class="note">浏览器端的 <code>EventSource</code> 只能发起 GET，而提交提问要带 JSON 正文。因此本课用 <code>fetch</code> 发起 POST，再读 <code>response.body</code> 的流，自己按 <code>event:</code> 与 <code>data:</code> 行解帧。</div>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="route.html">← 技能路由与消息组装</a>
+            <a class="btn btn-ghost" href="answer.html">一次回答的链路 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>本课重点 · 第 5 课 · 提示词、AI 技能与流式会话</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 5 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">预习</p>
+          <a href="preview.html">认证与知识库问答</a>
+          <p class="nav-label">本课</p>
+          <a href="../index.html">概览</a>
+          <a href="scope.html" class="active">本课重点</a>
+          <a href="session.html">会话与消息模型</a>
+          <a href="skill-model.html">智能体与技能的数据模型</a>
+          <a href="route.html">技能路由与消息组装</a>
+          <a href="stream.html">流式输出与 SSE</a>
+          <a href="answer.html">一次回答的链路</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="apply.html">实践步骤与验收</a>
+          <a href="think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">本课重点</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>本课重点</h1>
+          <p class="lead">本课做一个解题助手：教师在本班建好智能体，为它配角色提示词、绑定技能与本班材料；学生选定一个智能体后连续追问，助手按该智能体作答并给出出处。下面三节依次说明本课要做的六件事、谁能操作什么、做完怎样算通过；实现以 <code>project-src/week05-harness</code> 的演示代码为准。</p>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">本课要做的六件事</span></h2>
+            <article class="kp-card">
+              <ul>
+                <li><b>智能体。</b>教师在本班创建、修改、启停智能体，并为每个智能体绑定技能与本班材料；班内名称唯一，绑定他班的技能或材料一律按不存在处理。</li>
+                <li><b>会话选定智能体。</b>新建会话时必须选定本班一个已启用的智能体，此后该会话一直用它，换智能体要新开会话。</li>
+                <li><b>一次回答的输入。</b>角色提示词取自该智能体；技能只在该智能体绑定且已启用的集合里路由，至多命中一个；检索只在该智能体绑定的材料里进行。</li>
+                <li><b>消息组装。</b>系统消息只放智能体提示词、技能说明与边界句；编号资料放在用户消息里——它与技能描述都来自上传，属于数据而不是指令。</li>
+                <li><b>流式与引用。</b>以 SSE 逐段返回；引用列表随第一个事件先行到达，正文随后逐段到达。</li>
+                <li><b>接口文档。</b>用代码注解生成 OpenAPI 描述，并提供 Swagger 页面，可对照文档试调主要接口。</li>
+              </ul>
+            </article>
+            <figure class="fig">
+              <svg viewBox="0 0 760 210" role="img" aria-label="智能体配好提示词、绑定技能与绑定材料，一次回答只用到这三项，并以 SSE 逐段返回">
+                <defs><marker id="scA" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#7d736c"/></marker></defs>
+                <rect x="16" y="16" width="252" height="178" rx="10" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="32" y="42" font-size="13" font-weight="600" fill="#94070a">智能体（本班）</text>
+                <line x1="32" y1="54" x2="252" y2="54" stroke="#e6e1dd"/>
+                <text x="32" y="80" font-size="12" fill="#1c1917">角色提示词</text>
+                <text x="32" y="98" font-size="11" fill="#7d736c">规定这个助手是谁</text>
+                <text x="32" y="126" font-size="12" fill="#1c1917">绑定技能（零到多个）</text>
+                <text x="32" y="144" font-size="11" fill="#7d736c">只在这个集合里路由</text>
+                <text x="32" y="172" font-size="12" fill="#1c1917">绑定材料（零到多个）</text>
+                <text x="32" y="190" font-size="11" fill="#7d736c">只在这些材料里检索</text>
+                <line x1="268" y1="105" x2="296" y2="105" stroke="#7d736c" stroke-width="1.5" marker-end="url(#scA)"/>
+                <rect x="300" y="16" width="196" height="178" rx="10" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="316" y="42" font-size="13" font-weight="600" fill="#1c1917">一次回答</text>
+                <line x1="316" y1="54" x2="480" y2="54" stroke="#e6e1dd"/>
+                <text x="316" y="80" font-size="12" fill="#1c1917">技能：绑定集合内</text>
+                <text x="316" y="108" font-size="12" fill="#1c1917">检索：绑定材料内</text>
+                <text x="316" y="136" font-size="12" fill="#1c1917">资料：放用户消息</text>
+                <text x="316" y="164" font-size="12" fill="#1c1917">提示词：取自智能体</text>
+                <text x="316" y="186" font-size="11" fill="#7d736c">至多命中一个技能</text>
+                <line x1="496" y1="105" x2="524" y2="105" stroke="#7d736c" stroke-width="1.5" marker-end="url(#scA)"/>
+                <rect x="528" y="16" width="216" height="178" rx="10" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="544" y="42" font-size="13" font-weight="600" fill="#1c1917">SSE 流式回答</text>
+                <line x1="544" y1="54" x2="728" y2="54" stroke="#e6e1dd"/>
+                <text x="544" y="80" font-size="12" fill="#1c1917">meta 先带引用列表</text>
+                <text x="544" y="108" font-size="12" fill="#1c1917">delta 逐段增量</text>
+                <text x="544" y="136" font-size="12" fill="#1c1917">done 收尾</text>
+                <text x="544" y="164" font-size="12" fill="#1c1917">有据才写 [n]</text>
+                <text x="544" y="186" font-size="11" fill="#7d736c">编号与引用一一对应</text>
+              </svg>
+              <figcaption>智能体把「助手是谁」「能用哪些技能」「能查哪些材料」三件事一次配好。一次回答的全部输入都来自会话绑定的那一个智能体，班级之外不越界。</figcaption>
+            </figure>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">谁能操作什么</span></h2>
+            <table>
+              <thead>
+                <tr><th>对象</th><th>学生</th><th>教师</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>智能体</td><td>列出本班已启用的并从中选用</td><td>创建、修改、启停；绑定技能与材料</td></tr>
+                <tr><td>技能</td><td>可列出本班技能</td><td>编写或上传技能文件，绑定到智能体</td></tr>
+                <tr><td>材料</td><td>可列出本班材料</td><td>上传入库、重建索引，绑定到智能体</td></tr>
+                <tr><td>会话</td><td>只看到自己的；新建时选定智能体</td><td>只看到自己的</td></tr>
+                <tr><td>检索</td><td colspan="2">只限所选智能体绑定的材料；班级取自登录用户</td></tr>
+              </tbody>
+            </table>
+            <div class="note">授权判定在服务端强制执行（server-side enforcement），前端不承担访问控制职责。隐藏页面入口不构成隔离：学生调用教师专属接口得到 403；按编号访问未启用、他班或不存在的智能体，得到与「不存在」完全一致的 404。</div>
+          </section>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">验收标准与验证方法</span></h2>
+            <table>
+              <thead>
+                <tr><th>验收标准（DoD）</th><th>验证方法</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>智能体可管理</td><td>教师建两个智能体，各绑不同技能与材料；学生的列表只见已启用的；按编号访问他班或未启用的，与不存在返回完全一致</td></tr>
+                <tr><td>只在绑定集合内作答</td><td>给某智能体只绑数学技能与数学材料，再问语文题：不命中技能，引用里也不出现未绑定的材料</td></tr>
+                <tr><td>会话锁定智能体</td><td>新建会话时选定 A；此后消息体里再带 B 的编号，回答仍按 A 的提示词与技能</td></tr>
+                <tr><td>引导技能不给最终答案，停用后行为明显变化</td><td>用适用条件里的词提问，命中「解题引导」时只指出错在哪一步并带 <code>[1]</code>，不写得数；把该技能停用（或解绑）再问同一句，改为直接给结论</td></tr>
+                <tr><td>检索落空仍作答</td><td>问材料里没有的内容：仍按智能体提示词作答，引用为空，回答里不出现 <code>[n]</code>，也不整段回「资料中未找到相关内容」</td></tr>
+                <tr><td>回答可引用知识库</td><td>引用列表含材料标题与切片序号；回答中的编号与之对应</td></tr>
+                <tr><td>流式输出正常</td><td>浏览器里文字逐段出现；抓包可见多次 <code>delta</code> 且每次是新增文本</td></tr>
+                <tr><td>接口文档可对照</td><td>浏览器打开 Swagger 页面，能按文档试调主要接口</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="../index.html">← 概览</a>
+            <a class="btn btn-ghost" href="session.html">会话与消息模型 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

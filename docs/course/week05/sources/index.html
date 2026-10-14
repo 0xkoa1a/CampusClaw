@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>实现教程 · 第 5 课 · 提示词、AI 技能与流式会话</title>
+    <link rel="stylesheet" href="css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="index.html">CampusClaw<span>第 5 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">预习</p>
+          <a href="pages/preview.html">认证与知识库问答</a>
+          <p class="nav-label">本课</p>
+          <a href="index.html" class="active">概览</a>
+          <a href="pages/scope.html">本课重点</a>
+          <a href="pages/session.html">会话与消息模型</a>
+          <a href="pages/skill-model.html">智能体与技能的数据模型</a>
+          <a href="pages/route.html">技能路由与消息组装</a>
+          <a href="pages/stream.html">流式输出与 SSE</a>
+          <a href="pages/answer.html">一次回答的链路</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="pages/apply.html">实践步骤与验收</a>
+          <a href="pages/think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">概览</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>实现教程</h1>
+          <p class="lead">第 4 课已能在班内检索到带出处的切片。本课把检索接入一次回答：教师在新建的智能体上配好角色提示词、绑定技能与材料；学生选定一个智能体后提问，服务端按该智能体的绑定选技能、检索，再以流式逐段返回。提示词、技能与知识库三者必须同时参与同一次回答。</p>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">本课承接第 4 课</span></h2>
+            <p class="unit-lead">登录、角色校验、上传入库与本班混合检索沿用第 4 课，本课不再重做。演示实现见 <code>project-src/week05-harness</code>；每位同学在第 4 课产出的本人学期仓上增量实现，不新建仓库。</p>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">先记住三条结论</span></h2>
+            <article class="kp-card">
+              <h3>提示词挂在智能体上，不再每班一份</h3>
+              <p>智能体存于 <code>tutor_agents</code>，字段含名称、角色提示词与启用状态，每班可以有多个，由教师创建与维护。角色提示词为空的智能体回退到默认角色设定（fallback），不因此拒绝请求。班级提示词表 <code>class_prompts</code> 保留，但回答路径不再读它。</p>
+            </article>
+            <article class="kp-card">
+              <h3>一次提问只选至多一个技能</h3>
+              <p>候选集是该智能体绑定且已启用的技能；未绑定的技能即使适用条件命中，也不参与路由。路由在候选集里按适用条件做词法命中计分（lexical scoring），取最高分的一条；同分取技能编号较小者；零命中即不选技能。命中的技能名称含「解题引导」时，回答不得写出最终答案、选项、得数或完整解题过程。</p>
+            </article>
+            <article class="kp-card">
+              <h3>检索优先，落空仍作答</h3>
+              <p>有超过相似度下限的命中时，回答优先依据这些材料，并用 <code>[n]</code> 标出出处。检索落空、或该智能体没有绑定材料时，不再用固定文案结束：仍按该智能体的提示词作答，引用列表为空数组，回答里不出现编号，也不得编造出处。</p>
+            </article>
+          </section>
+
+          <div class="grid">
+            <a class="tile" href="pages/preview.html"><strong>认证与知识库问答</strong><span>Cookie + Session 版与 Bearer JWT 版认证链路，加知识库问答方案</span></a>
+            <a class="tile" href="pages/scope.html"><strong>本课重点</strong><span>本课要做的六件事、交给谁操作、验收怎么验</span></a>
+            <a class="tile" href="pages/session.html"><strong>会话与消息模型</strong><span>两张表的字段分工、会话选定的智能体、历史窗口</span></a>
+            <a class="tile" href="pages/skill-model.html"><strong>智能体与技能的数据模型</strong><span>智能体字段、技能文件样板与解析规则，及与主流 SKILL.md 的差异</span></a>
+            <a class="tile" href="pages/route.html"><strong>技能路由与消息组装</strong><span>候选集来自智能体绑定，词法计分选技能；两条消息各放什么</span></a>
+            <a class="tile" href="pages/stream.html"><strong>流式输出与 SSE</strong><span>与 WebSocket 的取舍，四类事件与三个工程细节</span></a>
+            <a class="tile" href="pages/answer.html"><strong>一次回答的链路</strong><span>十一步链路、每步落在哪一层、两种口径与编号回溯</span></a>
+            <a class="tile" href="pages/apply.html"><strong>实践步骤与验收</strong><span>实现顺序、验证方法与常见故障排查</span></a>
+            <a class="tile" href="pages/think.html"><strong>思考与分析</strong><span>五道研讨题，按协议、配置、回答、安全分组，每题含替代方案与权衡</span></a>
+          </div>
+
+          <div class="pager">
+            <span></span>
+            <a class="btn btn-ghost" href="pages/scope.html">本课重点 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="js/app.js"></script>
+  </body>
+</html>

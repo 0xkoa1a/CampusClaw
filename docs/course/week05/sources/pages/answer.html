@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>一次回答的链路 · 第 5 课 · 提示词、AI 技能与流式会话</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 5 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">预习</p>
+          <a href="preview.html">认证与知识库问答</a>
+          <p class="nav-label">本课</p>
+          <a href="../index.html">概览</a>
+          <a href="scope.html">本课重点</a>
+          <a href="session.html">会话与消息模型</a>
+          <a href="skill-model.html">智能体与技能的数据模型</a>
+          <a href="route.html">技能路由与消息组装</a>
+          <a href="stream.html">流式输出与 SSE</a>
+          <a href="answer.html" class="active">一次回答的链路</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="apply.html">实践步骤与验收</a>
+          <a href="think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">一次回答的链路</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>一次回答的链路</h1>
+          <p class="lead">本页把前几页接成一条链。一轮提问要经过十一步：先确定会话用的是哪个智能体、本次命中哪个技能，再从该智能体绑定的材料里取依据，把角色与依据分别装进两条消息送入生成，最后落库。检索落空不会让链路终止，只是清空引用列表。</p>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">从请求到持久化</span></h2>
+            <p class="unit-lead">顺序取自服务端处理一轮提问的那一个方法：前七步都在准备输入，第八步起才开始产生输出。</p>
+            <div class="flow">
+              <div class="flow-step"><b>1 取会话</b><span>按会话编号与当前用户读取，再比对班级</span></div>
+              <div class="flow-step"><b>2 取智能体</b><span>读会话选定的智能体，再比对班级</span></div>
+              <div class="flow-step"><b>3 取候选集</b><span>只取该智能体绑定且已启用的技能</span></div>
+              <div class="flow-step"><b>4 选技能</b><span>在候选集内按适用条件打分，至多一个</span></div>
+              <div class="flow-step"><b>5 记问题</b><span>首轮用提问前 24 字改写标题，随后落库</span></div>
+              <div class="flow-step"><b>6 检索</b><span>只在绑定材料内检索，取前 4 条</span></div>
+              <div class="flow-step"><b>7 筛切片</b><span>去掉空正文与学科不符的，再依次编号</span></div>
+              <div class="flow-step"><b>8 推 meta</b><span>状态、技能与引用列表先到</span></div>
+              <div class="flow-step"><b>9 组消息</b><span>角色与技能进系统消息，资料进用户消息</span></div>
+              <div class="flow-step"><b>10 生成</b><span>逐段推 delta</span></div>
+              <div class="flow-step"><b>11 收尾</b><span>助手消息落库，推 done</span></div>
+            </div>
+            <p>第 5 步把提问先落库，是为了让下一轮读到的历史里一定包含本轮提问。第 8 步刻意排在组消息之前：引用列表与技能名先发出去，页面立刻能显示出处，而读历史、拼消息、等首字这三段耗时都藏进同一次首字延迟里。第 7 步筛完可能一条不剩——链路不因此中断，引用列表以空数组下发，第 10 步照常生成。</p>
+            <table>
+              <thead>
+                <tr><th>步骤</th><th>落在哪一层</th><th>失败时怎么返回</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>1–2 切会话与智能体</td><td>两次数据库查询</td><td>不存在或跨班 → 404</td></tr>
+                <tr><td>3–5 取技能、落库提问</td><td>一次查询，两次写入</td><td>数据库不可用 → 503</td></tr>
+                <tr><td>6 检索</td><td>调用检索服务</td><td>服务不可用 → 503</td></tr>
+                <tr><td>7–9 筛切片、推 meta、组消息</td><td>全部在进程内</td><td>没有失败分支</td></tr>
+                <tr><td>10–11 生成与收尾</td><td>对话网关，随后一次写入</td><td>首片之前 → 503；之后只能补一条 <code>error</code> 事件</td></tr>
+              </tbody>
+            </table>
+            <div class="note">第 9 步之后再出错，HTTP 状态码已经是 200，改不回来；能返回 404 与 503 的只有前七步。这条分界线落在第一个事件产生的那一刻——上一页讲过它的成因，这里给出它在这一条链上的确切位置。</div>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">有依据与无依据的两种口径</span></h2>
+            <p class="unit-lead">检索命中与否，改变的是消息的措辞与引用列表，而不是这段回答要不要写。</p>
+            <figure class="fig">
+              <svg viewBox="0 0 760 248" role="img" aria-label="同一入口检索命中时，系统消息要求优先引用并标出编号、用户消息附上编号资料，生成后正文可带编号且引用列表非空；检索落空时，系统消息要求不得写编号、用户消息写一句说明，生成后正文剥掉编号且引用列表为空。两条路都走到同一次生成">
+                <defs>
+                  <marker id="anB2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#7d736c"/></marker>
+                  <marker id="anR2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#94070a"/></marker>
+                </defs>
+                <rect x="16" y="28" width="146" height="72" rx="8" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="89" y="58" text-anchor="middle" font-size="13" font-weight="600" fill="#1c1917">有切片</text>
+                <text x="89" y="80" text-anchor="middle" font-size="11" fill="#7d736c">绑定材料内检索</text>
+                <line x1="162" y1="64" x2="178" y2="64" stroke="#94070a" stroke-width="1.5" marker-end="url(#anR2)"/>
+                <rect x="182" y="28" width="290" height="72" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="327" y="50" text-anchor="middle" font-size="13" font-weight="600" fill="#1c1917">两条消息</text>
+                <text x="327" y="70" text-anchor="middle" font-size="11" fill="#7d736c">系统消息：优先引用，要求标 [1]</text>
+                <text x="327" y="88" text-anchor="middle" font-size="11" fill="#7d736c">用户消息：附上编号资料</text>
+                <line x1="472" y1="64" x2="488" y2="64" stroke="#94070a" stroke-width="1.5" marker-end="url(#anR2)"/>
+                <rect x="492" y="28" width="252" height="72" rx="8" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="618" y="50" text-anchor="middle" font-size="13" font-weight="600" fill="#1c1917">调用对话网关</text>
+                <text x="618" y="70" text-anchor="middle" font-size="11" fill="#94070a">正文可带 [1]</text>
+                <text x="618" y="88" text-anchor="middle" font-size="11" fill="#94070a">引用列表非空</text>
+                <rect x="16" y="124" width="146" height="72" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="89" y="154" text-anchor="middle" font-size="13" font-weight="600" fill="#1c1917">没有切片</text>
+                <text x="89" y="176" text-anchor="middle" font-size="11" fill="#7d736c">检索结果为空</text>
+                <line x1="162" y1="160" x2="178" y2="160" stroke="#7d736c" stroke-width="1.5" marker-end="url(#anB2)"/>
+                <rect x="182" y="124" width="290" height="72" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="327" y="146" text-anchor="middle" font-size="13" font-weight="600" fill="#1c1917">两条消息</text>
+                <text x="327" y="166" text-anchor="middle" font-size="11" fill="#7d736c">系统消息：不得写出编号</text>
+                <text x="327" y="184" text-anchor="middle" font-size="11" fill="#7d736c">用户消息：一句说明</text>
+                <line x1="472" y1="160" x2="488" y2="160" stroke="#7d736c" stroke-width="1.5" marker-end="url(#anB2)"/>
+                <rect x="492" y="124" width="252" height="72" rx="8" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="618" y="146" text-anchor="middle" font-size="13" font-weight="600" fill="#1c1917">调用对话网关</text>
+                <text x="618" y="166" text-anchor="middle" font-size="11" fill="#94070a">正文剥掉 [n]</text>
+                <text x="618" y="184" text-anchor="middle" font-size="11" fill="#94070a">引用列表为空</text>
+                <rect x="16" y="208" width="728" height="28" rx="6" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="380" y="227" text-anchor="middle" font-size="11" fill="#7d736c">两条路都走到同一次生成，差别只在消息措辞与引用列表</text>
+              </svg>
+              <figcaption>检索是否命中，决定的是回答里有没有编号与出处，而不是这段回答要不要写。落空时模型仍按角色与技能作答，只是不得写出 <code>[1]</code> 这样的编号，也不得把回答写成整段的「资料中未找到相关内容」。</figcaption>
+            </figure>
+          </section>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">编号、落库与回溯</span></h2>
+            <p class="unit-lead">生成之后还有几件事要做对：编号怎么发、落空后怎么清、这一轮凭什么可回溯。</p>
+            <article class="kp-card">
+              <h3>编号连续，不跳号</h3>
+              <p>先把空正文的切片剔除，再依次编号。若先编号再剔除，回答里的 [2] 就会指向引用列表里已经不存在的条目。每条资料截断 800 字，避免单条过长挤占上下文。</p>
+            </article>
+            <article class="kp-card">
+              <h3>落空时还要剥掉编号</h3>
+              <p>无依据那一支的模型输出，在推给浏览器之前会先删掉所有 <code>[n]</code> 形式的编号，免得出现指向不存在出处的引用。系统消息里也已写明不要编号，两道措施取其一都够用，叠在一起是不去指望模型每次都听话。</p>
+            </article>
+            <article class="kp-card">
+              <h3>助手消息连同当次证据一并持久化</h3>
+              <p>助手消息除正文外，还写入引用列表与本次命中的技能名。<code>done</code> 事件返回这条消息的编号。事后可按会话回放：这一轮用的是哪个智能体（记在会话行上）、命中了哪个技能、引了哪几份材料、材料属于哪个班。</p>
+            </article>
+            <article class="kp-card">
+              <h3>生成中途失败的降级处理</h3>
+              <p>生成过程中若已产出若干片段才失败，则以已生成的内容收尾并持久化；一个片段都未产出时，才向上返回错误。增量推送开始后状态码已不可变更，只能以 <code>error</code> 事件收尾。</p>
+            </article>
+            <div class="note">流式回答的 <code>meta</code> 里，状态字段恒为「ok」：这一轮有没有依据，从引用列表是否为空即可读出，不必再借状态区分。第 4 课的问答接口则把「没有依据」单列成一个独立状态——同一件事，两条链路各有一套口径。</div>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="stream.html">← 流式输出与 SSE</a>
+            <a class="btn btn-ghost" href="apply.html">实践步骤与验收 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

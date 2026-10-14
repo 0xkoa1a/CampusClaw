@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="ABDFD4QEhrJf4q7QJO0MLX">
+<head data-page-node-id="GI0gt8rnwAvfD2LcuyuxEc">
+    <meta charset="UTF-8" data-page-node-id="VPSg09cnI8eVtR1xtlBeOu">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="T9OAMuKGjva10xSN4JLrbH">
+    <title>互联网软件开发技术与实践 - 课程入口</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+            line-height: 1.6;
+            color: #1c2530;
+            background: #f5f6f8;
+            overflow-x: hidden;
+        }
+
+        a { color: inherit; text-decoration: none; }
+
+        .wrap {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 32px 80px;
+        }
+
+        .site-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+            padding: 20px 0 8px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .site-title {
+            font-size: 28px;
+            font-weight: 900;
+            color: #94070a;
+            letter-spacing: 1px;
+        }
+
+        .site-nav-links {
+            display: flex;
+            gap: 20px;
+        }
+
+        .site-nav a { color: rgba(28, 37, 48, 0.7); }
+        .site-nav a:hover { color: #94070a; }
+
+        .page-header {
+            padding: 20px 0 28px;
+        }
+
+        .page-header-main { max-width: none; }
+
+        .page-header .meta { margin-bottom: 0; }
+
+        .page-header h1 {
+            font-size: 40px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #94070a 0%, #a3282b 50%, #b8860b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .page-header .meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .page-header .pill {
+            padding: 4px 12px;
+            background: #ffffff;
+            border: 1px solid #e6e8ec;
+            border-radius: 999px;
+            font-size: 13px;
+            color: rgba(28, 37, 48, 0.7);
+        }
+
+        .page-intro {
+            margin: 16px 0 0;
+            max-width: none;
+            font-size: 15px;
+            line-height: 1.85;
+            color: rgba(28, 37, 48, 0.78);
+        }
+
+        .page-intro p + p { margin-top: 8px; }
+
+        .section { padding: 8px 0 8px; }
+
+        .section-title {
+            font-size: 28px;
+            font-weight: 900;
+            margin-bottom: 18px;
+            background: linear-gradient(135deg, #94070a 0%, #a3282b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            position: relative;
+            display: inline-block;
+        }
+
+        .section-title::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            bottom: -8px;
+            width: 72px;
+            height: 4px;
+            background: linear-gradient(135deg, #94070a 0%, #a3282b 100%);
+            border-radius: 2px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 8px 14px;
+            background: #94070a;
+            color: #ffffff;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .btn:hover { background: #a3282b; }
+
+        .stage {
+            margin: 12px 0;
+            background: #ffffff;
+            border: 1px solid #e6e8ec;
+            border-radius: 14px;
+            overflow: hidden;
+        }
+
+        .stage-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 18px;
+            font-size: 15px;
+            font-weight: 700;
+            color: #94070a;
+            cursor: pointer;
+            list-style: none;
+            user-select: none;
+        }
+
+        .stage-head::-webkit-details-marker { display: none; }
+
+        .stage-head::after {
+            content: "";
+            flex-shrink: 0;
+            width: 8px;
+            height: 8px;
+            border-right: 2px solid #94070a;
+            border-bottom: 2px solid #94070a;
+            transform: rotate(-45deg);
+            transition: transform 0.2s ease;
+            margin-right: 4px;
+        }
+
+        .stage[open] .stage-head::after {
+            transform: rotate(45deg);
+            margin-top: -4px;
+        }
+
+        .stage-head:hover { background: rgba(148, 7, 10, 0.04); }
+
+        .stage-body {
+            padding: 16px 18px 18px;
+            border-top: 1px solid #e6e8ec;
+        }
+
+        .lesson-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .lesson {
+            background: #ffffff;
+            border: 1px solid #e6e8ec;
+            border-radius: 16px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .lesson-ready { border-color: rgba(148, 7, 10, 0.45); }
+        .lesson-pending { border-color: #e6e8ec; }
+
+        .lesson-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .lesson-goal {
+            font-size: 14px;
+            color: rgba(28, 37, 48, 0.7);
+            margin-bottom: 12px;
+            flex: 1;
+        }
+
+        .lesson-decks { display: flex; flex-wrap: wrap; gap: 8px; }
+
+        .req-lead {
+            font-size: 15px;
+            color: rgba(28, 37, 48, 0.72);
+            margin: -8px 0 20px;
+        }
+
+        .role-card .lesson-title { margin-bottom: 4px; }
+
+        .role-tag {
+            display: inline-block;
+            margin-bottom: 10px;
+            padding: 2px 10px;
+            border-radius: 999px;
+            background: rgba(148, 7, 10, 0.08);
+            color: #94070a;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .pending {
+            font-size: 13px;
+            color: rgba(28, 37, 48, 0.45);
+        }
+
+        .btn-ghost {
+            display: inline-block;
+            padding: 8px 14px;
+            background: #ffffff;
+            border: 1px solid rgba(148, 7, 10, 0.45);
+            color: #94070a;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        .btn-ghost:hover { background: rgba(148, 7, 10, 0.06); }
+
+        .lesson.nav-card .lesson-goal { margin-bottom: 14px; }
+
+        @media (max-width: 960px) {
+            .lesson-grid { grid-template-columns: repeat(2, 1fr); }
+            .page-header h1 { font-size: 32px; }
+        }
+
+        @media (max-width: 640px) {
+            .wrap { padding: 0 16px 56px; }
+            .lesson-grid { grid-template-columns: 1fr; }
+            .page-header h1 { font-size: 26px; }
+            .site-title { font-size: 24px; }
+            .site-nav {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+            .site-nav-links { flex-wrap: wrap; }
+        }
+    </style>
+</head>
+<body data-page-node-id="fL1zqvNB6kOhYfEmJ0At8R">
+    <div class="wrap" data-page-node-id="vxW59SWAO8C3C21L8ijQms">
+        <nav class="site-nav" aria-label="课程资源" data-page-node-id="dqKIap96WaQ9ALNE6KXUSH">
+            <div class="site-title" data-page-node-id="6ZJRoJCm38xQpMpC2HJFJk">互联网软件开发技术与实践</div>
+            <div class="site-nav-links" data-page-node-id="JAJSDaDlvEVqOGeWfhhUS1">
+                <a href="#schedule" data-page-node-id="lHIGtgWWP1GN53rEyfaDFv">教学进度</a>
+                <a href="腾讯会议.html">腾讯会议</a>
+                <a href="campusclaw/index.html" data-page-node-id="2zFsD8OUGqgyuogM6DLNCm">CampusClaw 产品介绍</a>
+                <a href="项目介绍.html" data-page-node-id="bh1WwdwStOEFU4sMxDfAW5">学期项目说明</a>
+                <a href="harness/index.html" data-page-node-id="43TcE6tnc63mWpN6sGpgK1">Harness 工程</a>
+                <a href="demo-src/dist/index.html" target="_blank" rel="noopener" data-page-node-id="AdpvxU0uELT1yGQlsJQVKL">项目演示</a>
+                <a href="https://ai-gateway.devops.hello1023.com/" target="_blank" rel="noopener" data-page-node-id="HeT5OEL6TgIZOih43HruKf">课程网关</a>
+            </div>
+        </nav>
+
+        <header class="page-header" data-page-node-id="xLB1rYaejGy9c2HdrWQPIa">
+            <div class="page-header-main" data-page-node-id="LzVscsk1uFDindMCvkgQsp">
+                <div class="meta" data-page-node-id="tHynBiO4IzfA2WZXOe29XZ">
+                    <span class="pill" data-page-node-id="Msu85J624ajRuruDftBYuT">2 学分 · 32 课时</span>
+                    <span class="pill" data-page-node-id="ta0omauYUZcMRM2WCZDx2w">周三8:30-11:30</span>
+                    <span class="pill" data-page-node-id="jBv6JXvbYs9HsREsYU19Cw">3202教室</span>
+                    <span class="pill" data-page-node-id="KYUOJMAToSG3NvavOmiraC">张齐勋</span>
+                </div>
+                <div class="page-intro" data-page-node-id="KqFcvTYqEz3K7Kt4EX2XVo">
+                    <p data-page-node-id="SVJM8icWWR47vVEcbx8qDD">本课程面向 AI 时代的软件工程实践。课堂以智能教学平台 CampusClaw 为示范案例，从互联网应用设计、开发到部署交付完整走一遍。</p>
+                    <p data-page-node-id="vSLCp0pMMABTbDmqqAR5su">小组学期项目可在 CampusClaw 上继续优化与扩展，也可自选其他互联网应用课题；均须接入大语言模型、智能体、知识库、技能与 MCP，并采用规约驱动开发，最终交付可部署、可演示的系统。</p>
+                </div>
+            </div>
+        </header>
+
+        <section class="section" id="schedule" data-page-node-id="FXZn4aBtPR7nFapEfAEuoM">
+            <h2 class="section-title" data-page-node-id="ylC7MSi3lJwmDVVjPYkueh">教学进度</h2>
+
+            <details class="stage" data-page-node-id="yOl3Dh6krKsLe9D30L7DOs">
+                <summary class="stage-head" data-page-node-id="vbSAjXzCAi40lhqTpqwhZT">阶段一 · 绪论与案例认知</summary>
+                <div class="stage-body">
+                <div class="lesson-grid" data-page-node-id="V6GWmiNNatmBSuwzy2nDNE">
+                    <article class="lesson lesson-ready" data-page-node-id="sq46ejJbrBvrCuupGKDu3M">
+                        <h4 class="lesson-title" data-page-node-id="Rxto6xt2jNf7zH1h2vDb8q">第 1 课 · 绪论</h4>
+                        <p class="lesson-goal" data-page-node-id="nxjmdEm7od4WyPrDauq7iN">了解课程目标与项目案例，掌握互联网应用的基本特征与 AI 原生开发方法</p>
+                        <div class="lesson-decks" data-page-node-id="gMp13i7I2hR9M1nX7aJWAS">
+                            <a class="btn" href="课件/第1课-课件上-互联网应用/index.html" target="_blank" rel="noopener" data-page-node-id="VMxkF5BZ3wzpk6w9uNoBMM">课件上</a>
+                            <a class="btn" href="课件/第1课-课件中-LLM与智能体/index.html" target="_blank" rel="noopener" data-page-node-id="pqGN7hyioyFi28YsFrDUMH">课件中</a>
+                            <a class="btn" href="课件/第1课-课件下-AI与开发方法/index.html" target="_blank" rel="noopener" data-page-node-id="BLr55TyP654MNgA4TlBzYa">课件下</a>
+                        </div>
+                    </article>
+                </div>
+                </div>
+            </details>
+
+            <details class="stage" data-page-node-id="Wa8WDX9bgE5PgSRnnNcRtP">
+                <summary class="stage-head" data-page-node-id="NR8jFBIlR9gK6FVlB9sfrQ">阶段二 · 需求落地与系统基础</summary>
+                <div class="stage-body">
+                <div class="lesson-grid" data-page-node-id="zqQjNLKohpsu5o4TfjbZfP">
+                    <article class="lesson lesson-ready" data-page-node-id="QRhPe94s9z0lqbzjcgYmBG">
+                        <h4 class="lesson-title" data-page-node-id="6aVkx0MO8WRElHw3JzVvSg">第 2 课 · SDD 与 CampusClaw 规约</h4>
+                        <p class="lesson-goal" data-page-node-id="QKdcsDzdUnb3miIFXjBBQ9">以课表案例对比氛围编程与规约驱动开发，用 OpenSpec 写出四件套规约并纳入版本管理；本课不写业务代码。</p>
+                        <div class="lesson-decks" data-page-node-id="bHSNpZno1nP6Tsidgi9Wji">
+                            <a class="btn" href="课件/第2课-课件-SDD与CampusClaw规约/index.html" target="_blank" rel="noopener" data-page-node-id="9yoGe97oiFGCo4EgWUO9ln">课件</a>
+                        </div>
+                    </article>
+                    <article class="lesson lesson-ready" data-page-node-id="v5YCHKzIvp4LP7noia7gnl">
+                        <h4 class="lesson-title" data-page-node-id="SQx9tLABfSuTP8TrLTNqAa">第 3 课 · 认证授权与知识库入库</h4>
+                        <p class="lesson-goal" data-page-node-id="o9nI48Vz0yqSJLyjXktFwQ">服务端会话登录、基于角色的访问控制与班级隔离；材料上传后正文入库，以 Docker Compose 一键启动并持久化。</p>
+                        <div class="lesson-decks" data-page-node-id="DSTJ40jpqNGsV4onSm83AD">
+                            <a class="btn" href="课件/第3课-课件-认证授权与知识库入库/index.html" target="_blank" rel="noopener" data-page-node-id="RSBjKJglbmW4vJ1crFR13V">课件</a>
+                            <a class="btn" href="/week03/" target="_blank" rel="noopener" data-page-node-id="NqHcwE3iEO7d9l0rZAzqse">系统原型</a>
+                        </div>
+                    </article>
+                    <article class="lesson lesson-ready" data-page-node-id="TzByAWZsYK2H9wpOVrcMs5">
+                        <h4 class="lesson-title" data-page-node-id="bLrycNE00bvDYSmh5705KP">第 4 课 · 可追溯知识库检索</h4>
+                        <p class="lesson-goal" data-page-node-id="aDF5DRK1oI03Ef8gBjYZO1">本班范围内完成正文切分、向量嵌入与入库，实现关键字、向量与混合检索，命中可回溯到原文并标注出处。</p>
+                        <div class="lesson-decks" data-page-node-id="f7ApUdH0D7M8NeOJ5ybYa6">
+                            <a class="btn" href="课件/第4课-课件-可追溯知识库检索/index.html" target="_blank" rel="noopener" data-page-node-id="JTaAJFdZZYHy8vvFaX4Jk2">课件</a>
+                            <a class="btn" href="/week04/" target="_blank" rel="noopener" data-page-node-id="0HsP1ooN7aGS32TlUoeiIU">系统原型</a>
+                        </div>
+                    </article>
+                </div>
+                </div>
+            </details>
+
+            <details class="stage" open data-page-node-id="hFdkLSCDaleKfEnV1ltGSU">
+                <summary class="stage-head" data-page-node-id="jqi0Y9aHPxgETFC2pmj8XL">阶段三 · 智能业务闭环</summary>
+                <div class="stage-body">
+                <div class="lesson-grid" data-page-node-id="hWdUnvAI0q1G9PLor3XFND">
+                    <article class="lesson lesson-ready" data-page-node-id="RL6NMLHDtbZYPkgjyHZZQY">
+                        <h4 class="lesson-title" data-page-node-id="RHnRZhpkBjXoK7ppvHb5Ie">第 5 课 · 提示词、AI 技能与流式会话</h4>
+                        <p class="lesson-goal" data-page-node-id="AEyFwla9Z4uuF6ps2LLE7B">做成解题助手智能体：用提示词定角色，用解题引导技能约束回答，并检索本班知识库后流式作答。</p>
+                        <div class="lesson-decks" data-page-node-id="r6Py057Qz9cFugBXiwG8Se">
+                            <a class="btn" href="课件/第5课-课件-提示词AI技能与流式会话/index.html" target="_blank" rel="noopener" data-page-node-id="VhbQ8NFlcwUYJMwY2iAZVz">课件</a>
+                            <a class="btn" href="/week05/" target="_blank" rel="noopener">系统原型</a>
+                            <a class="btn btn-ghost" href="课程任务清单-第5课.html">任务清单</a>
+                        </div>
+                    </article>
+                    <article class="lesson lesson-pending" data-page-node-id="CEeArGfpvd6OFRniFqtyRA">
+                        <h4 class="lesson-title" data-page-node-id="i3rGpmG7C2ZQw7seqgWu7D">第 6 课 · MCP 与工具接入</h4>
+                        <p class="lesson-goal" data-page-node-id="xhQasEu22uv8hnu61MwKP0">理解 MCP 协议与主机/客户端/服务器角色，完成工具发现、绑定与鉴权调用</p>
+                        <p class="pending" data-page-node-id="LZakKJbV7HAv6MgADDexxf">课件待补充</p>
+                    </article>
+                    <article class="lesson lesson-pending" data-page-node-id="eyfXHF1z6Lz9UjL0WVBRgh">
+                        <h4 class="lesson-title" data-page-node-id="F31D27a3NnOHRcgIDZwj8Z">第 7 课 · 作业流程与三项技能</h4>
+                        <p class="lesson-goal" data-page-node-id="or9YjyIG9JWZgbGHs3LP8H">完成布置、提交、批改、教师改分与错题讲解的完整作业流程</p>
+                        <p class="pending" data-page-node-id="A4sv8ixXKfHE9nQbVi44EG">课件待补充</p>
+                    </article>
+                    <article class="lesson lesson-pending" data-page-node-id="hCU3UzmQtVXPbGLDNkD5mm">
+                        <h4 class="lesson-title" data-page-node-id="m41MhwFGm669wvUSGpYbX5">第 8 课 · 异步任务与消息队列</h4>
+                        <p class="lesson-goal" data-page-node-id="DPxLdD8U94N1Q6f9dECKZP">理解异步任务与消息队列原理，将同步批改改为异步处理</p>
+                        <p class="pending" data-page-node-id="UJJir5oXpoDTkUbPEiQ7bE">课件待补充</p>
+                    </article>
+                </div>
+                </div>
+            </details>
+
+            <details class="stage" data-page-node-id="MrsoyTxyelFzbrwI8luWQM">
+                <summary class="stage-head" data-page-node-id="geQLAl1MBwNP4hhtBnNqw1">阶段四 · 质量、安全与交付</summary>
+                <div class="stage-body">
+                <div class="lesson-grid" data-page-node-id="G7viDrQkGwnM85IYClO1Mm">
+                    <article class="lesson lesson-pending" data-page-node-id="1lBn9a5FFwEa6xPmHyHkSd">
+                        <h4 class="lesson-title" data-page-node-id="zb0U0cs6Xhbnerly7MWPwu">第 9 课 · 安全检查与审计</h4>
+                        <p class="lesson-goal" data-page-node-id="BzTPhJkTLLstennH918awM">掌握权限收紧、安全审计与证据留存，形成可查询的审计记录</p>
+                        <p class="pending" data-page-node-id="9JotarM0jq2sGKdHYdTBHr">课件待补充</p>
+                    </article>
+                    <article class="lesson lesson-pending" data-page-node-id="pHQgtHdMDlNeJivuXTrNb9">
+                        <h4 class="lesson-title" data-page-node-id="cNvwbr0aiWIoNABp25pQOW">第 10 课 · 测试、交付与运行验证</h4>
+                        <p class="lesson-goal" data-page-node-id="ppZEole2xRqMOL9c4jGPNI">掌握自动化测试、容器化部署与运行观测，完成真实用户迭代与性能验证</p>
+                        <p class="pending" data-page-node-id="5RxVdTw8GtSCdgXah9QI9A">课件待补充</p>
+                    </article>
+                </div>
+                </div>
+            </details>
+
+            <details class="stage" data-page-node-id="rF4lqxEfmHnzIR7ATHgnxx">
+                <summary class="stage-head" data-page-node-id="oCB6Wb00FGwbhBlqmX5uvj">展示与复盘</summary>
+                <div class="stage-body">
+                <div class="lesson-grid" data-page-node-id="AGV8iK8SqTpNa6mH1Zsh4X">
+                    <article class="lesson lesson-pending" data-page-node-id="BuG7ZmVW76tXEYcZbo4UUw">
+                        <h4 class="lesson-title" data-page-node-id="5REJNZvoUrDWDpTCBtF3wz">第 11 课 · 展示与复盘</h4>
+                        <p class="lesson-goal" data-page-node-id="uVRFbResfMEEQu1IQ8UtLy">以证据说明产品价值、系统质量与个人贡献，完成项目答辩与复盘</p>
+                        <p class="pending" data-page-node-id="OuQ7EN91Xloj3H9MK7zNcK">课件待补充</p>
+                    </article>
+                </div>
+                </div>
+            </details>
+        </section>
+
+        <section class="section" id="requirements" data-page-node-id="eM9oiiBSL8Jqu7dP7trJry">
+            <h2 class="section-title" data-page-node-id="KqHa5AAPFmBCyAW4EaYYAc">分组要求</h2>
+            <p class="req-lead" data-page-node-id="ajmLtdGHIjzZCGnWt8z4Cd">分组完成<strong data-page-node-id="M3V4oRWEY6eI2qjicb1uQc">本组选定</strong>的学期项目，组内协作、组间独立。选题可为 CampusClaw 的进一步优化与扩展，或为经教师确认的自选课题（须满足与课程目标一致的工程与 AI 能力要求）。每组不超过 3 人，三人分工如下；不足 3 人时须兼任，并在个人贡献记录中写明。</p>
+            <div class="lesson-grid" data-page-node-id="vQgWe3c1bntRCmSEqWvXd7">
+                <article class="lesson lesson-ready role-card" data-page-node-id="LgdEhelDsPeTUV8CW740nm">
+                    <span class="role-tag" data-page-node-id="qhu3hR0wZBbp4ywQfsp72B">角色一</span>
+                    <h3 class="lesson-title" data-page-node-id="R6bvjXPNJIWWu5zShHcigK">制定规约</h3>
+                    <p class="lesson-goal" data-page-node-id="aldyZ8kjDmRGfG3t5h56WZ">把需求写成可执行、可验收的规约：谁、做什么、不做、失败时怎样、用何证据。</p>
+                </article>
+                <article class="lesson lesson-ready role-card" data-page-node-id="Egs2F23PBjmTuzWlWjjcQe">
+                    <span class="role-tag" data-page-node-id="uS4zlyKRk3SRcX8BSEXlQg">角色二</span>
+                    <h3 class="lesson-title" data-page-node-id="kKoImxBt9w45wEBGCan7EJ">开发系统</h3>
+                    <p class="lesson-goal" data-page-node-id="wD4AKKNTyCzmP0cnxKJMPW">按规约在同一仓库实现与修改系统，保持主路径可运行，并保留实现过程中的依据。</p>
+                </article>
+                <article class="lesson lesson-ready role-card" data-page-node-id="l5PKq6RXxrIT5DdExr5Hmc">
+                    <span class="role-tag" data-page-node-id="VWCLg1bTXkLIHIYSjkYrdv">角色三</span>
+                    <h3 class="lesson-title" data-page-node-id="HZb9LB3bnmVNUBULeqRD3W">项目验收</h3>
+                    <p class="lesson-goal" data-page-node-id="b0hfto6dlGqTVl6S2D0so0">用同一份规约判定是否完成：核对功能、失败路径、权限与证据，不接受“模型声称完成”。</p>
+                </article>
+            </div>
+        </section>
+    </div>
+</body>
+</html>

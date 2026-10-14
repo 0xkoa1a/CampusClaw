@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>预习内容 · Cookie 与 Session、JWT 认证、知识库问答 · 第 5 课</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 5 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">预习</p>
+          <a href="preview.html" class="active">认证与知识库问答</a>
+          <p class="nav-label">本课</p>
+          <a href="../index.html">概览</a>
+          <a href="scope.html">本课重点</a>
+          <a href="session.html">会话与消息模型</a>
+          <a href="skill-model.html">智能体与技能的数据模型</a>
+          <a href="route.html">技能路由与消息组装</a>
+          <a href="stream.html">流式输出与 SSE</a>
+          <a href="answer.html">一次回答的链路</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="apply.html">实践步骤与验收</a>
+          <a href="think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">认证与知识库问答</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>预习内容：Cookie 与 Session、JWT 认证与知识库问答</h1>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">认证与授权的职责边界</span></h2>
+            <p class="unit-lead">认证回答「你是谁」，授权回答「你能做什么」，二者由不同部件承担。Cookie 是浏览器侧的凭据载体；Session 指服务端保存的会话状态，一条会话对应存储中的一条记录。</p>
+            <figure>
+              <svg viewBox="0 0 760 196" role="img" aria-label="认证由 Cookie 携带的凭据连到用户，授权由角色与班级决定，业务代码只从上下文读身份">
+                <rect x="16" y="16" width="340" height="120" rx="10" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="186" y="42" text-anchor="middle" font-size="14" font-weight="600" fill="#94070a">认证 · 你是谁</text>
+                <text x="40" y="70" font-size="12" fill="#1c1917">Cookie 携带的凭据 → sessions 行 → users.id</text>
+                <text x="40" y="92" font-size="12" fill="#1c1917">有效期与是否登出由 sessions 决定</text>
+                <text x="40" y="116" font-size="11" fill="#7d736c">回答不了「能做什么、能看哪个班」</text>
+                <rect x="404" y="16" width="340" height="120" rx="10" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="574" y="42" text-anchor="middle" font-size="14" font-weight="600" fill="#1c1917">授权 · 你能做什么</text>
+                <text x="428" y="70" font-size="12" fill="#1c1917">users.role：teacher / student</text>
+                <text x="428" y="92" font-size="12" fill="#1c1917">users.class_id：可见数据范围</text>
+                <text x="428" y="116" font-size="11" fill="#7d736c">两者每次请求都从库里连表读，不缓存</text>
+                <rect x="16" y="148" width="728" height="40" rx="8" fill="#ffffff" stroke="#94070a"/>
+                <text x="380" y="173" text-anchor="middle" font-size="12" fill="#1c1917">业务代码只从 UserFrom(ctx) 取身份；请求头、查询参数、请求体里的角色与班级一律不采信</text>
+              </svg>
+              <figcaption>会话存储里通常只放标识与元数据，角色与班级这类权限要素留在业务表：只需在 <code>users</code> 表里改一次该用户所在的行（如改 <code>role</code> 或 <code>class_id</code>），下一次请求就按新值判定权限，不必等会话过期。</figcaption>
+            </figure>
+            <article class="kp-card">
+              <h3>一次连表把两者一起取回</h3>
+              <p><code>GetSessionUser</code> 用一条 JOIN 查询同时取回用户、角色与班级，较两次独立查询少一次往返，也避免两处读到不一致的快照。</p>
+            </article>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">Cookie 与 Session 的生命周期</span></h2>
+            <p class="unit-lead">一次登录在两处各留一笔：浏览器侧收到一枚 Cookie，服务端新增一条会话状态。Cookie 里携带的那串值即<b>会话令牌</b>，它只负责被带回服务端；会话是否有效、属于谁、何时过期，全由服务端那一侧决定。会话状态放在哪里没有唯一定式，先看可选项，再看本课采用的一种。</p>
+
+            <p class="unit-sub">会话状态放在哪里</p>
+            <figure>
+              <svg viewBox="0 0 760 292" role="img" aria-label="会话状态的五种常见存放位置及其部署代价">
+                <rect x="16" y="16" width="728" height="44" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="32" y="43" font-size="12" fill="#1c1917">进程内存</text>
+                <text x="170" y="43" font-size="11" fill="#7d736c">单机最省事；进程重启后已登录状态全部失效</text>
+                <text x="728" y="43" text-anchor="end" font-size="11" fill="#7d736c">限单机</text>
+                <rect x="16" y="70" width="728" height="44" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="32" y="97" font-size="12" fill="#1c1917">本地文件</text>
+                <text x="170" y="97" font-size="11" fill="#7d736c">一个会话一个文件，多机要挂共享盘</text>
+                <text x="728" y="97" text-anchor="end" font-size="11" fill="#7d736c">限单机</text>
+                <rect x="16" y="124" width="728" height="44" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="32" y="151" font-size="12" fill="#1c1917">集中式缓存</text>
+                <text x="170" y="151" font-size="11" fill="#7d736c">过期时间原生支持，多副本共享，生产环境最常见</text>
+                <text x="728" y="151" text-anchor="end" font-size="11" fill="#7d736c">可多副本</text>
+                <rect x="16" y="178" width="728" height="44" rx="8" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="32" y="205" font-size="12" fill="#1c1917">关系库表</text>
+                <text x="170" y="205" font-size="11" fill="#7d736c">与业务同库，重启不丢，可直接用 SQL 核对</text>
+                <text x="728" y="205" text-anchor="end" font-size="11" fill="#94070a">本课采用</text>
+                <rect x="16" y="232" width="728" height="44" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="32" y="259" font-size="12" fill="#1c1917">签名令牌</text>
+                <text x="170" y="259" font-size="11" fill="#7d736c">状态放在令牌自身，服务端不存；要能立即失效仍得配一张表</text>
+                <text x="728" y="259" text-anchor="end" font-size="11" fill="#7d736c">无状态</text>
+              </svg>
+              <figcaption>五种选择没有绝对优劣，取舍看三件事：能否多副本共享、是否要求「登出即失效」、愿不愿意多引一个组件。前两种只适合单机，第四种与业务数据同库、最省组件，第五种把状态挪进凭据本身。</figcaption>
+            </figure>
+            <p>本课取第四种：会话行与业务数据同在一个 MySQL 库里，不额外引入缓存组件，重启服务也不丢登录态，排查时能直接用 SQL 核对。代价同样具体——每个受保护请求多一次库往返，登录高峰时这张表会成为写热点，因此生产上更常见的是换成集中式缓存，流程其余部分不变。</p>
+
+            <p class="unit-sub">本课的生命周期</p>
+            <figure>
+              <svg viewBox="0 0 760 196" role="img" aria-label="会话令牌从生成、下发、写入 sessions 行、校验到失效的五个环节">
+                <rect x="16" y="16" width="128" height="30" rx="6" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="80" y="36" text-anchor="middle" font-size="12" font-weight="600" fill="#94070a">生成</text>
+                <rect x="16" y="50" width="128" height="72" rx="6" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="28" y="70" font-size="11" fill="#1c1917">32 字节随机源</text>
+                <text x="28" y="88" font-size="11" fill="#1c1917">Base64URL 无填充</text>
+                <text x="28" y="106" font-size="11" fill="#1c1917">→ 43 个字符</text>
+                <rect x="164" y="16" width="128" height="30" rx="6" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="228" y="36" text-anchor="middle" font-size="12" font-weight="600" fill="#94070a">下发</text>
+                <rect x="164" y="50" width="128" height="72" rx="6" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="176" y="70" font-size="11" fill="#1c1917">Set-Cookie</text>
+                <text x="176" y="88" font-size="11" fill="#1c1917">HttpOnly · Lax</text>
+                <text x="176" y="106" font-size="11" fill="#1c1917">Path=/week04</text>
+                <rect x="312" y="16" width="128" height="30" rx="6" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="376" y="36" text-anchor="middle" font-size="12" font-weight="600" fill="#94070a">入库</text>
+                <rect x="312" y="50" width="128" height="72" rx="6" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="324" y="70" font-size="11" fill="#1c1917">sessions 新增一行</text>
+                <text x="324" y="88" font-size="11" fill="#1c1917">user_id + 到期时刻</text>
+                <text x="324" y="106" font-size="11" fill="#1c1917">存于 MySQL</text>
+                <rect x="460" y="16" width="128" height="30" rx="6" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="524" y="36" text-anchor="middle" font-size="12" font-weight="600" fill="#94070a">校验</text>
+                <rect x="460" y="50" width="128" height="72" rx="6" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="472" y="70" font-size="11" fill="#1c1917">取回 Cookie</text>
+                <text x="472" y="88" font-size="11" fill="#1c1917">拿令牌定位该行</text>
+                <text x="472" y="106" font-size="11" fill="#1c1917">未过期即认作登录</text>
+                <rect x="608" y="16" width="128" height="30" rx="6" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="672" y="36" text-anchor="middle" font-size="12" font-weight="600" fill="#94070a">失效</text>
+                <rect x="608" y="50" width="128" height="72" rx="6" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="620" y="70" font-size="11" fill="#1c1917">删除 sessions 行</text>
+                <text x="620" y="88" font-size="11" fill="#1c1917">MaxAge = -1</text>
+                <text x="620" y="106" font-size="11" fill="#1c1917">启动清过期行</text>
+                <line x1="146" y1="66" x2="157" y2="66" stroke="#94070a" stroke-width="1.5"/>
+                <polygon points="157,62 163,66 157,70" fill="#94070a"/>
+                <line x1="294" y1="66" x2="305" y2="66" stroke="#94070a" stroke-width="1.5"/>
+                <polygon points="305,62 311,66 305,70" fill="#94070a"/>
+                <line x1="442" y1="66" x2="453" y2="66" stroke="#94070a" stroke-width="1.5"/>
+                <polygon points="453,62 459,66 453,70" fill="#94070a"/>
+                <line x1="590" y1="66" x2="601" y2="66" stroke="#94070a" stroke-width="1.5"/>
+                <polygon points="601,62 607,66 601,70" fill="#94070a"/>
+                <rect x="16" y="138" width="728" height="42" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="380" y="163" text-anchor="middle" font-size="12" fill="#1c1917">Cookie 只携带令牌本身 · 会话状态、有效期与失效全在服务端 · 浏览器侧不含身份信息</text>
+              </svg>
+              <figcaption>令牌是 32 字节随机数，自身不含任何用户信息；会话表以它为查询入口并带唯一约束，同一枚令牌不会对应两行。上面选定的存放位置只影响这几步落在哪，不影响流程本身。</figcaption>
+            </figure>
+            <table>
+              <thead>
+                <tr><th>Cookie 属性</th><th>取值</th><th>挡住什么</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>HttpOnly</code></td><td>true</td><td>页面脚本无法读取，XSS 取不到会话凭据</td></tr>
+                <tr><td><code>SameSite</code></td><td>Lax</td><td>跨站的子资源请求与 POST 表单不携带（顶级 GET 导航除外），缩小 CSRF 面</td></tr>
+                <tr><td><code>Path</code></td><td>/week04</td><td>令牌不会带到同域下的其他挂载路径</td></tr>
+                <tr><td><code>MaxAge</code></td><td><code>SESSION_TTL</code>（默认 86400 秒）</td><td>到期由浏览器丢弃，不依赖服务端清理</td></tr>
+              </tbody>
+            </table>
+            <div class="note"><code>SESSION_SECRET</code> 未设置时进程启动即失败，不回落内置默认值——否则所有部署将共用同一把密钥。口令用 bcrypt 加盐后入库，代价因子 12（<code>db.BcryptCost</code>）。</div>
+          </section>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">一次请求的身份校验流程</span></h2>
+            <p class="unit-lead">受保护的请求都要先过 <code>RequireAuth</code>，按序四步：取令牌、查会话、判定、注入。前两步是两次校验；第三步根据失败原因决定返回 401 还是 503；第四步把通过校验的身份交给处理器。</p>
+            <figure>
+              <svg viewBox="0 0 760 256" role="img" aria-label="请求经 RequireAuth 取令牌、查会话、判定并注入身份的四步，其中只有查会话访问数据库">
+                <rect x="16" y="16" width="620" height="42" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+                <rect x="26" y="27" width="26" height="20" rx="5" fill="#94070a"/>
+                <text x="39" y="41" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">1</text>
+                <text x="64" y="34" font-size="13" font-weight="600" fill="#94070a">取令牌</text>
+                <text x="64" y="51" font-size="12" fill="#1c1917">从 Cookie 里读出会话令牌；读不到直接 401，不再往下走</text>
+                <rect x="648" y="25" width="96" height="24" rx="6" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="696" y="41" text-anchor="middle" font-size="11" fill="#7d736c">不查库</text>
+                <rect x="16" y="76" width="620" height="42" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+                <rect x="26" y="87" width="26" height="20" rx="5" fill="#94070a"/>
+                <text x="39" y="101" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">2</text>
+                <text x="64" y="94" font-size="13" font-weight="600" fill="#94070a">查会话</text>
+                <text x="64" y="111" font-size="12" fill="#1c1917">按令牌取会话行，一条 JOIN 同时取回用户、角色与班级，并确认未过期</text>
+                <rect x="648" y="85" width="96" height="24" rx="6" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="696" y="101" text-anchor="middle" font-size="11" fill="#94070a">查库</text>
+                <rect x="16" y="136" width="620" height="42" rx="8" fill="#fdf3f3" stroke="#94070a"/>
+                <rect x="26" y="147" width="26" height="20" rx="5" fill="#94070a"/>
+                <text x="39" y="161" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">3</text>
+                <text x="64" y="154" font-size="13" font-weight="600" fill="#94070a">判定</text>
+                <text x="64" y="171" font-size="12" fill="#1c1917">查不到会话行 → 401；查询出错 → 503 并记日志</text>
+                <rect x="648" y="145" width="96" height="24" rx="6" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="696" y="161" text-anchor="middle" font-size="11" fill="#7d736c">不查库</text>
+                <rect x="16" y="196" width="620" height="42" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+                <rect x="26" y="207" width="26" height="20" rx="5" fill="#94070a"/>
+                <text x="39" y="221" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">4</text>
+                <text x="64" y="214" font-size="13" font-weight="600" fill="#94070a">注入</text>
+                <text x="64" y="231" font-size="12" fill="#1c1917">把用户写入请求上下文；业务代码只从上下文取身份，不采信请求参数</text>
+                <rect x="648" y="205" width="96" height="24" rx="6" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="696" y="221" text-anchor="middle" font-size="11" fill="#7d736c">不查库</text>
+              </svg>
+              <figcaption>只有「查会话」一步访问数据库，其余三步都在进程内完成。判定区分的是故障出在哪一侧：会话查不到是凭据的问题（401），数据库查不动是服务端的问题（503）。两者混同，使用者只会反复重登而无从排查。</figcaption>
+            </figure>
+            <table>
+              <thead>
+                <tr><th>保护级别</th><th>中间件</th><th>入口</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>公开</td><td>无</td><td><code>GET /health</code>、<code>POST /api/login</code></td></tr>
+                <tr><td>登录即可</td><td><code>RequireAuth</code></td><td><code>/api/me</code>、<code>POST /api/logout</code><br /><code>GET /api/materials…</code>、<code>POST /api/search</code>、<code>POST /api/ask</code><br /><code>GET /api/prompt</code>、<code>GET /api/skills</code>、<code>/api/conversations…</code></td></tr>
+                <tr><td>教师专属</td><td><code>RequireAuth</code> + <code>RequireTeacher</code></td><td><code>POST /api/materials</code>、<code>/api/materials/{id}/reindex</code><br /><code>PUT /api/prompt</code>、<code>POST / PUT / DELETE /api/skills…</code></td></tr>
+              </tbody>
+            </table>
+            <div class="note">默认拒绝原则：每个入口在注册时即声明保护级别，不存在「先放行、再由处理器判定」的写法。上表按级别归并，同类路由合并为一行；教师专属接口遇非教师身份返回 403 并记日志。班级与资源归属不在中间件内判定，统一取自会话中的用户，见第 4 节。</div>
+          </section>
+
+          <section class="unit" id="u4">
+            <h2 class="unit-h"><span class="unit-n">4</span><span class="unit-t">班级来源：数据隔离的唯一依据</span></h2>
+            <p class="unit-lead">班级决定一次请求可见的数据范围。第 5 课的提示词、技能与检索均按班级切分，这条线须先理清。</p>
+            <table>
+              <thead>
+                <tr><th>环节</th><th>班级取自</th><th>越界时的表现</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>检索 <code>POST /api/search</code></td><td><code>user.ClassID</code>；请求体中的 <code>class_id</code> 读入后丢弃</td><td>返回 200 与空 <code>hits</code>，不返回 403</td></tr>
+                <tr><td>问答 <code>POST /api/ask</code></td><td>同上</td><td>同上；无依据时返回固定文案与空引用</td></tr>
+                <tr><td>向量视图 <code>GET /api/materials/{id}/vectors</code></td><td>先取材料，再比对 <code>material.ClassID</code></td><td>跨班与不存在均返回 404，响应完全一致</td></tr>
+                <tr><td>提示词与技能（第 5 课新增）</td><td>同样来自 <code>user.ClassID</code>，写操作按班级限定</td><td>跨班改写与删除一律按资源不存在处理，返回 404</td></tr>
+              </tbody>
+            </table>
+            <div class="note">跨班检索表现为接口可访问但结果为空，而非 403：403 会确认资源存在，从而泄露他班材料的存在性。按编号定位的单个资源相反——跨班与不存在必须返回完全一致的 404，使调用方无法区分二者。</div>
+            <p>前端同样遵循这一约定：<code>credentials: 'same-origin'</code> 使 Cookie 自动携带，角色与班级既不写入本地存储，也不回传服务端。<code>GET /api/me</code> 只决定页面上显示哪些入口（可发现性），不构成授权依据。</p>
+          </section>
+
+          <section class="unit" id="u5">
+            <h2 class="unit-h"><span class="unit-n">5</span><span class="unit-t">另一种实现：Bearer JWT</span></h2>
+            <p class="unit-lead">前四节为 Cookie + Session 版。后续迭代将凭据改为 JWT（JSON Web Token，一种由头部、载荷与签名三段拼成、自身携带信息的令牌），以 <code>Authorization: Bearer</code> 传递。认证目标不变，变化的是凭据形态与存放位置。本节对照 <code>project-src/week05-harness</code>，对应归档变更 <code>2026-10-06-use-jwt-bearer-auth</code>。</p>
+
+            <table>
+              <thead>
+                <tr><th>维度</th><th>Cookie + Session 版</th><th>Bearer JWT 版</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>凭据形态</td><td>32 字节随机数经 Base64URL 编码，自身不含信息</td><td>HS256 签名的 JWT，自带声明</td></tr>
+                <tr><td>服务端状态</td><td><code>sessions</code> 表每会话一行</td><td><code>token_revocations</code> 表只记录已吊销的 <code>jti</code></td></tr>
+                <tr><td>传递与存放</td><td>浏览器按域与路径自动携带，前端不存储</td><td>前端显式附加 <code>Authorization</code> 头，凭据存于 <code>localStorage</code></td></tr>
+                <tr><td>角色与班级</td><td>JOIN <code>users</code> 读取</td><td>同样 JOIN <code>users</code> 读取，不采信声明</td></tr>
+                <tr><td>登出即时性</td><td>删除会话行即失效</td><td>须写入吊销行才失效</td></tr>
+                <tr><td>主要风险</td><td>依赖 <code>SameSite</code> 与同源策略缓解 CSRF</td><td>凭据存于 <code>localStorage</code>，页面脚本可读，须防 XSS</td></tr>
+              </tbody>
+            </table>
+
+            <p class="unit-sub">令牌里装什么</p>
+            <p>签名算法写作 <code>HS256</code>，即 HMAC-SHA256：签发与验证用同一把密钥，属对称签名。它契合本课的部署形态——服务端既签发也验证，无需分发公钥；若要让第三方在不持有密钥的前提下验签，则须改用非对称算法（如 <code>RS256</code>，私钥签发、公钥验证）。</p>
+            <figure>
+              <svg viewBox="0 0 760 204" role="img" aria-label="JWT 由头部、载荷与签名三段组成，载荷只含 sub、jti、iat、exp 四个声明">
+                <rect x="16" y="16" width="190" height="56" rx="8" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="111" y="36" text-anchor="middle" font-size="12" font-weight="600" fill="#94070a">header</text>
+                <text x="111" y="54" text-anchor="middle" font-size="11" fill="#1c1917">alg: HS256 · typ: JWT</text>
+                <rect x="214" y="16" width="290" height="56" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="359" y="36" text-anchor="middle" font-size="12" font-weight="600" fill="#1c1917">payload</text>
+                <text x="359" y="54" text-anchor="middle" font-size="11" fill="#1c1917">sub · jti · iat · exp</text>
+                <rect x="512" y="16" width="232" height="56" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="628" y="36" text-anchor="middle" font-size="12" font-weight="600" fill="#1c1917">signature</text>
+                <text x="628" y="54" text-anchor="middle" font-size="11" fill="#1c1917">由服务端密钥生成</text>
+                <text x="210" y="46" text-anchor="middle" font-size="16" fill="#94070a">.</text>
+                <text x="508" y="46" text-anchor="middle" font-size="16" fill="#94070a">.</text>
+                <rect x="16" y="84" width="728" height="64" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="380" y="106" text-anchor="middle" font-size="12" fill="#1c1917">sub 是用户 ID，只用来回库读用户行；jti 是 16 字节随机的十六进制，作为吊销表的键</text>
+                <text x="380" y="128" text-anchor="middle" font-size="12" fill="#1c1917">exp = 签发时刻 + SESSION_TTL_SECONDS；解析时限定算法为 HS256 且要求 exp 必填</text>
+                <text x="380" y="145" text-anchor="middle" font-size="11" fill="#7d736c">none 与其他算法一律 401，且不访问数据库</text>
+                <rect x="16" y="158" width="728" height="38" rx="8" fill="#ffffff" stroke="#94070a"/>
+                <text x="380" y="182" text-anchor="middle" font-size="12" fill="#94070a">角色与班级不写进声明：写进去就得等令牌过期才生效，且旧令牌会带着旧角色继续可用</text>
+              </svg>
+              <figcaption>签发与解析均由 <code>golang-jwt/jwt/v5</code> 完成，不自行拼装头部与签名。被否决的方案正是「把角色与班级写入声明并据此直接授权」。</figcaption>
+            </figure>
+
+            <p class="unit-sub">一次请求的校验顺序</p>
+            <figure>
+              <svg viewBox="0 0 760 292" role="img" aria-label="JWT 版鉴权五步：取 Bearer、验签、查吊销表、读用户行、注入上下文">
+                <rect x="16" y="16" width="620" height="42" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+                <rect x="26" y="27" width="26" height="20" rx="5" fill="#94070a"/>
+                <text x="39" y="41" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">1</text>
+                <text x="64" y="34" font-size="13" font-weight="600" fill="#94070a">取 Bearer</text>
+                <text x="64" y="51" font-size="12" fill="#1c1917">没有 Authorization、格式不是 Bearer、令牌含空格 → 401</text>
+                <rect x="648" y="25" width="96" height="24" rx="6" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="696" y="41" text-anchor="middle" font-size="11" fill="#7d736c">不查库</text>
+                <rect x="16" y="70" width="620" height="42" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+                <rect x="26" y="81" width="26" height="20" rx="5" fill="#94070a"/>
+                <text x="39" y="95" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">2</text>
+                <text x="64" y="88" font-size="13" font-weight="600" fill="#94070a">验签与有效期</text>
+                <text x="64" y="105" font-size="12" fill="#1c1917">parseClaims：算法、exp、sub 与 jti 是否齐备 → 失败 401</text>
+                <rect x="648" y="79" width="96" height="24" rx="6" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="696" y="95" text-anchor="middle" font-size="11" fill="#7d736c">不查库</text>
+                <rect x="16" y="124" width="620" height="42" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+                <rect x="26" y="135" width="26" height="20" rx="5" fill="#94070a"/>
+                <text x="39" y="149" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">3</text>
+                <text x="64" y="142" font-size="13" font-weight="600" fill="#94070a">查吊销表</text>
+                <text x="64" y="159" font-size="12" fill="#1c1917">TokenRevoked(jti)：已吊销 → 401；数据库错误 → 503</text>
+                <rect x="648" y="133" width="96" height="24" rx="6" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="696" y="149" text-anchor="middle" font-size="11" fill="#94070a">查库</text>
+                <rect x="16" y="178" width="620" height="42" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+                <rect x="26" y="189" width="26" height="20" rx="5" fill="#94070a"/>
+                <text x="39" y="203" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">4</text>
+                <text x="64" y="196" font-size="13" font-weight="600" fill="#94070a">读用户行</text>
+                <text x="64" y="213" font-size="12" fill="#1c1917">GetUserByID(sub) 连 classes：无此行 → 401；其他错误 → 503</text>
+                <rect x="648" y="187" width="96" height="24" rx="6" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="696" y="203" text-anchor="middle" font-size="11" fill="#94070a">查库</text>
+                <rect x="16" y="232" width="620" height="42" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+                <rect x="26" y="243" width="26" height="20" rx="5" fill="#94070a"/>
+                <text x="39" y="257" text-anchor="middle" font-size="12" font-weight="700" fill="#ffffff">5</text>
+                <text x="64" y="250" font-size="13" font-weight="600" fill="#94070a">注入上下文</text>
+                <text x="64" y="267" font-size="12" fill="#1c1917">WithUser(ctx, user)；RequireTeacher 仍只读这个上下文</text>
+                <rect x="648" y="241" width="96" height="24" rx="6" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="696" y="257" text-anchor="middle" font-size="11" fill="#7d736c">不查库</text>
+              </svg>
+              <figcaption>前两步不访问数据库，非法令牌在校验阶段即被拒绝，不产生数据库负载；后两步的判定与第 3 节一致——「查不到行」才是 401，数据库不可用是 503。</figcaption>
+            </figure>
+
+            <p class="unit-sub">登出与换发：吊销表</p>
+            <figure>
+              <svg viewBox="0 0 760 176" role="img" aria-label="令牌有效期与吊销行生命周期的时间轴">
+                <line x1="60" y1="62" x2="700" y2="62" stroke="#e6e1dd" stroke-width="1.5"/>
+                <polygon points="694,57 704,62 694,67" fill="#e6e1dd"/>
+                <rect x="60" y="40" width="560" height="22" rx="6" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="340" y="55" text-anchor="middle" font-size="11" fill="#1c1917">令牌有效期　iat → exp</text>
+                <text x="60" y="32" font-size="11" fill="#7d736c">签发 iat</text>
+                <text x="620" y="32" text-anchor="end" font-size="11" fill="#7d736c">到期 exp</text>
+                <line x1="280" y1="62" x2="280" y2="96" stroke="#94070a" stroke-width="1" stroke-dasharray="3 3"/>
+                <line x1="620" y1="62" x2="620" y2="96" stroke="#94070a" stroke-width="1" stroke-dasharray="3 3"/>
+                <rect x="280" y="96" width="340" height="22" rx="6" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="450" y="111" text-anchor="middle" font-size="11" fill="#94070a">吊销行：jti 记入，expires_at = 原 exp</text>
+                <text x="280" y="88" font-size="11" fill="#94070a">登出 / 换发</text>
+                <rect x="16" y="132" width="728" height="36" rx="8" fill="#ffffff" stroke="#94070a"/>
+                <text x="380" y="155" text-anchor="middle" font-size="12" fill="#1c1917">吊销行仅在原令牌过期前有意义：过期后由清理任务删除，表不会无限增长</text>
+              </svg>
+              <figcaption>所谓换发，指登录请求若带着尚未过期的旧令牌，先吊销它的 <code>jti</code> 再签发新令牌。这与 Cookie + Session 版防会话固定是同一意图：避免同一用户同时持有两枚可用凭据。</figcaption>
+            </figure>
+            <p>Bearer 版没有 Cookie 可清，登出改为把 <code>jti</code> 写入吊销表；同一令牌再次使用，会在鉴权阶段直接返回 401。可见「无状态」并不是真的没有状态：一旦要求立即失效或封禁某账号，仍要有一张表记着已作废的凭据，只是从「每次请求都查」变成「只在作废时写一次」。</p>
+            <div class="note">改为 Bearer 并非「更安全」，而是风险位置发生转移。Cookie 由浏览器按域自动附带，要防的是跨站请求伪造（CSRF）——别的站点能让浏览器替你发出带凭据的请求；令牌改存到页面脚本可读的 <code>localStorage</code> 后，要防的是跨站脚本（XSS）——一段注入的脚本就能把它取走。因此材料正文仍不得以未净化 HTML 渲染，前端收到 401 时须清除凭据并回到登录页。<br />未随之变更的部分：限流维度与阈值（用户名 + 来源地址，5 次 / 300 秒，锁定返回 401 而非 429）、角色与班级仍回库读取、无刷新令牌（<code>sessions</code> 表保留但不参与新路径）。</div>
+          </section>
+
+          <section class="unit" id="u6">
+            <h2 class="unit-h"><span class="unit-n">6</span><span class="unit-t">知识库的双存储分工</span></h2>
+            <p class="unit-lead">切片正文与偏移量存于 MySQL，向量存于 Qdrant（向量数据库），两侧以同一个切片编号对齐。这一拆分决定了后续每一步的实现方式。</p>
+            <figure>
+              <svg viewBox="0 0 760 232" role="img" aria-label="MySQL 存切片正文与状态，Qdrant 存向量与载荷，两侧用同一个切片编号对齐">
+                <rect x="16" y="16" width="320" height="150" rx="10" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="176" y="40" text-anchor="middle" font-size="14" font-weight="600" fill="#1c1917">MySQL · knowledge_chunks</text>
+                <text x="36" y="70" font-size="12" fill="#1c1917">id · class_id · material_id · chunk_index</text>
+                <text x="36" y="92" font-size="12" fill="#1c1917">chunk_text　正文，MEDIUMTEXT</text>
+                <text x="36" y="114" font-size="12" fill="#1c1917">start_offset / end_offset　可回原文定位</text>
+                <text x="36" y="136" font-size="12" fill="#1c1917">index_status　pending / ready / failed</text>
+                <text x="36" y="156" font-size="11" fill="#7d736c">FULLTEXT ft_chunk_text WITH PARSER ngram</text>
+                <rect x="424" y="16" width="320" height="150" rx="10" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="584" y="40" text-anchor="middle" font-size="14" font-weight="600" fill="#94070a">Qdrant · campusclaw_chunks</text>
+                <text x="444" y="70" font-size="12" fill="#1c1917">point id = 切片 id</text>
+                <text x="444" y="92" font-size="12" fill="#1c1917">vector　dim = EMBEDDING_DIM，Cosine</text>
+                <text x="444" y="114" font-size="12" fill="#1c1917">payload：class_id / material_id / chunk_id</text>
+                <text x="444" y="136" font-size="12" fill="#1c1917">payload：knowledge_entry_id / chunk_index</text>
+                <text x="444" y="156" font-size="11" fill="#7d736c">载荷字段须与 MySQL 侧的切片行逐一对上，才算两侧对齐</text>
+                <line x1="342" y1="96" x2="418" y2="96" stroke="#94070a" stroke-width="1.5"/>
+                <polygon points="412,91 422,96 412,101" fill="#94070a"/>
+                <polygon points="348,91 338,96 348,101" fill="#94070a"/>
+                <text x="380" y="82" text-anchor="middle" font-size="11" fill="#94070a">同一个 id</text>
+                <rect x="16" y="178" width="728" height="44" rx="8" fill="#ffffff" stroke="#94070a"/>
+                <text x="380" y="198" text-anchor="middle" font-size="12" fill="#1c1917">写入顺序：先写 MySQL 取得自增切片 id → 嵌入 → 用同一 id 写 Qdrant → 标 ready</text>
+                <text x="380" y="216" text-anchor="middle" font-size="12" fill="#1c1917">嵌入或写入失败：标 failed、回滚已写向量，对外统一 503</text>
+              </svg>
+              <figcaption>先写 MySQL 后写 Qdrant，是为取得自增主键作为向量主键；顺序相反则需额外维护一张映射表。此外每次重建索引前，都会拿正文重新算一遍，与 <code>knowledge_index_state</code> 里记录的值比对，据此判断是否需要重建。</figcaption>
+            </figure>
+            <article class="kp-card">
+              <h3>切分策略随材料元数据给出</h3>
+              <p>策略为空时使用服务端默认窗口：<code>CHUNK_MAX_CHARS</code> 默认 800 字符，相邻窗口重叠 <code>CHUNK_OVERLAP_CHARS</code> 默认 80 字符。第 4 课规约的三种取值为 <code>auto</code>（默认窗口）、<code>custom</code>（指定窗口）与 <code>hierarchy</code>（按标题层级）。切片表上设有联合唯一约束 <code>(knowledge_entry_id, chunk_index)</code>，重复入库不会产生两份记录。</p>
+            </article>
+          </section>
+
+          <section class="unit" id="u7">
+            <h2 class="unit-h"><span class="unit-n">7</span><span class="unit-t">三种检索模式与 RRF 融合</span></h2>
+            <p class="unit-lead">关键字路径与向量路径各自排序，再按名次融合为一份结果。融合只使用名次，不使用两路的原始分数——两个分数不在同一尺度上，无法直接比较或相加。</p>
+            <table>
+              <thead>
+                <tr><th>模式</th><th>执行路径</th><th>外部依赖</th><th>特点</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>keyword</code></td><td>MySQL 全文索引</td><td>仅数据库</td><td>字面重合度高时排序靠前；同义替换与改写无法召回</td></tr>
+                <tr><td><code>vector</code></td><td>问句嵌入 + Qdrant</td><td>嵌入网关与 Qdrant</td><td>语义相近的表达可召回；专有名词与数值的字面精确匹配弱于关键字路径</td></tr>
+                <tr><td><code>hybrid</code></td><td>两条路径均执行</td><td>三者都需依赖</td><td>默认模式，召回率最高；代价是两条路径任一失败即整次检索失败</td></tr>
+              </tbody>
+            </table>
+            <article class="kp-card">
+              <h3>RRF 是什么</h3>
+              <p>RRF（Reciprocal Rank Fusion，倒数名次融合）把多路检索结果合成一份排序：某条目在某一路上排第 r 名，这一路就为它贡献 <code>1/(k + r)</code> 分，各路的贡献相加即为融合分。<code>k</code> 是把曲线压平的常数——取值越大，靠前名次之间的优势越弱；本课取 <code>rrfK = 60</code>，是该方法的常用取值。</p>
+              <p>它只用到名次，因而在两路分数不可比时依然可用。某条目只被一路召回时，缺席的那一路不贡献分数，不影响它参与排序；两路都命中的条目两头得分，于是排得更靠前。融合分只表示名次次序，不是相关性阈值——判断「有没有依据」另由过滤条件决定，见本节末。</p>
+            </article>
+            <p>两条路径的过滤方式不同：关键字路径取 <code>MATCH … AGAINST</code> 得分最高的至多 <code>SEARCH_MAX_RESULTS</code>（默认 20）条，不设绝对分下限；向量路径在 Qdrant 侧即按 payload 中的 <code>class_id</code> 过滤，并要求余弦相似度（两个向量的夹角余弦，取值越大越接近）不低于 <code>SEARCH_VECTOR_MIN</code>（默认 0.35）。两条路径随后都回查 MySQL，仅取班级一致且状态为 <code>ready</code> 的切片正文。融合公式取 <code>rrfK = 60</code>：</p>
+            <figure>
+              <svg viewBox="0 0 760 210" role="img" aria-label="三个切片的关键字名次、向量名次与融合分计算示例">
+                <rect x="16" y="16" width="728" height="30" fill="#94070a"/>
+                <text x="30" y="36" font-size="12" font-weight="600" fill="#ffffff">切片</text>
+                <text x="122" y="36" font-size="12" font-weight="600" fill="#ffffff">关键字名次</text>
+                <text x="242" y="36" font-size="12" font-weight="600" fill="#ffffff">向量名次</text>
+                <text x="362" y="36" font-size="12" font-weight="600" fill="#ffffff">计算式</text>
+                <text x="586" y="36" font-size="12" font-weight="600" fill="#ffffff">融合分</text>
+                <rect x="16" y="46" width="728" height="32" fill="#fdf3f3" stroke="#e6e1dd"/>
+                <text x="30" y="67" font-size="12" fill="#1c1917">切片 A</text>
+                <text x="122" y="67" font-size="12" fill="#1c1917">第 1 名</text>
+                <text x="242" y="67" font-size="12" fill="#1c1917">第 3 名</text>
+                <text x="362" y="67" font-size="12" fill="#1c1917">1/(60+1) + 1/(60+3)</text>
+                <text x="586" y="67" font-size="12" fill="#94070a">0.03227</text>
+                <rect x="16" y="78" width="728" height="32" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="30" y="99" font-size="12" fill="#1c1917">切片 B</text>
+                <text x="122" y="99" font-size="12" fill="#1c1917">第 2 名</text>
+                <text x="242" y="99" font-size="12" fill="#7d736c">未命中</text>
+                <text x="362" y="99" font-size="12" fill="#1c1917">1/(60+2)</text>
+                <text x="586" y="99" font-size="12" fill="#1c1917">0.01613</text>
+                <rect x="16" y="110" width="728" height="32" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="30" y="131" font-size="12" fill="#1c1917">切片 C</text>
+                <text x="122" y="131" font-size="12" fill="#7d736c">未命中</text>
+                <text x="242" y="131" font-size="12" fill="#1c1917">第 1 名</text>
+                <text x="362" y="131" font-size="12" fill="#1c1917">1/(60+1)</text>
+                <text x="586" y="131" font-size="12" fill="#1c1917">0.01639</text>
+                <rect x="16" y="152" width="728" height="48" rx="8" fill="#ffffff" stroke="#94070a"/>
+                <text x="380" y="172" text-anchor="middle" font-size="12" fill="#1c1917">排序结果：A 0.03227 &gt; C 0.01639 &gt; B 0.01613　两路都命中者排到最前</text>
+                <text x="380" y="190" text-anchor="middle" font-size="12" fill="#7d736c">融合分只表示名次，不表示相关程度；同分时取切片编号小者</text>
+              </svg>
+              <figcaption>关键字路径的第 2 名反而低于向量路径的第 1 名——两条路径的原始分数不在同一尺度上，无法直接比较，这正是融合只取名次的原因；若要给某一路加权，调整的是名次项前的系数。</figcaption>
+            </figure>
+            <div class="note">分页作用于融合之后：<code>limit</code> 默认 10、上限 <code>SEARCH_MAX_RESULTS</code>（默认 20），二者为负时返回 400；<code>offset</code> 越界则返回空数组而 <code>status</code> 仍为 <code>ok</code>。只有当两条路径均无命中时，<code>status</code> 才是 <code>no_evidence</code>。区分这两种情形，调用方才可辨别「无命中」与「偏移量越界」。</div>
+          </section>
+
+          <section class="unit" id="u8">
+            <h2 class="unit-h"><span class="unit-n">8</span><span class="unit-t">有依据方才生成</span></h2>
+            <p class="unit-lead">这是第 4 课已建成的问答接口：先检索、后生成，检索无命中即不调用模型。第 5 课的流式回答在这条链路旁边另起一条，两者的差别集中在「检索落空怎么办」，见本节末。</p>
+            <figure>
+              <svg viewBox="0 0 760 300" role="img" aria-label="问答接口先做本班混合检索，命中为空走固定文案，命中非空才组装提示词并调用模型">
+                <rect x="16" y="14" width="728" height="32" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="380" y="35" text-anchor="middle" font-size="12" fill="#1c1917">POST /api/ask　q 长度 2–500 字　班级取自 user.ClassID</text>
+                <rect x="16" y="58" width="728" height="32" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="380" y="79" text-anchor="middle" font-size="12" fill="#1c1917">本班混合检索　mode=hybrid，limit=4，offset=0</text>
+                <polygon points="380,100 650,122 380,144 110,122" fill="#ffffff" stroke="#94070a"/>
+                <text x="380" y="126" text-anchor="middle" font-size="12" font-weight="600" fill="#94070a">命中数为 0 ？</text>
+                <path d="M218 133 V148 H186 V154" fill="none" stroke="#94070a" stroke-width="1.5"/>
+                <polygon points="181,150 191,150 186,158" fill="#94070a"/>
+                <path d="M542 133 V148 H574 V154" fill="none" stroke="#94070a" stroke-width="1.5"/>
+                <polygon points="569,150 579,150 574,158" fill="#94070a"/>
+                <rect x="16" y="158" width="340" height="84" rx="8" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="186" y="180" text-anchor="middle" font-size="13" font-weight="600" fill="#94070a">无依据</text>
+                <text x="32" y="200" font-size="11" fill="#1c1917">status = no_evidence</text>
+                <text x="32" y="218" font-size="11" fill="#1c1917">answer = 资料中未找到相关内容</text>
+                <text x="32" y="236" font-size="11" fill="#1c1917">citations = []　模型调用 0 次</text>
+                <rect x="404" y="158" width="340" height="84" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="574" y="180" text-anchor="middle" font-size="13" font-weight="600" fill="#1c1917">有依据</text>
+                <text x="420" y="200" font-size="11" fill="#1c1917">再到 MySQL 取切片全文，按名次编号 [1]…[n]</text>
+                <text x="420" y="218" font-size="11" fill="#1c1917">每条正文截取前 800 字，拼入 system 消息</text>
+                <text x="420" y="236" font-size="11" fill="#1c1917">历史只留 user/assistant：最近 6 条消息、每条 500 字</text>
+                <rect x="404" y="250" width="340" height="36" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="574" y="272" text-anchor="middle" font-size="12" fill="#1c1917">chat/completions → answer + citations</text>
+                <path d="M574 242 V250" fill="none" stroke="#94070a" stroke-width="1.5"/>
+                <polygon points="569,246 579,246 574,252" fill="#94070a"/>
+              </svg>
+              <figcaption>无依据分支同样返回 200：是否流式只决定回答如何送达，不决定生成什么。第 5 课的流式回答另有一条口径——检索落空时它仍调用模型，只是引用列表为空、正文不带编号。</figcaption>
+            </figure>
+            <div class="note">两条路径并存，口径不同：本接口在检索无命中时直接回固定文案，模型调用 0 次；第 5 课的流式回答在落空或该智能体未绑定材料时仍调用模型，回答不得整段等于「资料中未找到相关内容」，也不得出现 <code>[n]</code> 编号。</div>
+            <p>生成侧参数固定为 <code>temperature 0.2</code>、<code>max_tokens 500</code>、超时 50 秒。非 200 响应、空正文与网络失败统一折算为 <code>ErrUnavailable</code>，对外返回 503——错误信息不携带密钥，也不带回上游响应正文。第 4 课的历史由客户端回传，因此要在服务端逐条清洗：角色不是 <code>user</code> 或 <code>assistant</code> 的消息一律丢弃，客户端塞进来的 <code>system</code> 消息不会生效。</p>
+            <div class="note">引用编号在组装提示词时按顺序即时生成，仅计入确实取到正文的切片；编号自 1 起，与返回的 <code>citations</code> 数组按顺序一一对应，模型写 <code>[2]</code> 即指向该数组的第 2 个元素。</div>
+          </section>
+
+          <div class="pager">
+            <span></span>
+            <a class="btn btn-ghost" href="../index.html">本课概览 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

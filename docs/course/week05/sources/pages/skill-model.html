@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>智能体与技能的数据模型 · 第 5 课 · 提示词、AI 技能与流式会话</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 5 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">预习</p>
+          <a href="preview.html">认证与知识库问答</a>
+          <p class="nav-label">本课</p>
+          <a href="../index.html">概览</a>
+          <a href="scope.html">本课重点</a>
+          <a href="session.html">会话与消息模型</a>
+          <a href="skill-model.html" class="active">智能体与技能的数据模型</a>
+          <a href="route.html">技能路由与消息组装</a>
+          <a href="stream.html">流式输出与 SSE</a>
+          <a href="answer.html">一次回答的链路</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="apply.html">实践步骤与验收</a>
+          <a href="think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">智能体与技能的数据模型</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>智能体与技能的数据模型</h1>
+          <p class="lead">本课有两个由教师维护的配置制品：<b>智能体</b>把角色提示词与「能用的技能」「能查的材料」绑在一起；<b>技能</b>以单一文本文件定义，空行以上是元数据，空行以下是引导规程。两者都按班级切分，一次回答只用会话选定的那一个智能体所绑定的部分。文末对照主流的 SKILL.md 格式，说明本课为什么这样选。</p>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">智能体：提示词与两份绑定</span></h2>
+            <p class="unit-lead">智能体是本班的一个配置单位。它不复制技能与材料的正文，只保存绑定关系；技能与材料各自仍是班级级的行。</p>
+            <table>
+              <thead>
+                <tr><th>字段 / 关系</th><th>含义</th><th>约束</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>id</code></td><td>主键</td><td>自增</td></tr>
+                <tr><td><code>class_id</code></td><td>所属班级</td><td>跨班不可见；按编号直取他班智能体返回 404</td></tr>
+                <tr><td><code>name</code></td><td>名称</td><td>班内唯一，不超过 64 字</td></tr>
+                <tr><td><code>prompt</code></td><td>角色提示词</td><td>不超过 2000 字；为空时回退到默认角色设定，不因此拒绝请求</td></tr>
+                <tr><td><code>enabled</code></td><td>启用状态</td><td>为否时学生列不到、也选不了；已存在的会话不受影响</td></tr>
+                <tr><td><code>tutor_agent_skills</code></td><td>绑定的技能</td><td>只能绑本班技能，跨班或不存在按 404 处理；未绑定或已停用的技能不参与路由</td></tr>
+                <tr><td><code>tutor_agent_materials</code></td><td>绑定的材料</td><td>只能绑本班材料；空绑定是合法状态，此时检索为空</td></tr>
+              </tbody>
+            </table>
+            <figure class="fig">
+              <svg viewBox="0 0 760 180" role="img" aria-label="智能体表通过两张绑定表指向本班技能与本班材料，未绑定的技能与材料不参与这次回答">
+                <defs><marker id="agA" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#7d736c"/></marker></defs>
+                <rect x="16" y="24" width="180" height="132" rx="10" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="106" y="52" text-anchor="middle" font-size="13" font-weight="600" fill="#94070a">智能体</text>
+                <text x="106" y="76" text-anchor="middle" font-size="11" fill="#1c1917">name · prompt</text>
+                <text x="106" y="96" text-anchor="middle" font-size="11" fill="#1c1917">enabled · class_id</text>
+                <text x="106" y="122" text-anchor="middle" font-size="11" fill="#7d736c">一个班可以有多个</text>
+                <text x="106" y="140" text-anchor="middle" font-size="11" fill="#7d736c">会话新建时选定</text>
+                <line x1="196" y1="70" x2="246" y2="44" stroke="#7d736c" stroke-width="1.5" marker-end="url(#agA)"/>
+                <line x1="196" y1="110" x2="246" y2="136" stroke="#7d736c" stroke-width="1.5" marker-end="url(#agA)"/>
+                <rect x="252" y="16" width="190" height="56" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="347" y="38" text-anchor="middle" font-size="12" font-weight="600" fill="#1c1917">智能体 ↔ 技能</text>
+                <text x="347" y="58" text-anchor="middle" font-size="11" fill="#7d736c">agent_id · skill_id</text>
+                <rect x="252" y="108" width="190" height="56" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="347" y="130" text-anchor="middle" font-size="12" font-weight="600" fill="#1c1917">智能体 ↔ 材料</text>
+                <text x="347" y="150" text-anchor="middle" font-size="11" fill="#7d736c">agent_id · material_id</text>
+                <line x1="442" y1="44" x2="492" y2="44" stroke="#7d736c" stroke-width="1.5" marker-end="url(#agA)"/>
+                <line x1="442" y1="136" x2="492" y2="136" stroke="#7d736c" stroke-width="1.5" marker-end="url(#agA)"/>
+                <rect x="498" y="16" width="246" height="56" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="621" y="38" text-anchor="middle" font-size="12" font-weight="600" fill="#1c1917">skills · 本班技能</text>
+                <text x="621" y="58" text-anchor="middle" font-size="11" fill="#7d736c">未绑定的不参与路由</text>
+                <rect x="498" y="108" width="246" height="56" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="621" y="130" text-anchor="middle" font-size="12" font-weight="600" fill="#1c1917">materials · 本班材料</text>
+                <text x="621" y="150" text-anchor="middle" font-size="11" fill="#7d736c">未绑定的不进这次检索</text>
+              </svg>
+              <figcaption>绑定关系是两张关联表，不是智能体行里的字段快照：教师改了绑定，下一次提问即按新关系作答，不必重建智能体。</figcaption>
+            </figure>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">技能的字段与来源</span></h2>
+            <p class="unit-lead">技能以单一文本文件定义：空行以上是元数据，空行以下是引导规程。服务端解析后写入 <code>skills</code> 表；一条技能要参与路由，还须被某个智能体绑定且处于启用状态。</p>
+            <table>
+              <thead>
+                <tr><th>字段</th><th>含义</th><th>约束</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>id</code></td><td>主键</td><td>自增</td></tr>
+                <tr><td><code>class_id</code></td><td>所属班级</td><td>跨班不可见，按编号直取他班技能返回 404</td></tr>
+                <tr><td><code>name</code></td><td>名称</td><td>班内唯一，不超过 32 字；含「解题引导」时触发不给最终答案的硬性要求</td></tr>
+                <tr><td><code>trigger_text</code></td><td>适用条件</td><td>不超过 120 字；按中英文逗号、顿号、分号或竖线切词，再逐词与提问比对</td></tr>
+                <tr><td><code>description</code></td><td>说明</td><td>空行以下的正文，不超过 2000 字，整段进入系统消息</td></tr>
+                <tr><td><code>tools_json</code></td><td>工具列表</td><td>本课只接受 <code>knowledge_search</code>，其他值在解析阶段即被拒绝</td></tr>
+                <tr><td><code>source_text</code></td><td>文件原文</td><td>保留教师写的整份文件，便于取回再编辑</td></tr>
+                <tr><td><code>subject_text</code></td><td>资料范围</td><td>不超过 32 字；非空时只保留标题含该词的材料</td></tr>
+                <tr><td><code>enabled</code></td><td>启用状态</td><td>为否时不参与路由，即使仍被智能体绑定着</td></tr>
+                <tr><td><code>seed_key</code></td><td>种子幂等键</td><td>预置技能专用；教师自建的技能为 NULL</td></tr>
+              </tbody>
+            </table>
+            <figure class="fig">
+              <svg viewBox="0 0 760 190" role="img" aria-label="技能文件经解析拆成元数据与说明，分别写入 skills 表的各列">
+                <defs><marker id="skB" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#7d736c"/></marker></defs>
+                <rect x="16" y="30" width="180" height="130" rx="10" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="106" y="56" text-anchor="middle" font-size="13" font-weight="600" fill="#94070a">教师写的技能文件</text>
+                <text x="36" y="84" font-size="12" fill="#1c1917">空行以上：名称</text>
+                <text x="36" y="104" font-size="12" fill="#1c1917">适用条件 资料 工具</text>
+                <text x="36" y="124" font-size="12" fill="#1c1917">启用</text>
+                <text x="36" y="148" font-size="12" fill="#94070a">空行以下：说明</text>
+                <line x1="196" y1="95" x2="240" y2="95" stroke="#7d736c" stroke-width="1.5" marker-end="url(#skB)"/>
+                <rect x="246" y="56" width="150" height="78" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="321" y="82" text-anchor="middle" font-size="13" font-weight="600" fill="#1c1917">解析</text>
+                <text x="321" y="104" text-anchor="middle" font-size="11" fill="#7d736c">校验字段与长度</text>
+                <text x="321" y="122" text-anchor="middle" font-size="11" fill="#7d736c">原文一并保留</text>
+                <line x1="396" y1="95" x2="440" y2="95" stroke="#7d736c" stroke-width="1.5" marker-end="url(#skB)"/>
+                <rect x="446" y="30" width="298" height="130" rx="10" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="595" y="56" text-anchor="middle" font-size="13" font-weight="600" fill="#1c1917">skills 表的一行</text>
+                <text x="466" y="84" font-size="12" fill="#1c1917">name · trigger_text · subject_text</text>
+                <text x="466" y="106" font-size="12" fill="#1c1917">tools_json · enabled</text>
+                <text x="466" y="128" font-size="12" fill="#1c1917">description ← 空行以下</text>
+                <text x="466" y="148" font-size="12" fill="#7d736c">source_text ← 整份原文</text>
+              </svg>
+              <figcaption>文件是教师唯一的输入接口；表的每一列均可溯源到文件中的字段，无需另行填写表单。</figcaption>
+            </figure>
+          </section>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">两份样板</span></h2>
+            <p class="unit-lead">下面是 A 班预置的两份技能文件。空行之前是元数据，空行之后是引导规程；<code>#</code> 开头的行与空行在元数据区被忽略。</p>
+            <pre><code>名称：数学解题引导
+适用条件：方程,去括号,分数,通分,面积,应用题,未知数,行程
+资料：数学
+工具：knowledge_search
+启用：是
+
+学生正在自己做数学作业，往往已经写了一步。先看懂他卡在哪一步，只指出下一步该检查什么，例如去括号有没有乘到每一项、分母不同要不要先通分、该设哪个未知数。不要算出最终得数，不要把整道题做完。依据只用数学自学笔记，并标出材料标题和位置。</code></pre>
+            <pre><code>名称：语文解题引导
+适用条件：春晓,默写,阅读,中心,作文,开头,古诗,词语
+资料：语文
+工具：knowledge_search
+启用：是
+
+学生正在自己背诵、做阅读或改作文，卡在某一句。先接住他已经写出的那一句，告诉他往前看哪一句、找哪类句子。不要把诗的下一句、中心句或改好的段落直接写出来。依据只用语文自学笔记，并标出材料标题和位置。</code></pre>
+            <div class="note">解析规则：文件不超过 8000 字；名称、适用条件与启用三项必填；同一字段重复出现、出现未定义字段、或空行以下缺少正文，均在提交时被拒绝，并返回面向教师的可读错误信息。</div>
+          </section>
+
+          <section class="unit" id="u4">
+            <h2 class="unit-h"><span class="unit-n">4</span><span class="unit-t">本课格式与主流 SKILL.md 的差异</span></h2>
+            <p class="unit-lead">本课的技能文件是项目自定义格式，不是 Agent Skills 规范的 <code>SKILL.md</code>。两者的差别不在写法，而在于由谁决定「这次提问该用哪个技能」。</p>
+            <p>先交代对方的形态：规范要求一个技能是一个目录，目录中的 <code>SKILL.md</code> 以 YAML frontmatter 开头——即由两行 <code>---</code> 夹住的一段键值元数据，其后才是正文；正文之外还可放脚本与参考文件，按需载入。</p>
+            <table>
+              <thead>
+                <tr><th>维度</th><th>SKILL.md（Agent Skills 规范）</th><th>本课实现</th></tr>
+              </thead>
+              <tbody>
+                <tr><td style="white-space:nowrap">形态</td><td>目录 <code>skill-name/</code> 内含 <code>SKILL.md</code>，可再带脚本与参考文件</td><td>单个纯文本文件，解析后写成 <code>skills</code> 表的一行</td></tr>
+                <tr><td style="white-space:nowrap">元数据</td><td>YAML frontmatter，<code>name</code> 与 <code>description</code> 必填</td><td>中文键行：名称、适用条件、资料、工具、启用</td></tr>
+                <tr><td style="white-space:nowrap">正文</td><td>frontmatter 之后的 Markdown，写法不限</td><td>空行以下的说明，不超过 2000 字</td></tr>
+                <tr><td style="white-space:nowrap"><b>激活主体</b></td><td><b>模型</b>读 <code>description</code>，自行判断该不该用</td><td><b>服务端</b>按适用条件切词计分，至多选一个</td></tr>
+                <tr><td style="white-space:nowrap">加载方式</td><td>渐进式披露：元数据常驻，正文与资源按需载入</td><td>全量入库；命中后整段说明进入系统消息</td></tr>
+                <tr><td style="white-space:nowrap">执行参数</td><td>只有 <code>allowed-tools</code>，且是实验性字段</td><td>资料即检索范围，工具限定为 <code>knowledge_search</code></td></tr>
+                <tr><td style="white-space:nowrap">可移植性</td><td>跨产品通用，可拿到别的 Harness 里直接跑</td><td>绑定本项目的表结构与路由实现</td></tr>
+              </tbody>
+            </table>
+            <figure class="fig">
+              <svg viewBox="0 0 760 388" role="img" aria-label="左侧是 SKILL.md 规范的流程：元数据常驻、模型判断、加载正文；右侧是本课流程：技能入库、服务端计分、至多选一个，分歧点在第二步由谁判断">
+                <defs><marker id="skA" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#7d736c"/></marker></defs>
+                <text x="194" y="30" text-anchor="middle" font-size="13" font-weight="600" fill="#1c1917">SKILL.md（Agent Skills 规范）</text>
+                <text x="566" y="30" text-anchor="middle" font-size="13" font-weight="600" fill="#94070a">本课：服务端路由</text>
+                <rect x="16" y="48" width="356" height="56" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="194" y="70" text-anchor="middle" font-size="13" font-weight="600" fill="#1c1917">元数据常驻上下文</text>
+                <text x="194" y="90" text-anchor="middle" font-size="11" fill="#7d736c">name 与 description，约 100 tokens</text>
+                <line x1="194" y1="108" x2="194" y2="156" stroke="#7d736c" stroke-width="1.5" marker-end="url(#skA)"/>
+                <rect x="16" y="160" width="356" height="56" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="194" y="182" text-anchor="middle" font-size="13" font-weight="600" fill="#1c1917">模型自己判断要不要用</text>
+                <text x="194" y="202" text-anchor="middle" font-size="11" fill="#7d736c">读 description 匹配当前任务</text>
+                <line x1="194" y1="220" x2="194" y2="268" stroke="#7d736c" stroke-width="1.5" marker-end="url(#skA)"/>
+                <rect x="16" y="272" width="356" height="56" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="194" y="294" text-anchor="middle" font-size="13" font-weight="600" fill="#1c1917">加载 SKILL.md 正文</text>
+                <text x="194" y="314" text-anchor="middle" font-size="11" fill="#7d736c">激活后才读，正文即指令</text>
+                <rect x="388" y="48" width="356" height="56" rx="8" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="566" y="70" text-anchor="middle" font-size="13" font-weight="600" fill="#1c1917">技能整行存进 skills 表</text>
+                <text x="566" y="90" text-anchor="middle" font-size="11" fill="#7d736c">名称、适用条件、资料、工具、启用</text>
+                <line x1="566" y1="108" x2="566" y2="156" stroke="#7d736c" stroke-width="1.5" marker-end="url(#skA)"/>
+                <rect x="388" y="160" width="356" height="56" rx="8" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="566" y="182" text-anchor="middle" font-size="13" font-weight="600" fill="#1c1917">服务端按适用条件计分</text>
+                <text x="566" y="202" text-anchor="middle" font-size="11" fill="#7d736c">逐词匹配提问，同分取编号较小者</text>
+                <line x1="566" y1="220" x2="566" y2="268" stroke="#7d736c" stroke-width="1.5" marker-end="url(#skA)"/>
+                <rect x="388" y="272" width="356" height="56" rx="8" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="566" y="294" text-anchor="middle" font-size="13" font-weight="600" fill="#1c1917">至多选一个技能</text>
+                <text x="566" y="314" text-anchor="middle" font-size="11" fill="#7d736c">选中技能的说明进入系统消息</text>
+                <rect x="16" y="344" width="728" height="28" rx="6" fill="#ffffff" stroke="#94070a"/>
+                <text x="380" y="362" text-anchor="middle" font-size="11" fill="#94070a">分歧在第二步：由模型在运行时判断，还是由代码在请求内判定</text>
+              </svg>
+              <figcaption>分歧点只有一处，却决定了技能文件里能写什么。左边把判断交给模型，元数据就必须写给人看懂的描述；右边交给代码，就必须写可供切词比对的「适用条件」，以及服务端要拿去约束检索的「资料」与「工具」。</figcaption>
+            </figure>
+            <div class="note">这是一次有取舍的选型，不是格式写错了。把选择权交给代码，换来的是确定性：同一次提问路由到哪个技能可以单测、可以在验证记录里复现、出错能定位到是哪个词没匹配上。代价是技能读不懂超出「适用条件」词表的意图。Agent Skills 规范反过来，覆盖面更宽，但同一次提问的结果不易复现——两种做法服务于不同的目标。</div>
+          </section>
+
+          <section class="unit" id="u5">
+            <h2 class="unit-h"><span class="unit-n">5</span><span class="unit-t">写权限与生效时机</span></h2>
+            <table>
+              <thead>
+                <tr><th>操作</th><th>接口与角色</th><th>生效时机</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>列出本班智能体</td><td>已登录即可；学生只得到已启用的</td><td>即时</td></tr>
+                <tr><td>创建、修改、启停智能体</td><td>仅教师；同时提交绑定的技能与材料编号</td><td>下一次提问即按新关系作答；已有会话立即改用它</td></tr>
+                <tr><td>列出本班技能</td><td>已登录即可</td><td>即时</td></tr>
+                <tr><td>新建、修改、删除技能</td><td>仅教师</td><td>下一次提问即按新配置路由；删除会同时清掉绑定</td></tr>
+                <tr><td>把技能从智能体解绑（或停用技能）</td><td>仅教师</td><td>该技能下一次提问起不再参与这个智能体的路由</td></tr>
+              </tbody>
+            </table>
+            <div class="note">配置不随会话创建时的快照（snapshot）固化：会话锁定的只是「用哪个智能体」，而该智能体当前绑了哪些技能与材料，每次提问重新读取。教师中途解绑某技能后，已存在的会话下一次提问即按新关系路由——验收时可解绑后重放同一提问，对比回答行为的差异。</div>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="session.html">← 会话与消息模型</a>
+            <a class="btn btn-ghost" href="route.html">技能路由与消息组装 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

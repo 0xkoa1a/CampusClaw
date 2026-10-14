@@ -21,6 +21,7 @@ docker compose exec -T app python -m scripts.reindex_all
 
 - [课堂派提交材料](docs/classroom/提交材料/README.md)：按作业日期、平台顺序和完整作业名组织；文字、截图、PDF 都在对应日期目录。
 - [课程与课堂派要求](docs/classroom/requirements.md)：课程要求、作业原文、示例说明与截止时间。
+- [第 5 课参考材料](docs/course/week05/README.md)：在线文档快照、详细功能要求、实践与验收清单。
 - [方案报告源文件与导出记录](docs/classroom/0930/README.md)：Markdown、HTML、PDF 和打印样式。
 - [截图采集记录](docs/classroom/evidence.md)：截图环境、认证值脱敏和验证记录。
 - [第三课验收](docs/week03-verification.md)、[第四课验收](docs/week04-verification.md)：各阶段的实际验证结果。
@@ -34,8 +35,9 @@ docker compose exec -T app python -m scripts.reindex_all
 | `app/` | 服务端、页面模板与浏览器脚本 |
 | `scripts/`、`tests/` | 初始化、验收、提交材料同步脚本及自动化测试 |
 | `openspec/` | 正式规格与历史变更 |
+| `docs/course/` | 课程文档快照与后续实现要求 |
 | `docs/classroom/提交材料/` | 课堂派上传文件和可复制的文字答案 |
 | `docs/classroom/0930/` | 方案报告源文件及导出产物 |
 | `docs/evidence/` | 运行截图原件与仓库验证截图 |
 
-本学期范围不含家长端、多校区运营和学科交易市场。当前完成第三、四课；第五课暂缓，智能体、业务技能、MCP 和互联网部署按[学期项目要求](docs/classroom/requirements.md#学期项目交付)继续规划。
+本学期范围不含家长端、多校区运营和学科交易市场。当前完成第三、四课；第五课材料已留档、实现待开展。智能体、业务技能、MCP 和互联网部署按[学期项目要求](docs/classroom/requirements.md#学期项目交付)继续规划。

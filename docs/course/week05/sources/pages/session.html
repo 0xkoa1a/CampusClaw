@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>会话与消息模型 · 第 5 课 · 提示词、AI 技能与流式会话</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 5 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">预习</p>
+          <a href="preview.html">认证与知识库问答</a>
+          <p class="nav-label">本课</p>
+          <a href="../index.html">概览</a>
+          <a href="scope.html">本课重点</a>
+          <a href="session.html" class="active">会话与消息模型</a>
+          <a href="skill-model.html">智能体与技能的数据模型</a>
+          <a href="route.html">技能路由与消息组装</a>
+          <a href="stream.html">流式输出与 SSE</a>
+          <a href="answer.html">一次回答的链路</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="apply.html">实践步骤与验收</a>
+          <a href="think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">会话与消息模型</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>会话与消息模型</h1>
+          <p class="lead">多轮问答需要两样东西：一个容器，一串文本。<code>conversations</code> 记这次连续追问属于谁、属于哪个班、由哪个智能体作答；<code>messages</code> 按写入顺序记下说过的每一句，以及助手这侧的出处。两者以会话编号关联。</p>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">两张表的职责划分</span></h2>
+            <p class="unit-lead">会话是容器，消息是内容。会话行只记归属、角色与标题；对话正文与出处全部落在消息行。</p>
+            <table>
+              <thead>
+                <tr><th>表</th><th>字段</th><th>含义与约束</th></tr>
+              </thead>
+              <tbody>
+                <tr><td rowspan="6"><code>conversations</code></td><td><code>id</code></td><td>主键，自增</td></tr>
+                <tr><td><code>class_id</code></td><td>所属班级，取自登录用户，请求无法指定</td></tr>
+                <tr><td><code>user_id</code></td><td>归属用户；会话列表与单条读取都按它过滤</td></tr>
+                <tr><td><code>agent_id</code></td><td>会话选定的智能体；新建时写入，此后不再变更</td></tr>
+                <tr><td><code>title</code></td><td>新建时为占位串「新的提问」，首轮提问后改为其前 24 字</td></tr>
+                <tr><td><code>created_at</code> · <code>updated_at</code></td><td><code>updated_at</code> 随每次提问刷新，会话列表按它倒序</td></tr>
+                <tr><td rowspan="6"><code>messages</code></td><td><code>id</code></td><td>主键，自增；同一会话内按它排序</td></tr>
+                <tr><td><code>conversation_id</code></td><td>所属会话；会话行删除时一并清掉</td></tr>
+                <tr><td><code>role</code></td><td>只有 <code>user</code> 与 <code>assistant</code>，由数据库约束</td></tr>
+                <tr><td><code>content</code></td><td>消息正文</td></tr>
+                <tr><td><code>citations_json</code> · <code>skill_name</code></td><td>出处信息，仅助手消息有：引用列表与本次命中的技能名</td></tr>
+                <tr><td><code>created_at</code></td><td>写入时间</td></tr>
+              </tbody>
+            </table>
+            <figure class="fig">
+              <svg viewBox="0 0 760 280" role="img" aria-label="conversations 记班级、用户、选定的智能体与标题，messages 记角色、正文与出处，两者用会话编号关联">
+                <defs><marker id="smA" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#7d736c"/></marker></defs>
+                <rect x="16" y="16" width="336" height="176" rx="10" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="184" y="42" text-anchor="middle" font-size="14" font-weight="600" fill="#94070a">conversations · 会话</text>
+                <line x1="36" y1="54" x2="332" y2="54" stroke="#e6e1dd"/>
+                <text x="40" y="78" font-size="12" fill="#1c1917">id　主键</text>
+                <text x="40" y="100" font-size="12" fill="#1c1917">class_id · user_id　归属</text>
+                <text x="40" y="122" font-size="12" fill="#94070a">agent_id　选定的智能体</text>
+                <text x="40" y="144" font-size="12" fill="#1c1917">title　首轮提问前 24 字</text>
+                <text x="40" y="166" font-size="12" fill="#1c1917">created_at · updated_at</text>
+                <line x1="352" y1="104" x2="386" y2="104" stroke="#7d736c" stroke-width="1.5" marker-end="url(#smA)"/>
+                <rect x="392" y="16" width="352" height="176" rx="10" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="568" y="42" text-anchor="middle" font-size="14" font-weight="600" fill="#1c1917">messages · 消息</text>
+                <line x1="412" y1="54" x2="724" y2="54" stroke="#e6e1dd"/>
+                <text x="416" y="78" font-size="12" fill="#1c1917">id · conversation_id</text>
+                <text x="416" y="100" font-size="12" fill="#1c1917">role　user 或 assistant</text>
+                <text x="416" y="122" font-size="12" fill="#1c1917">content　正文</text>
+                <text x="416" y="144" font-size="12" fill="#1c1917">citations_json · skill_name</text>
+                <text x="416" y="166" font-size="12" fill="#1c1917">created_at</text>
+                <rect x="16" y="208" width="728" height="56" rx="8" fill="#ffffff" stroke="#94070a"/>
+                <text x="380" y="230" text-anchor="middle" font-size="12" fill="#1c1917">一条会话对应多条消息：messages.conversation_id = conversations.id</text>
+                <text x="380" y="252" text-anchor="middle" font-size="12" fill="#94070a">会话行既不存提示词，也不存对话正文</text>
+              </svg>
+              <figcaption>会话编号把一批消息归到一次追问下；<code>agent_id</code> 让每轮回答都能回到当时那套角色设定与绑定。助手消息上的技能名与引用列表，则记下这轮用了什么、引了哪些材料。</figcaption>
+            </figure>
+            <article class="kp-card">
+              <h3>标题由服务端生成</h3>
+              <p>新建会话时，标题写入占位串「新的提问」。首轮提问到达后，服务端取该提问的前 24 字覆盖它；若截取结果为空，保留占位串。此后每轮提问只刷新 <code>updated_at</code>——会话列表按它倒序，最近问过的排在最前。</p>
+            </article>
+            <article class="kp-card">
+              <h3>会话选定一个智能体</h3>
+              <p>新建会话时必须指定一个智能体：服务端校验它属于本班且处于启用状态，通过后把编号写进会话行。此后这个会话一直用它，请求里再带别的编号也不会更换；要换只能新开会话。</p>
+              <p>该智能体后来被停用，已有会话仍可继续提问——停用只拦住新建时的选用。若本班当时一个已启用的智能体都没有，新建会话会返回 400。</p>
+            </article>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">上下文窗口：末尾 6 条消息</span></h2>
+            <p class="unit-lead">消息全部留在库里，但送进上下文的只有最靠后的一小段。窗口固定，不随会话变长。</p>
+            <p>全量历史会让上下文无界增长（unbounded context growth），每轮的开销也随会话长度上涨。本课取一个固定窗口：每次回答都重新查询消息表，按写入顺序取末尾 6 条（一问一答算一轮，6 条约合 3 轮），每条正文再截断到 500 字。角色不是 <code>user</code> 或 <code>assistant</code> 的记录、以及正文为空的记录，一律跳过。本轮提问在生成之前已写入库，因此必定落在窗口内。</p>
+            <figure class="fig">
+              <svg viewBox="0 0 760 168" role="img" aria-label="历史窗口：十一条消息里只取最靠后的六条送进上下文，更早的仍留在库里">
+                <rect x="351" y="12" width="393" height="26" rx="6" fill="#ffffff" stroke="#94070a"/>
+                <text x="547" y="30" text-anchor="middle" font-size="12" fill="#94070a">窗口内：末尾 6 条消息，每条截断 500 字</text>
+                <rect x="16" y="52" width="58" height="48" rx="6" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="45" y="81" text-anchor="middle" font-size="12" fill="#7d736c">第 1 条</text>
+                <rect x="83" y="52" width="58" height="48" rx="6" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="112" y="81" text-anchor="middle" font-size="12" fill="#7d736c">第 2 条</text>
+                <rect x="150" y="52" width="58" height="48" rx="6" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="179" y="81" text-anchor="middle" font-size="12" fill="#7d736c">第 3 条</text>
+                <rect x="217" y="52" width="58" height="48" rx="6" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="246" y="81" text-anchor="middle" font-size="12" fill="#7d736c">第 4 条</text>
+                <rect x="284" y="52" width="58" height="48" rx="6" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="313" y="81" text-anchor="middle" font-size="12" fill="#7d736c">第 5 条</text>
+                <rect x="351" y="52" width="58" height="48" rx="6" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="380" y="81" text-anchor="middle" font-size="12" fill="#1c1917">第 6 条</text>
+                <rect x="418" y="52" width="58" height="48" rx="6" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="447" y="81" text-anchor="middle" font-size="12" fill="#1c1917">第 7 条</text>
+                <rect x="485" y="52" width="58" height="48" rx="6" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="514" y="81" text-anchor="middle" font-size="12" fill="#1c1917">第 8 条</text>
+                <rect x="552" y="52" width="58" height="48" rx="6" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="581" y="81" text-anchor="middle" font-size="12" fill="#1c1917">第 9 条</text>
+                <rect x="619" y="52" width="58" height="48" rx="6" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="648" y="81" text-anchor="middle" font-size="12" fill="#1c1917">第 10 条</text>
+                <rect x="686" y="52" width="58" height="48" rx="6" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="715" y="81" text-anchor="middle" font-size="12" fill="#1c1917">第 11 条</text>
+                <text x="715" y="116" text-anchor="middle" font-size="11" fill="#94070a">本轮提问</text>
+                <rect x="16" y="132" width="728" height="28" rx="6" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="380" y="151" text-anchor="middle" font-size="11" fill="#7d736c">窗口之外的消息仍留在库里，只是不进上下文</text>
+              </svg>
+              <figcaption>窗口是滑动的（sliding window）：每次回答都重新查询消息表、取列表末尾的若干条，而不是记录上次读到哪里。更早的消息仍可翻看，只是不再进入上下文。</figcaption>
+            </figure>
+          </section>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">会话的归属与跨班判定</span></h2>
+            <p class="unit-lead">会话是私有资源。读取与新建都要过两道判定：先看是不是本人，再看是不是本班；任一不符，与「不存在」返回完全一致的响应。</p>
+            <table>
+              <thead>
+                <tr><th>情形</th><th>结果</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>读取自己的会话</td><td>返回会话与消息列表</td></tr>
+                <tr><td>读取他人会话</td><td>查询带上用户编号，查不到这条会话，返回 404</td></tr>
+                <tr><td>读取他班会话</td><td>先按用户取出该行，再比对班级；不一致时同样返回 404</td></tr>
+                <tr><td>新建会话时选定智能体</td><td>只接受本班已启用的；不存在、他班或未启用一律按「不存在」返回 404</td></tr>
+                <tr><td>新建会话但本班没有已启用的智能体</td><td>返回 400，提示本班暂无可用的智能体</td></tr>
+                <tr><td>会话所属智能体后来被停用</td><td>已有会话照常提问；停用只挡住新会话的选用</td></tr>
+                <tr><td>在未登录时访问</td><td>返回 401，不清空任何数据</td></tr>
+              </tbody>
+            </table>
+            <div class="note">两重过滤缺一不可，防的是对象级越权（BOLA/IDOR）：只按用户过滤，防不住班级维度的越权读取；只按班级过滤，防不住跨用户维度的越权读取。跨班与不存在必须返回完全一致的响应，避免通过状态码差异泄露资源存在性（information disclosure）。</div>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="scope.html">← 本课重点</a>
+            <a class="btn btn-ghost" href="skill-model.html">智能体与技能的数据模型 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

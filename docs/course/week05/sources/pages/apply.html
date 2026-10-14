@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>实践步骤与验收 · 第 5 课 · 提示词、AI 技能与流式会话</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 5 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">预习</p>
+          <a href="preview.html">认证与知识库问答</a>
+          <p class="nav-label">本课</p>
+          <a href="../index.html">概览</a>
+          <a href="scope.html">本课重点</a>
+          <a href="session.html">会话与消息模型</a>
+          <a href="skill-model.html">智能体与技能的数据模型</a>
+          <a href="route.html">技能路由与消息组装</a>
+          <a href="stream.html">流式输出与 SSE</a>
+          <a href="answer.html">一次回答的链路</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="apply.html" class="active">实践步骤与验收</a>
+          <a href="think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">实践步骤与验收</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>实践步骤与验收</h1>
+          <p class="lead">每位同学在第 4 课产出的本人学期仓上增量实现，不新建仓库。下面按依赖关系给出实现顺序：先有存储层，再有编排层与接口层，最后是前端；每一层做完先自验一次，再往上走。</p>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">实现顺序（按依赖排序）</span></h2>
+            <p class="unit-lead">顺序可以合并，但不能颠倒：没有会话存储就无从谈流式落库，没有检索就无从谈引用。</p>
+            <table>
+              <thead>
+                <tr><th style="white-space:nowrap">层次</th><th style="white-space:nowrap">顺序</th><th>实现项</th><th>完成后的可验证点</th></tr>
+              </thead>
+              <tbody>
+                <tr><td style="white-space:nowrap">存储层</td><td>1</td><td>幂等建表：会话、消息、智能体三张主表，加两张绑定表</td><td>重复启动不报错，不重建已有表</td></tr>
+                <tr><td rowspan="5" style="white-space:nowrap">接口层</td><td>2</td><td>会话接口：列表、新建、按编号读取</td><td>新建时未选定本班已启用的智能体返回 404；他人与他班的会话也都返回 404</td></tr>
+                <tr><td>3</td><td>智能体读写与两份绑定：名称 64 字内、提示词 2000 字内，绑定本班技能与本班材料</td><td>学生调用写接口返回 403；提示词留空时回退到默认角色</td></tr>
+                <tr><td>4</td><td>消息读写：落库、取最近 6 条消息、每条截断 500 字</td><td>超过 6 条后，更早的消息不再进入上下文</td></tr>
+                <tr><td>5</td><td>技能文件解析：字段、长度与工具名校验</td><td>缺字段、重复字段、非法工具名都被拒并给出可读提示</td></tr>
+                <tr><td>6</td><td>技能增删改查：写操作仅教师，班内名称唯一</td><td>同名提交返回 400；他班技能按编号直取返回 404</td></tr>
+                <tr><td rowspan="4" style="white-space:nowrap">编排层</td><td>7</td><td>路由：只在智能体绑定的已启用技能里打分，至多选一个</td><td>两个技能同时适用时只出现一条引导正文</td></tr>
+                <tr><td>8</td><td>检索接入：只在智能体绑定的材料内取前 4 条，再按学科过滤</td><td>引用列表只含该学科材料，编号连续</td></tr>
+                <tr><td>9</td><td>消息组装：角色与技能进系统消息，资料进用户消息，附最近 6 条历史</td><td>有资料时要求标编号；落空时不写编号，也不许整段回一句「未找到」</td></tr>
+                <tr><td>10</td><td>流式接口：meta、delta、done、error 四类事件</td><td>抓包可见多次 delta，且每次是新增文本</td></tr>
+                <tr><td style="white-space:nowrap">接口文档</td><td>11</td><td>由处理器注解生成 OpenAPI，挂载 Swagger 页面</td><td>打开 <code>/swagger</code> 能对照文档实际发一次请求；文档与注解同源，改代码即改文档</td></tr>
+                <tr><td style="white-space:nowrap">前端</td><td>12</td><td>fetch 提交并自行解帧，逐段渲染</td><td>文字逐段出现；结束后能打开引用材料</td></tr>
+              </tbody>
+            </table>
+            <figure class="fig">
+              <svg viewBox="0 0 760 220" role="img" aria-label="四层自下而上：存储层为编排层提供数据，编排层为接口层提供编排，接口层之上是前端；箭头表示下层是上层的运行前提，第 11 步的接口文档由接口层注解生成，不占运行时层">
+                <defs><marker id="apA" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#94070a"/></marker></defs>
+                <line x1="26" y1="178" x2="26" y2="24" stroke="#94070a" stroke-width="1.5" marker-end="url(#apA)"/>
+                <rect x="40" y="16" width="704" height="34" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="56" y="38" font-size="13" font-weight="600" fill="#1c1917">前端</text>
+                <text x="728" y="38" text-anchor="end" font-size="11" fill="#7d736c">第 12 步 · fetch 解帧、逐段渲染</text>
+                <rect x="40" y="58" width="704" height="34" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="56" y="80" font-size="13" font-weight="600" fill="#1c1917">接口层</text>
+                <text x="728" y="80" text-anchor="end" font-size="11" fill="#7d736c">第 2–6 步 · 会话、消息、智能体、技能的接口</text>
+                <rect x="40" y="100" width="704" height="34" rx="8" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="56" y="122" font-size="13" font-weight="600" fill="#94070a">编排层</text>
+                <text x="728" y="122" text-anchor="end" font-size="11" fill="#94070a">第 7–10 步 · 选技能、检索、组消息、流式</text>
+                <rect x="40" y="142" width="704" height="34" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="56" y="164" font-size="13" font-weight="600" fill="#1c1917">存储层</text>
+                <text x="728" y="164" text-anchor="end" font-size="11" fill="#7d736c">第 1 步 · 幂等建表与读写</text>
+                <rect x="16" y="186" width="728" height="26" rx="6" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="380" y="204" text-anchor="middle" font-size="11" fill="#7d736c">第 11 步的接口文档由接口层注解生成，不占运行时层；其余每层的产出都要能单独验证</text>
+              </svg>
+              <figcaption>箭头方向是依赖方向：下层是上层的运行前提。检索沿用第 4 课，本课在它外面加了「只在绑定材料内」的范围限制；其余各层都是本课新增。</figcaption>
+            </figure>
+            <div class="note">不需要新增依赖：数据库、检索与对话网关沿用第 4 课的配置。密钥只放在本机 <code>.env</code>，不入库、不进镜像，也不要提交到 Git。课内以个人为单位完成；需要第二方复核的环节走同伴交叉验证，见第 3 节。</div>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">常见故障与排查</span></h2>
+            <p class="unit-lead">排查时先分清两类：一类是真故障，另一类只是设计如此。把第二类当成缺陷去改，往往会把「跨班与不存在表现一致」这条硬约束改坏。</p>
+            <table>
+              <thead>
+                <tr><th>现象</th><th>常见原因</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>响应一次性返回，无增量渲染</td><td>反向代理仍在缓冲，或服务端写入后未 flush；检查 <code>proxy_buffering off</code> 与 <code>X-Accel-Buffering: no</code></td></tr>
+                <tr><td>提问返回 400</td><td>提问少于 2 个字或超过 500 字；提示词超过 2000 字；或本班还没有任何已启用的智能体</td></tr>
+                <tr><td>提交技能即被拒绝</td><td>文件缺名称、适用条件或启用；重复写了同一字段；工具名不是 <code>knowledge_search</code>；空行以下缺少正文；超过 8000 字</td></tr>
+                <tr><td>技能同名提交失败</td><td>班内名称唯一是数据库约束，换个名称或先改已有的那一条</td></tr>
+                <tr><td>禁用技能后回答行为未变</td><td>先确认该技能是否仍被这个智能体绑定着。会话锁定的只是「用哪个智能体」，而它当前绑了哪些技能与材料是每次提问重读的，所以停用或解绑应当立即生效，不必新建会话</td></tr>
+                <tr><td><code>/swagger</code> 打不开，或清单里少接口</td><td>文档路由挂在了业务路由之后；<code>openapi.Mount</code> 须在注册接口之前调用。另一个原因是处理器上缺注解，或注解的路径与注册路径不一致</td></tr>
+              </tbody>
+            </table>
+            <p class="sub-h">以下三种现象是预期行为，不是缺陷</p>
+            <table>
+              <thead>
+                <tr><th>现象</th><th>为什么这样设计</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>新建会话返回 404</td><td>所选智能体不存在、已停用或不属于本班，一律按「不存在」处理，响应与一个真的不存在的编号完全一致</td></tr>
+                <tr><td>他班会话返回 404</td><td>跨班与不存在必须返回完全一致的响应，否则状态码本身就成了探测他班资源是否存在的信息泄露</td></tr>
+                <tr><td>回答里没有出处编号</td><td>检索没有命中，或该智能体还没有绑定材料。此时仍会作答，只是引用列表为空、正文不含编号</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">同伴交叉验证清单</span></h2>
+            <p class="unit-lead">以下四项无法自测完成，需要同伴以自己的账号在同一套环境上交叉验证。</p>
+            <article class="kp-card">
+              <h3>会话归属</h3>
+              <p>同伴登录后列出会话，不应出现你的会话；用你的会话编号直接读取，返回 404，且与读取一个不存在编号的响应完全一致。</p>
+            </article>
+            <article class="kp-card">
+              <h3>智能体隔离</h3>
+              <p>同伴列出本班智能体，不应看到别班的；拿别班的智能体编号去新建会话，返回 404。再把某个智能体停用，用它已建好的会话仍可继续提问。</p>
+            </article>
+            <article class="kp-card">
+              <h3>班级边界</h3>
+              <p>同伴在请求体里写入你所在班级的编号再提问，结果仍是本班的命中；用只存在于你班材料里的词提问，对方得到空结果而不是报错。</p>
+            </article>
+            <article class="kp-card">
+              <h3>技能开关</h3>
+              <p>同伴把某个技能改为「启用：否」后再问同一句，回答方式应当明显不同：该技能不再进入候选集，改为直接给结论。技能与材料的绑定是每次提问重读的，因此开关立即生效，不必新建会话。</p>
+            </article>
+            <div class="note">四项均需留存证据：请求与响应的截图或日志片段，写入本人学期仓的验证记录，便于期末回溯。</div>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="answer.html">← 一次回答的链路</a>
+            <a class="btn btn-ghost" href="think.html">思考与分析 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>
