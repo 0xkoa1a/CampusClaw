@@ -49,7 +49,8 @@ def test_sync_is_correct_idempotent_and_check_is_read_only(tmp_path):
     copies, expected = MODULE.validate_entries(root, entries)
     assert len(copies) == 11
     assert len([p for p in expected if p.suffix == ".jpg"]) == 10
-    assert len([p for p in expected if p.suffix == ".pdf"]) == 1
+    assert len([p for p in expected if p.suffix == ".pdf"]) == 2
+    assert len([p for p in expected if p.suffix == ".png"]) == 7
     assert len([p for p in expected if p.suffix == ".txt"]) == 5
     canonical_paths = [root / item["target"] for entry in entries for item in entry["files"]
                        if item.get("canonical")]
@@ -117,7 +118,7 @@ def test_preflight_rejects_symlinked_source_and_duplicate_target(tmp_path):
 
     manifest_path = root / MODULE.MANIFEST
     data = json.loads(manifest_path.read_text(encoding="utf-8"))
-    data["entries"][0]["files"][0]["target"] = data["entries"][1]["files"][0]["target"]
+    data["entries"][0]["files"][1]["target"] = data["entries"][0]["files"][0]["target"]
     manifest_path.write_text(json.dumps(data), encoding="utf-8")
     with pytest.raises(MODULE.SubmissionError, match="duplicate target"):
         MODULE.validate_entries(root, MODULE.load_manifest(root))
@@ -126,6 +127,58 @@ def test_preflight_rejects_symlinked_source_and_duplicate_target(tmp_path):
 def test_preflight_rejects_unknown_extra_file(tmp_path):
     root = make_root(tmp_path, extra=True)
     with pytest.raises(MODULE.SubmissionError, match="unknown extra file"):
+        MODULE.validate_entries(root, MODULE.load_manifest(root))
+
+
+def test_week06_canonical_files_are_presence_checked_and_indexed_first(tmp_path):
+    root = make_root(tmp_path)
+    entries = MODULE.load_manifest(root)
+    week06 = next(entry for entry in entries if entry["date"] == "week06")
+    assert week06["order"] == "01"
+    assert week06["title"] == "个人AI应用平台与MCP验证报告"
+    assert len(week06["files"]) == 12
+    assert all(item["canonical"] and item["source"] == item["target"] for item in week06["files"])
+
+    copies, expected = MODULE.validate_entries(root, entries)
+    assert len(copies) == 11
+    assert all(root / item["target"] in expected for item in week06["files"])
+    rendered = MODULE.render_index(entries)
+    assert rendered.index("## week06") < rendered.index("## 0930") < rendered.index("## 0923")
+    assert "| 01 | 个人AI应用平台与MCP验证报告 | [Markdown 正文]" in rendered
+    assert "[知识库范围验证](<week06/知识库范围验证.json>)" in rendered
+    assert rendered.index("| 01 | 0930-课后任务") < rendered.index("| 02 | 0930-课堂任务")
+    assert rendered.index("| 01 | 0923-课后任务") < rendered.index("| 02 | 0923-后端")
+
+    missing = root / week06["files"][-1]["target"]
+    missing.unlink()
+    with pytest.raises(MODULE.SubmissionError, match="missing canonical"):
+        MODULE.validate_entries(root, entries)
+    assert not (root / MODULE.INDEX).exists()
+
+
+def test_week06_directory_is_known_but_extra_files_are_rejected(tmp_path):
+    root = make_root(tmp_path)
+    extra = root / MODULE.SUBMISSION_ROOT / "week06/unlisted.txt"
+    extra.write_text("extra", encoding="utf-8")
+    with pytest.raises(MODULE.SubmissionError, match="unknown extra file"):
+        MODULE.validate_entries(root, MODULE.load_manifest(root))
+
+
+@pytest.mark.parametrize(
+    "kind,target_suffix",
+    [("txt", ".txt"), ("exe", ".exe"), ("pdf", ".png")],
+)
+def test_canonical_kind_allowlist_and_extension_are_enforced(tmp_path, kind, target_suffix):
+    root = make_root(tmp_path)
+    manifest_path = root / MODULE.MANIFEST
+    data = json.loads(manifest_path.read_text(encoding="utf-8"))
+    item = data["entries"][0]["files"][0]
+    source = item["source"].rsplit(".", 1)[0] + target_suffix
+    item["source"] = source
+    item["target"] = source
+    item["kind"] = kind
+    manifest_path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    with pytest.raises(MODULE.SubmissionError, match="invalid canonical file reference"):
         MODULE.validate_entries(root, MODULE.load_manifest(root))
 
 

@@ -48,6 +48,16 @@ docker compose exec -T app python -m scripts.verify_deployment after
 
 两阶段还会检查未登录 401、学生上传 403 且无副作用、非法格式 400、班级参数篡改无效、跨班详情与下载 404，以及本班列表可见。结果输出为 `PASS`；详细实测及同学交叉验收事项见 [第三课验收记录](week03-verification.md)。
 
+## MCP 与应用配置
+
+新增安装会自动生成 `MCP_AUTH_TOKEN`；已有 `.env` 需补一个独立随机值。Compose 将该值注入主应用和 MCP 服务，MCP 不对宿主机开放端口。主应用只允许登记 `MCP_ALLOWED_BASE_URLS` 中的地址，默认是 `http://mcp-demo:8090`。新增服务器可使用独立的 `MCP_...` 令牌环境变量，需同时注入应用容器。
+
+教师在 `/conversations` 点击“安装内置应用与技能”，重复安装不会覆盖已有同名配置。在 `/mcp` 登记服务器名 `campus-tools` 和上述地址，令牌变量名填 `MCP_AUTH_TOKEN`。连接成功应看到 `calculate`、`unit_convert`；将 `calculate@campus-tools` 或 `unit_convert@campus-tools` 写入技能工具字段，再把技能绑定到应用。
+
+教师可以在 `/mcp` 查看本班工具审计。用户在会话侧栏展开调用记录，查看自己的实际模型请求与返回；该记录可能包含个人提问和材料片段，只在合成验收环境导出到 Git。外部工具记录与最终生成都由服务端鉴权，前端不保存 MCP 令牌。
+
+第六课的 HTTP 服务是 tools 能力教学子集，提供 initialize、tools/list、tools/call，没有实现 resources、prompts、远端采样和完整会话恢复。真实合成验证入口为 `scripts.verify_week06` 与 `scripts.verify_week06_rag_scope`，前者要求全新的测试数据，不能在正式资料上运行。
+
 ## 本地开发与测试
 
 使用 Python 3.10+，安装 `requirements-dev.txt` 后设置同样的环境变量。`python -m pytest -q` 运行所有自动化验收；`python -m flask --app wsgi run --port 8080` 在本机启动开发服务器。首次运行需要三个预置密码。需要单独初始化时，从仓库根目录运行 `python -m scripts.init_db`；该命令重复执行不会复制样本数据。`openspec validate --all --strict` 校验当前正式规格。

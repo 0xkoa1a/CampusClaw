@@ -87,7 +87,7 @@ SKILL_LIST_SCHEMA = json_schema({"skills": {"type": "array", "items": SKILL_SCHE
 SKILL_WRAPPER_SCHEMA = json_schema({"skill": SKILL_SCHEMA})
 AGENT_SCHEMA = json_schema({
     "id": INTEGER, "class_id": INTEGER, "name": STRING, "role_prompt": STRING,
-    "enabled": BOOLEAN, "skill_ids": INTEGER_ARRAY, "material_ids": INTEGER_ARRAY,
+    "enabled": BOOLEAN, "skill_ids": INTEGER_ARRAY, "material_ids": INTEGER_ARRAY, "tool_names": STRING_ARRAY,
 })
 AGENT_LIST_SCHEMA = json_schema({"agents": {"type": "array", "items": AGENT_SCHEMA}})
 AGENT_WRAPPER_SCHEMA = json_schema({"agent": AGENT_SCHEMA})

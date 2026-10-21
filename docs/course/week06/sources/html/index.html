@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>实现教程 · 第 6 课 · MCP 与工具接入</title>
+    <link rel="stylesheet" href="css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="index.html">CampusClaw<span>第 6 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">预习</p>
+          <a href="pages/preview.html">工具调用要解决什么</a>
+          <p class="nav-label">本课</p>
+          <a href="index.html" class="active">概览</a>
+          <a href="pages/scope.html">本课重点</a>
+          <a href="pages/mcp-model.html">协议的三层</a>
+          <a href="pages/binding.html">工具声明与候选集</a>
+          <a href="pages/bridge.html">调用循环</a>
+          <a href="pages/security.html">工具带来的风险面</a>
+          <a href="pages/audit.html">调用的可观测性</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="pages/apply.html">实践步骤与验收</a>
+          <a href="pages/think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">概览</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>实现教程</h1>
+          <p class="lead">本课讲的是「工具调用」的通用做法：模型为什么需要工具、协议怎么把工具接上来、工具如何转换为模型可理解的工具声明、一次提问中的调用循环如何推进、风险面在哪，以及如何把发生过的调用看清楚。落到交付上，是两端各一个：一个能暴露工具的服务器，与宿主里把它接进对话的那段编排（orchestration，对话中的控制逻辑）。</p>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">先记住三条结论</span></h2>
+            <article class="kp-card">
+              <h3>协议解决的是集成复杂度</h3>
+              <p>MCP 让工具源与应用各自只实现一次：能力、传输、报文三层分开，替换一层，另外两层不必改动。通信的两端都是程序——宿主应用与工具服务器；模型不发报文，它只知道「有哪些工具可用」。</p>
+            </article>
+            <article class="kp-card">
+              <h3>决策归模型，执行与收尾归宿主</h3>
+              <p>工具声明来自发现结果，随提问发给模型；模型输出「工具名 + 参数」，宿主按同一份结构校验、携带令牌执行、把结果作为工具消息回传，可循环多轮。参数校验、逐工具授权、轮次与累计次数上限都由宿主决定——超限后是优雅降级，而非报错。</p>
+            </article>
+            <article class="kp-card">
+              <h3>工具接进来，风险从「文字」升级为「动作」</h3>
+              <p>工具返回与工具说明都会原样进入提示词，两者都是攻击面。位置与句式检查只降低概率，授权与配额才拦得住动作；令牌只在服务端出现，接口响应只回一个「是否已配令牌」的布尔值。</p>
+            </article>
+          </section>
+
+          <figure class="fig">
+            <svg viewBox="0 0 760 300" role="img" aria-label="全景：上面一排是连接阶段做一次的三步，下面一排是每次提问都走一遍的三步">
+              <defs>
+                <marker id="ixA" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#7d736c"/></marker>
+                <marker id="ixB" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#94070a"/></marker>
+              </defs>
+              <rect x="16" y="16" width="120" height="28" rx="6" fill="#f8f6f4" stroke="#e6e1dd"/>
+              <text x="76" y="35" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1c1917">连接阶段：做一次</text>
+              <rect x="150" y="44" width="150" height="64" rx="9" fill="#f8f6f4" stroke="#e6e1dd"/>
+              <text x="225" y="70" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1c1917">登记服务器</text>
+              <text x="225" y="90" text-anchor="middle" font-size="10.5" fill="#7d736c">存下地址与令牌</text>
+              <line x1="304" y1="76" x2="316" y2="76" stroke="#7d736c" stroke-width="1.5" marker-end="url(#ixA)"/>
+              <rect x="320" y="44" width="170" height="64" rx="9" fill="#f8f6f4" stroke="#e6e1dd"/>
+              <text x="405" y="70" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1c1917">连接并发现</text>
+              <text x="405" y="90" text-anchor="middle" font-size="10.5" fill="#7d736c">存下工具清单</text>
+              <line x1="494" y1="76" x2="506" y2="76" stroke="#7d736c" stroke-width="1.5" marker-end="url(#ixA)"/>
+              <rect x="510" y="44" width="150" height="64" rx="9" fill="#f8f6f4" stroke="#e6e1dd"/>
+              <text x="585" y="70" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1c1917">划定候选集</text>
+              <text x="585" y="90" text-anchor="middle" font-size="10.5" fill="#7d736c">先按用途定范围</text>
+              <rect x="16" y="150" width="120" height="28" rx="6" fill="#fdf3f3" stroke="#94070a"/>
+              <text x="76" y="169" text-anchor="middle" font-size="11.5" font-weight="600" fill="#94070a">每次提问：走一遍</text>
+              <rect x="150" y="178" width="150" height="64" rx="9" fill="#fdf3f3" stroke="#94070a"/>
+              <text x="225" y="204" text-anchor="middle" font-size="12.5" font-weight="600" fill="#94070a">取候选工具</text>
+              <text x="225" y="224" text-anchor="middle" font-size="10.5" fill="#7d736c">转成工具声明</text>
+              <line x1="304" y1="210" x2="316" y2="210" stroke="#94070a" stroke-width="1.5" marker-end="url(#ixB)"/>
+              <rect x="320" y="178" width="170" height="64" rx="9" fill="#fdf3f3" stroke="#94070a"/>
+              <text x="405" y="204" text-anchor="middle" font-size="12.5" font-weight="600" fill="#94070a">执行调用</text>
+              <text x="405" y="224" text-anchor="middle" font-size="10.5" fill="#7d736c">留一条调用记录</text>
+              <line x1="494" y1="210" x2="506" y2="210" stroke="#94070a" stroke-width="1.5" marker-end="url(#ixB)"/>
+              <rect x="510" y="178" width="150" height="64" rx="9" fill="#fdf3f3" stroke="#94070a"/>
+              <text x="585" y="204" text-anchor="middle" font-size="12.5" font-weight="600" fill="#94070a">结果回传</text>
+              <text x="585" y="224" text-anchor="middle" font-size="10.5" fill="#7d736c">当数据，不当指令</text>
+              <rect x="16" y="258" width="728" height="30" rx="6" fill="#ffffff" stroke="#94070a"/>
+              <text x="380" y="278" text-anchor="middle" font-size="11" fill="#94070a">上排做一次，下排随每次提问自动走一遍；服务器断开后，下排的调用立即被拒</text>
+            </svg>
+            <figcaption>上排是配置、下排是运行：两者的频率不同，所以校验与记录的方式也不同。</figcaption>
+          </figure>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">六个知识点，分别在哪一页</span></h2>
+            <p class="unit-lead">前三个讲「工具怎么接上来」，后三个讲「接上来以后要补什么」。</p>
+            <table>
+              <thead>
+                <tr><th>知识点</th><th>在哪一页</th><th>要点</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>协议分层</td><td>协议的三层</td><td>能力、传输、报文各管一段，换掉一层不动另外两层</td></tr>
+                <tr><td>工具声明</td><td>工具声明与候选集</td><td>名称、说明、输入结构三项，都来自发现结果而非手写</td></tr>
+                <tr><td>候选集与最小权限</td><td>工具声明与候选集</td><td>先按用途划定上限，再让模型在上限之内自主决定</td></tr>
+                <tr><td>调用循环</td><td>调用循环</td><td>决策归模型、执行归宿主，可多轮，须有轮次与次数上限</td></tr>
+                <tr><td>信任边界</td><td>工具带来的风险面</td><td>返回与说明都是攻击面，防线分软硬，令牌不出服务端</td></tr>
+                <tr><td>可观测性</td><td>调用的可观测性</td><td>一次调用一条记录，回答五个问题；本课做到日志这一层</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <div class="grid">
+            <a class="tile" href="pages/preview.html"><strong>工具调用要解决什么</strong><span>模型的三类能力边界、适配数为什么是乘积、MCP 的定位，以及与函数调用等做法的区别</span></a>
+            <a class="tile" href="pages/scope.html"><strong>本课重点</strong><span>六个知识点、两个交付、八条验收标准</span></a>
+            <a class="tile" href="pages/mcp-model.html"><strong>协议的三层</strong><span>能力、传输、报文各管什么，握手协商的是什么</span></a>
+            <a class="tile" href="pages/binding.html"><strong>工具声明与候选集</strong><span>一个工具由哪三项描述、说明怎么写、为什么一次只给必要的工具</span></a>
+            <a class="tile" href="pages/bridge.html"><strong>调用循环</strong><span>连接执行一次、调用走多轮，循环如何终止，失败如何回传给模型</span></a>
+            <a class="tile" href="pages/security.html"><strong>工具带来的风险面</strong><span>返回与说明都是攻击面，防线分软硬，令牌的边界在哪</span></a>
+            <a class="tile" href="pages/audit.html"><strong>调用的可观测性</strong><span>一条记录回答五个问题，进度先于正文，日志、指标与追踪</span></a>
+            <a class="tile" href="pages/apply.html"><strong>实践步骤与验收</strong><span>推进顺序、故障定位，以及需要同伴交叉验证的四项</span></a>
+            <a class="tile" href="pages/think.html"><strong>思考与分析</strong><span>五道研讨题，按协议、声明、调用、信任分组，每题含替代方案与权衡</span></a>
+          </div>
+
+          <div class="pager">
+            <span></span>
+            <a class="btn btn-ghost" href="pages/preview.html">工具调用要解决什么 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="js/app.js"></script>
+  </body>
+</html>

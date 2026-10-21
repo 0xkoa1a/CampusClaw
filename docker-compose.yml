@@ -5,7 +5,7 @@ services:
       args:
         PYTHON_IMAGE: ${PYTHON_IMAGE:-python:3.12-slim}
     ports:
-      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:${APP_PORT:-8080}:8080"
     environment:
       SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env}
       SEED_TEACHER_PASSWORD: ${SEED_TEACHER_PASSWORD:?Set teacher password in .env}
@@ -20,6 +20,8 @@ services:
       EMBEDDING_DIM: ${EMBEDDING_DIM:-2048}
       CHAT_MODEL: ${CHAT_MODEL:-course-chat}
       QDRANT_URL: http://qdrant:6333
+      MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN:?Set MCP_AUTH_TOKEN in .env}
+      MCP_ALLOWED_BASE_URLS: ${MCP_ALLOWED_BASE_URLS:-http://mcp-demo:8090}
     volumes:
       - campusclaw_data:/app/data
       - campusclaw_uploads:/app/uploads
@@ -30,6 +32,20 @@ services:
       retries: 5
     depends_on:
       - qdrant
+      - mcp-demo
+
+  mcp-demo:
+    build:
+      context: ./mcp-server
+      args:
+        PYTHON_IMAGE: ${PYTHON_IMAGE:-python:3.12-slim}
+    environment:
+      MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN:?Set MCP_AUTH_TOKEN in .env}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8090/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   qdrant:
     image: ${QDRANT_IMAGE:-ghcr.io/qdrant/qdrant/qdrant:v1.19.1}

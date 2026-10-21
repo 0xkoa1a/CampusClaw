@@ -32,6 +32,8 @@ def create_app(test_config=None):
         EMBEDDING_MODEL=os.environ.get("EMBEDDING_MODEL", "course-embedding"),
         EMBEDDING_DIM=int(os.environ.get("EMBEDDING_DIM", "2048")),
         CHAT_MODEL=os.environ.get("CHAT_MODEL", "course-chat"),
+        MCP_AUTH_TOKEN=os.environ.get("MCP_AUTH_TOKEN", ""),
+        MCP_ALLOWED_BASE_URLS=os.environ.get("MCP_ALLOWED_BASE_URLS", "http://mcp-demo:8090").split(","),
         AI_TIMEOUT_SECONDS=int(os.environ.get("AI_TIMEOUT_SECONDS", "30")),
         QDRANT_URL=os.environ.get("QDRANT_URL", "http://qdrant:6333"),
         QDRANT_COLLECTION=os.environ.get("QDRANT_COLLECTION", "campusclaw_chunks"),
@@ -91,5 +93,17 @@ def create_app(test_config=None):
     app.extensions["conversation_locks"] = {"guard": threading.Lock(), "locks": {}}
     app.register_blueprint(agents_bp)
     app.register_blueprint(conversations_bp)
+    from .mcp_registry import bp as mcp_bp
+    app.register_blueprint(mcp_bp)
+    @app.get("/mcp")
+    def mcp_page():
+        from .auth import require_user
+        from flask import g, render_template
+        denied = require_user(page=True)
+        if denied:
+            return denied
+        if g.user["role"] != "teacher":
+            return "需要教师权限", 403
+        return render_template("mcp.html")
     install_openapi(app)
     return app

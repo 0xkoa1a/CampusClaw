@@ -64,6 +64,7 @@ AGENT_BODY = {"required": True, "content": {"application/json": {"schema": {
         "name": {"type": "string", "maxLength": 64}, "role_prompt": {"type": "string", "maxLength": 2000},
         "enabled": {"type": "boolean"}, "skill_ids": {"type": "array", "items": {"type": "integer"}},
         "material_ids": {"type": "array", "items": {"type": "integer"}},
+        "tool_names": {"type": "array", "items": {"type": "string", "enum": ["calculator"]}},
     },
 }}}}
 

@@ -11,12 +11,14 @@
   <h1>解题助手</h1>
   <p class="intro">选择本班智能体，围绕课程材料逐步梳理解题思路。</p>
   {% if g.user.role == "teacher" %}
+  <p><a href="/mcp">管理 MCP 服务器与调用审计</a> · <button id="install-apps" class="secondary-button" type="button">安装内置应用与技能</button></p>
   <details class="config-panel" id="teacher-config">
     <summary>教师配置：技能与智能体</summary>
     <div class="config-grid">
       <section class="config-card" aria-labelledby="skill-title">
         <h2 id="skill-title">技能</h2>
         <form id="skill-form">
+          <label for="builtin-skill">内置技能样板</label><select id="builtin-skill"><option value="">选择后填入，可编辑保存</option></select>
           <input type="hidden" name="id">
           <label for="skill-name">技能名称</label><input id="skill-name" name="name" required maxlength="32">
           <label for="skill-source">技能 source</label><textarea id="skill-source" name="source" required rows="10" aria-describedby="skill-import-help"></textarea>
@@ -33,7 +35,9 @@
         <form id="agent-form">
           <input type="hidden" name="id">
           <label for="agent-name">智能体名称</label><input id="agent-name" name="name" required maxlength="64">
+          <label for="prompt-template">提示词模板</label><select id="prompt-template"><option value="">选择后填入，可编辑保存</option></select>
           <label for="agent-prompt">角色提示词</label><textarea id="agent-prompt" name="role_prompt" rows="7" maxlength="2000"></textarea>
+          <label class="check-line"><input name="tool_names" value="calculator" type="checkbox">内置计算器（MCP 工具通过技能的 工具名@服务器名 绑定）</label>
           <label class="check-line"><input name="enabled" type="checkbox" checked>启用</label>
           <fieldset><legend>绑定技能</legend><div id="agent-skills" class="choice-list"></div></fieldset>
           <fieldset><legend>绑定材料</legend><div id="agent-materials" class="choice-list"></div></fieldset>
@@ -51,6 +55,7 @@
         <label for="new-agent">新会话智能体</label><select id="new-agent" name="agent_id" required></select>
         <button class="primary-button" type="submit" disabled>新建会话</button>
       </form>
+      <details><summary>查看本会话模型调用记录</summary><button id="load-traces" class="secondary-button" type="button">刷新调用记录</button><pre id="call-traces" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:500px;overflow:auto">选择会话后查看</pre></details>
       <h2>历史会话</h2><p id="conversation-list-status" class="help" role="status"></p>
       <ul id="conversation-list" class="conversation-list"></ul>
     </aside>
@@ -66,4 +71,4 @@
   </div>
 </main>
 {% endblock %}
-{% block scripts %}<script src="{{ url_for('static', filename='conversations.js') }}" defer></script>{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='conversations.js') }}" defer></script><script src="{{ url_for('static', filename='platform.js') }}" defer></script>{% endblock %}

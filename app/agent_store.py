@@ -94,8 +94,8 @@ def parse_skill(source):
     if any(len(fields.get(key, "")) > limit for key, limit in limits.items()) or len(body.strip()) > 2000:
         raise ApiProblem("技能字段或正文超过长度限制")
     tools = [x.strip() for x in re.split(r"[,，、;；|]", fields.get("工具", "")) if x.strip()]
-    if any(tool != "knowledge_search" for tool in tools):
-        raise ApiProblem("仅支持 knowledge_search 工具")
+    if any(tool not in {"knowledge_search", "calculator"} and not re.fullmatch(r"[a-z][a-z0-9_]*@[a-z][a-z0-9-]*", tool) for tool in tools):
+        raise ApiProblem("工具须为 knowledge_search、calculator 或 工具名@服务器名")
     return dict(name=fields["名称"], trigger_text=fields["适用条件"],
                 subject_text=fields.get("资料", ""), description=body.strip(),
                 enabled=fields["启用"] == "是", tools_json=json.dumps(tools), source_text=source)
@@ -110,6 +110,7 @@ def skill_json(row):
 
 def agent_json(row):
     item = dict(row)
+    item["tool_names"] = json.loads(item.pop("tool_names_json", "[]"))
     item["enabled"] = bool(item["enabled"])
     db = get_db()
     item["skill_ids"] = [r[0] for r in db.execute("SELECT skill_id FROM agent_skills WHERE agent_id=? ORDER BY skill_id", (row["id"],))]
@@ -128,6 +129,8 @@ def owned_row(table, identifier, class_id):
 
 def save_skill(class_id, source, identifier=None):
     item = parse_skill(source)
+    from .mcp_registry import validate_references
+    validate_references(json.loads(item["tools_json"]), class_id)
     db = get_db()
     if identifier is not None:
         owned_row("skills", identifier, class_id)
@@ -151,6 +154,11 @@ def save_agent(class_id, payload, identifier=None):
         raise ApiProblem("需要JSON对象")
     current = agent_json(owned_row("agents", identifier, class_id)) if identifier is not None else {}
     data = {**current, **payload}
+    tool_names = data.get("tool_names", [])
+    from .platform_tools import TOOL_NAMES
+    if not isinstance(tool_names, list) or any(not isinstance(name, str) or name not in TOOL_NAMES for name in tool_names):
+        raise ApiProblem("tool_names须为允许的工具名称数组")
+    tool_names = sorted(set(tool_names))
     name, prompt, enabled = data.get("name"), data.get("role_prompt", ""), data.get("enabled", True)
     if not isinstance(name, str) or not name.strip() or len(name.strip()) > 64:
         raise ApiProblem("智能体名称须为1–64字")
@@ -175,6 +183,7 @@ def save_agent(class_id, payload, identifier=None):
             for table, column, key in (("agent_skills", "skill_id", "skill_ids"), ("agent_materials", "material_id", "material_ids")):
                 db.execute(f"DELETE FROM {table} WHERE agent_id=?", (identifier,))
                 db.executemany(f"INSERT INTO {table}(agent_id,{column}) VALUES (?,?)", [(identifier, value) for value in bindings[key]])
+            db.execute("UPDATE agents SET tool_names_json=? WHERE id=?", (json.dumps(tool_names), identifier))
     except sqlite3.IntegrityError as exc:
         raise ApiProblem("本班已存在同名智能体或绑定资源已改变") from exc
     return agent_json(owned_row("agents", identifier, class_id))

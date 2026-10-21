@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>工具声明与候选集 · 第 6 课 · MCP 与工具接入</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 6 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">预习</p>
+          <a href="preview.html">工具调用要解决什么</a>
+          <p class="nav-label">本课</p>
+          <a href="../index.html">概览</a>
+          <a href="scope.html">本课重点</a>
+          <a href="mcp-model.html">协议的三层</a>
+          <a href="binding.html" class="active">工具声明与候选集</a>
+          <a href="bridge.html">调用循环</a>
+          <a href="security.html">工具带来的风险面</a>
+          <a href="audit.html">调用的可观测性</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="apply.html">实践步骤与验收</a>
+          <a href="think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">工具声明与候选集</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>工具声明与候选集</h1>
+          <p class="lead">工具要交给模型，须先转换为模型可理解的形式。本页讲一个工具由哪几项描述、说明怎么写模型才能正确使用、为什么一次请求不应给出全部工具，以及引用应在什么时点校验。</p>
+
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">一个工具由哪几项描述</span></h2>
+            <p class="unit-lead">名称、说明、输入结构、产出——四项各管一件事，缺一项模型便难以正确使用。</p>
+            <article class="kp-card">
+              <h3>名称（name）</h3>
+              <p>这个工具的唯一标识：模型提出调用时靠它指名，宿主解析时也靠它对应到服务器上的某个工具。同一台服务器内不可重名。</p>
+              <h3>说明（description）</h3>
+              <p>一段自然语言，写清这个工具做什么、什么时候应使用。它会原样进入提示词——<strong>模型判断「是否应当调用这个工具」，依据就是这段说明</strong>。</p>
+              <h3>输入结构（inputSchema）</h3>
+              <p>用 JSON Schema（一种描述 JSON 数据结构的规范）写出参数名、类型、是否必填。模型据此填写参数，宿主据此校验参数。</p>
+              <h3>产出（content）</h3>
+              <p>返回的是内容数组，每项可以是文本、图像或资源引用，并带一个「是否出错」的标记，用来区分「工具正常返回了空」与「工具自己报错了」。</p>
+            </article>
+          <figure class="fig">
+            <svg viewBox="0 0 760 262" role="img" aria-label="一个工具由名称、说明与输入结构三项描述，转成工具声明数组发给模型，模型按说明判断、按结构填参数">
+              <defs><marker id="dcA" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#7d736c"/></marker></defs>
+              <text x="16" y="14" font-size="11" font-weight="600" fill="#7d736c">服务器声明的</text>
+              <rect x="16" y="24" width="196" height="56" rx="9" fill="#fdf3f3" stroke="#94070a"/>
+              <text x="114" y="46" text-anchor="middle" font-size="12" font-weight="600" fill="#94070a">name　名称</text>
+              <text x="114" y="66" text-anchor="middle" font-size="10.5" fill="#7d736c">唯一标识，调用时靠它指名</text>
+              <rect x="16" y="92" width="196" height="56" rx="9" fill="#fdf3f3" stroke="#94070a"/>
+              <text x="114" y="114" text-anchor="middle" font-size="12" font-weight="600" fill="#94070a">description　说明</text>
+              <text x="114" y="134" text-anchor="middle" font-size="10.5" fill="#7d736c">给模型看：什么时候该用它</text>
+              <rect x="16" y="160" width="196" height="56" rx="9" fill="#fdf3f3" stroke="#94070a"/>
+              <text x="114" y="182" text-anchor="middle" font-size="12" font-weight="600" fill="#94070a">inputSchema　输入结构</text>
+              <text x="114" y="202" text-anchor="middle" font-size="10.5" fill="#7d736c">参数名、类型、是否必填</text>
+              <line x1="216" y1="118" x2="252" y2="118" stroke="#7d736c" stroke-width="1.5" marker-end="url(#dcA)"/>
+              <text x="234" y="108" text-anchor="middle" font-size="9.5" fill="#7d736c">转成</text>
+              <rect x="258" y="24" width="230" height="192" rx="10" fill="#ffffff" stroke="#94070a"/>
+              <text x="373" y="48" text-anchor="middle" font-size="12" font-weight="600" fill="#94070a">工具声明（tools 数组）</text>
+              <line x1="276" y1="60" x2="470" y2="60" stroke="#e6e1dd"/>
+              <text x="276" y="82" font-size="10.5" fill="#1c1917">随提问一起发给模型</text>
+              <text x="276" y="104" font-size="10.5" fill="#1c1917">一个场景只带一个子集</text>
+              <text x="276" y="126" font-size="10.5" fill="#1c1917">项数越多，占用上下文越多</text>
+              <line x1="276" y1="140" x2="470" y2="140" stroke="#e6e1dd"/>
+              <text x="276" y="162" font-size="10.5" fill="#7d736c">三项都来自发现结果</text>
+              <text x="276" y="182" font-size="10.5" fill="#7d736c">不由人手写——手写就会与</text>
+              <text x="276" y="200" font-size="10.5" fill="#7d736c">服务器的真实行为走偏</text>
+              <line x1="492" y1="118" x2="528" y2="118" stroke="#94070a" stroke-width="1.5" marker-end="url(#dcA)"/>
+              <rect x="534" y="24" width="210" height="192" rx="10" fill="#f8f6f4" stroke="#e6e1dd"/>
+              <text x="639" y="48" text-anchor="middle" font-size="12" font-weight="600" fill="#1c1917">模型怎么用这份声明</text>
+              <line x1="552" y1="60" x2="726" y2="60" stroke="#e6e1dd"/>
+              <text x="552" y="82" font-size="10.5" fill="#1c1917">读说明 → 判断是否调用</text>
+              <text x="552" y="104" font-size="10.5" fill="#1c1917">读结构 → 决定参数填什么</text>
+              <text x="552" y="126" font-size="10.5" fill="#1c1917">输出：工具名 + 参数对象</text>
+              <line x1="552" y1="140" x2="726" y2="140" stroke="#e6e1dd"/>
+              <text x="552" y="162" font-size="10.5" fill="#7d736c">同一份结构宿主还要用一次：</text>
+              <text x="552" y="182" font-size="10.5" fill="#7d736c">执行前按它校验参数</text>
+              <text x="552" y="202" font-size="10.5" fill="#94070a">模型填得对不对，由宿主判</text>
+              <rect x="16" y="228" width="728" height="26" rx="6" fill="#ffffff" stroke="#94070a"/>
+              <text x="380" y="246" text-anchor="middle" font-size="11" fill="#94070a">说明决定「模型会不会选它」，结构决定「参数能不能被校验」——前者影响效果，后者影响安全</text>
+            </svg>
+            <figcaption>发现结果之所以必须是机器生成的，正因为它要同时喂给模型与校验器两处。</figcaption>
+          </figure>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">说明是写给模型看的：怎么写才用得对</span></h2>
+            <p class="unit-lead">说明不是注释，而是这个工具交给模型的唯一一份使用说明，模型据以判断的就是它。</p>
+            <table>
+              <thead>
+                <tr><th>该写什么</th><th>为什么</th><th>反例</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>什么时候该用、什么时候不应使用</td><td>模型据此判断要不要发起调用</td><td>只写工具内部怎么实现，模型看不出适用场景</td></tr>
+                <tr><td>边界与单位</td><td>避免模型用它去做超出能力范围的事</td><td>不写「只给提示、不给最终答案」，于是被当成答案源</td></tr>
+                <tr><td>参数含义与取值范围</td><td>模型要据此填参数</td><td>参数名缩写成单个字母，模型无从推断</td></tr>
+                <tr><td>与相邻工具的差别</td><td>两个工具说明重叠时模型会选错</td><td>两个工具都写「查询信息」，模型只能随机选一个</td></tr>
+              </tbody>
+            </table>
+            <div class="note">说明写坏有两类典型后果：说明过宽，模型在不应调用的场景误调；说明与实际行为不符，模型调用后才发现取不到所需内容。前者增加无效调用，后者污染回答。因此说明的验收标准不是「表述通顺」，而是「按其描述调用不会出错」。</div>
+          </section>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">候选集：一次只给必要的工具</span></h2>
+            <p class="unit-lead">把全部工具不加筛选地交给模型，既危险也低效。应先划定一个候选子集，再让模型在子集内选择。</p>
+            <article class="kp-card">
+              <h3>为什么不应全部给出</h3>
+              <p>工具越多，选错的概率越高；模型可用的动作越多，一次误判的后果也越大。此外，每条工具声明都占用上下文窗口（context window），几十个工具即数千个词元，成本与延迟都切实存在。</p>
+              <h3>如何划定</h3>
+              <p>按场景、角色或任务先划定一个候选子集，只把子集内的工具转换为工具声明，随本次提问发出。模型只能在子集内选择，子集外的工具它根本看不到。</p>
+              <h3>这对应哪条原则</h3>
+              <p><strong>最小权限原则</strong>（least privilege：只授予完成当前任务所必需的权限）：先按用途划定上限，再让模型在上限之内自主决定。它是工具调用上的第一道防线，且在模型出场之前就已生效。</p>
+            </article>
+            <div class="note">候选集决定的是「最多能用哪些」，模型决定的是「本次用哪个」。前者属配置期问题，后者属运行期问题——把两者分开，事后才能追溯一次调用为何发生。</div>
+          </section>
+
+          <section class="unit" id="u4">
+            <h2 class="unit-h"><span class="unit-n">4</span><span class="unit-t">引用在什么时候校验</span></h2>
+            <p class="unit-lead">一条引用（「工具名@服务器名」这样的写法）要过四类检查。原则是：能在配置期发现的错误，就不应留到运行期。</p>
+            <table>
+              <thead>
+                <tr><th>检查</th><th>检查的内容</th><th>放在哪个时点</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>格式</td><td>写法是否符合引用格式</td><td>解析时立即拒绝，并给出可用写法</td></tr>
+                <tr><td>存在</td><td>这台服务器登记过吗</td><td>配置期；查不到就按不存在处理</td></tr>
+                <tr><td>可用</td><td>它当前是否已连接</td><td>配置期从严；运行期也要判一次</td></tr>
+                <tr><td>在清单内</td><td>这个工具在最近一次发现结果里吗</td><td>配置期；清单每次连接都会刷新</td></tr>
+              </tbody>
+            </table>
+            <p>配置期从严、运行期从简：前者查的是稳定事实（改一次管很久），后者只判断当前是否可用。若在运行期把四道检查都重做一遍，每次提问都要多一次完整校验，服务器瞬时抖动还会把正常的提问判为失败。</p>
+            <p>也要承认这条局限：校验只发生在保存那一刻，此后服务器断开、改名或被删除，引用不会随之改变，调用即失败——这不是校验遗漏，而是检查时与使用时的时间差（TOCTOU，time-of-check to time-of-use）所致。</p>
+            <div class="note">这套取舍可概括为：把能当场判定的错误推到离出错者最近的位置。配置错误应在配置者眼前报错，而不是变成用户看到的一段答非所问。</div>
+          </section>
+
+          <section class="unit" id="u5">
+            <h2 class="unit-h"><span class="unit-n">5</span><span class="unit-t">本课要求：引用怎么写</span></h2>
+            <p class="unit-lead">本课用「工具名@服务器名」这一写法把工具与它所在的服务器绑成一条引用。</p>
+            <table>
+              <thead>
+                <tr><th>写法</th><th>是否接受</th><th>说明</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>knowledge_search</code></td><td>接受</td><td>内置项：检索课程材料，不需要服务器</td></tr>
+                <tr><td><code>formula_hint@campus-tools</code></td><td>接受</td><td>标准引用：服务器须已登记且已连接</td></tr>
+                <tr><td><code>Formula_Hint@campus-tools</code></td><td>拒绝</td><td>大写字母不接受；工具名须以小写字母开头</td></tr>
+                <tr><td><code>formula-hint@campus-tools</code></td><td>拒绝</td><td>工具名一段不允许连字符（服务器名一段允许）</td></tr>
+                <tr><td><code>formula_hint</code></td><td>拒绝</td><td>缺少「@服务器名」，看似工具名却不是引用</td></tr>
+              </tbody>
+            </table>
+            <div class="note">两段分别定规矩是有理由的：工具名来自服务器，字符集由协议与实现约定，收紧一些更可控；服务器名由人命名、需要可读，因此放宽到允许连字符。</div>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="mcp-model.html">← 协议的三层</a>
+            <a class="btn btn-ghost" href="bridge.html">调用循环 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

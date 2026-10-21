@@ -1,6 +1,12 @@
 # 课堂派提交材料
 
-提交时按日期打开对应目录；文字作业复制同名 `.txt` 全文，截图和 PDF 按链接上传。
+按日期或课号打开目录；每项作业的文字、截图和 PDF 都在一起。文字答案复制全文，附件按链接上传。
+
+## week06
+
+| 顺序 | 作业 | 提交材料 |
+| --- | --- | --- |
+| 01 | 个人AI应用平台与MCP验证报告 | [Markdown 正文](<week06/个人AI应用平台与MCP验证报告.md>)<br>[HTML 正文](<week06/个人AI应用平台与MCP验证报告.html>)<br>[PDF 报告](<week06/个人AI应用平台与MCP验证报告.pdf>)<br>[MCP 服务器与发现工具](<week06/01-MCP服务器与发现工具.png>)<br>[MCP 调用审计](<week06/02-MCP调用审计.png>)<br>[手机端 MCP 管理](<week06/03-手机端MCP管理.png>)<br>[提示词模板与技能上传](<week06/04-提示词模板与技能上传.png>)<br>[学生工具回答](<week06/05-学生工具回答.png>)<br>[模型请求与工具参数](<week06/06-模型请求与工具参数.png>)<br>[PDF 首页](<week06/07-PDF首页.png>)<br>[模型与 MCP 调用验证](<week06/模型与MCP调用验证.json>)<br>[知识库范围验证](<week06/知识库范围验证.json>) |
 
 ## 0930
 
@@ -24,6 +30,6 @@
 
 ## 同步
 
-在仓库根目录运行 `python3 scripts/prepare_classroom_submission.py` 同步附件并生成本索引。五份文字答案直接编辑同名 TXT，脚本保留其内容。
+在仓库根目录运行 `python3 scripts/prepare_classroom_submission.py` 同步附件并生成本索引。报告与文字答案直接在对应目录维护；脚本检查这些文件，并同步已有截图附件。
 
 运行 `python3 scripts/prepare_classroom_submission.py --check` 检查附件、额外文件和索引是否最新。

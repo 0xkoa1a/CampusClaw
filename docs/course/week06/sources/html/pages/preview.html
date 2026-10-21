@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>工具调用要解决什么 · 第 6 课 · MCP 与工具接入</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 6 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">预习</p>
+          <a href="preview.html" class="active">工具调用要解决什么</a>
+          <p class="nav-label">本课</p>
+          <a href="../index.html">概览</a>
+          <a href="scope.html">本课重点</a>
+          <a href="mcp-model.html">协议的三层</a>
+          <a href="binding.html">工具声明与候选集</a>
+          <a href="bridge.html">调用循环</a>
+          <a href="security.html">工具带来的风险面</a>
+          <a href="audit.html">调用的可观测性</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="apply.html">实践步骤与验收</a>
+          <a href="think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">工具调用要解决什么</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>工具调用要解决什么</h1>
+          <p class="lead">模型存在三类能力边界。工具调用为其接入外部程序，MCP 规定这段接入如何实现。本页从能力边界讲起，依次说清为什么需要一个协议、MCP 处在协议栈的哪一层、它与相近做法如何区分，最后落到本课的任务。</p>
+
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">模型的三类能力边界</span></h2>
+            <p class="unit-lead">语言模型擅长生成自然语言，但有三类任务无法独立完成。工具调用正是为这三类任务准备的。</p>
+            <article class="kp-card">
+              <h3>知识存在时效</h3>
+              <p>训练语料截止之后发生的事，模型无从得知。问它「最新版本」「今天」，它只能按概率续写，且常给出高置信度的错误答案，即幻觉（hallucination）。</p>
+              <h3>精确计算不可靠</h3>
+              <p>精确计算、单位换算、日期推算：自回归（autoregressive）逐词生成的数字并不可靠——它是在续写最可能的下一个词，并非在执行计算。这类任务应交由确定性的程序完成。</p>
+              <h3>访问不到外部系统</h3>
+              <p>数据库、文件系统、业务接口、网页：模型的输出止于文本，既读不到外部状态，也无法改变外部状态。</p>
+              <h3>应对：把检索与计算交给外部程序</h3>
+              <p>模型只负责三件事——判断是否需要调用、决定调用哪一个、把结果组织为自然语言。这就是<strong>工具调用</strong>（tool use / function calling，函数调用：让模型以结构化形式说出「我要调哪个函数、参数是什么」，由外部程序真的去调）。</p>
+            </article>
+            <div class="note">需与检索增强生成区分：检索增强生成（RAG，Retrieval-Augmented Generation：先检索再让模型据此作答）补的是<strong>事实</strong>，工具调用补的是<strong>动作</strong>。第 4 课做的是前者，本课是后者。两者都向上下文中加入内容，但一个补的是「知道什么」，一个补的是「能做什么」。</div>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">为什么需要一个协议：集成复杂度是乘积</span></h2>
+            <p class="unit-lead">没有协议时，每个应用 × 每个工具源都要单独编写一套适配。</p>
+            <p>三个应用接三个工具源，需要编写九套适配；再增加一个工具源，每个应用都要随之修改。工作量是两侧数量的乘积 O(M×N)。</p>
+            <p>统一协议之后，工具源只实现一次服务器端、应用只实现一次客户端，工作量降为两侧数量之和 O(M+N)。新增一侧，改动不再随另一侧增长。</p>
+            <p>同一问题此前已有两次先例：语言服务器协议（LSP，Language Server Protocol）解决「编辑器 × 编程语言」，开放数据库互连与 Java 数据库连接（ODBC / JDBC）解决「应用 × 数据库」。MCP 是这一问题在「应用 × 工具」上的答案。</p>
+          <figure class="fig">
+            <svg viewBox="0 0 760 336" role="img" aria-label="没有协议时每个应用与每个工具源之间各写一套适配，适配数是乘法；有协议后各方只实现一次，适配数降为加法">
+              <defs><marker id="mnA" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#7d736c"/></marker></defs>
+              <rect x="16" y="16" width="364" height="264" rx="10" fill="#f8f6f4" stroke="#e6e1dd"/>
+              <text x="34" y="42" font-size="13" font-weight="600" fill="#1c1917">没有协议：每一对组合各写一套</text>
+              <text x="34" y="62" font-size="10.5" fill="#7d736c">3 个应用 × 3 个工具源 = 9 条适配</text>
+              <rect x="40" y="86" width="76" height="28" rx="7" fill="#ffffff" stroke="#e6e1dd"/>
+              <text x="78" y="104" text-anchor="middle" font-size="11" fill="#1c1917">应用 A</text>
+              <rect x="40" y="124" width="76" height="28" rx="7" fill="#ffffff" stroke="#e6e1dd"/>
+              <text x="78" y="142" text-anchor="middle" font-size="11" fill="#1c1917">应用 B</text>
+              <rect x="40" y="162" width="76" height="28" rx="7" fill="#ffffff" stroke="#e6e1dd"/>
+              <text x="78" y="180" text-anchor="middle" font-size="11" fill="#1c1917">应用 C</text>
+              <rect x="262" y="86" width="76" height="28" rx="7" fill="#ffffff" stroke="#e6e1dd"/>
+              <text x="300" y="104" text-anchor="middle" font-size="11" fill="#1c1917">工具源 1</text>
+              <rect x="262" y="124" width="76" height="28" rx="7" fill="#ffffff" stroke="#e6e1dd"/>
+              <text x="300" y="142" text-anchor="middle" font-size="11" fill="#1c1917">工具源 2</text>
+              <rect x="262" y="162" width="76" height="28" rx="7" fill="#ffffff" stroke="#e6e1dd"/>
+              <text x="300" y="180" text-anchor="middle" font-size="11" fill="#1c1917">工具源 3</text>
+              <line x1="120" y1="100" x2="256" y2="100" stroke="#7d736c" stroke-width="1.2" marker-end="url(#mnA)"/>
+              <line x1="120" y1="100" x2="256" y2="138" stroke="#7d736c" stroke-width="1.2" marker-end="url(#mnA)"/>
+              <line x1="120" y1="100" x2="256" y2="176" stroke="#7d736c" stroke-width="1.2" marker-end="url(#mnA)"/>
+              <line x1="120" y1="138" x2="256" y2="100" stroke="#7d736c" stroke-width="1.2" marker-end="url(#mnA)"/>
+              <line x1="120" y1="138" x2="256" y2="138" stroke="#7d736c" stroke-width="1.2" marker-end="url(#mnA)"/>
+              <line x1="120" y1="138" x2="256" y2="176" stroke="#7d736c" stroke-width="1.2" marker-end="url(#mnA)"/>
+              <line x1="120" y1="176" x2="256" y2="100" stroke="#7d736c" stroke-width="1.2" marker-end="url(#mnA)"/>
+              <line x1="120" y1="176" x2="256" y2="138" stroke="#7d736c" stroke-width="1.2" marker-end="url(#mnA)"/>
+              <line x1="120" y1="176" x2="256" y2="176" stroke="#7d736c" stroke-width="1.2" marker-end="url(#mnA)"/>
+              <text x="34" y="216" font-size="10.5" fill="#7d736c">每接一个新工具源，每个应用都要改一遍</text>
+              <text x="34" y="236" font-size="10.5" fill="#7d736c">新增一侧，改动量随另一侧的数量增长</text>
+              <rect x="396" y="16" width="348" height="264" rx="10" fill="#fdf3f3" stroke="#94070a"/>
+              <text x="414" y="42" font-size="13" font-weight="600" fill="#94070a">有了协议：各方只实现一次</text>
+              <text x="414" y="62" font-size="10.5" fill="#7d736c">3 + 3 = 6 条适配，接入新工具源不改应用</text>
+              <rect x="420" y="86" width="76" height="28" rx="7" fill="#ffffff" stroke="#94070a"/>
+              <text x="458" y="104" text-anchor="middle" font-size="11" fill="#94070a">应用 A</text>
+              <rect x="420" y="124" width="76" height="28" rx="7" fill="#ffffff" stroke="#94070a"/>
+              <text x="458" y="142" text-anchor="middle" font-size="11" fill="#94070a">应用 B</text>
+              <rect x="420" y="162" width="76" height="28" rx="7" fill="#ffffff" stroke="#94070a"/>
+              <text x="458" y="180" text-anchor="middle" font-size="11" fill="#94070a">应用 C</text>
+              <rect x="536" y="76" width="34" height="124" rx="8" fill="#ffffff" stroke="#94070a"/>
+              <text x="553" y="116" text-anchor="middle" font-size="11.5" font-weight="600" fill="#94070a">协</text>
+              <text x="553" y="136" text-anchor="middle" font-size="11.5" font-weight="600" fill="#94070a">议</text>
+              <rect x="640" y="86" width="76" height="28" rx="7" fill="#ffffff" stroke="#e6e1dd"/>
+              <text x="678" y="104" text-anchor="middle" font-size="11" fill="#1c1917">工具源 1</text>
+              <rect x="640" y="124" width="76" height="28" rx="7" fill="#ffffff" stroke="#e6e1dd"/>
+              <text x="678" y="142" text-anchor="middle" font-size="11" fill="#1c1917">工具源 2</text>
+              <rect x="640" y="162" width="76" height="28" rx="7" fill="#ffffff" stroke="#e6e1dd"/>
+              <text x="678" y="180" text-anchor="middle" font-size="11" fill="#1c1917">工具源 3</text>
+              <line x1="500" y1="100" x2="530" y2="100" stroke="#94070a" stroke-width="1.4" marker-end="url(#mnA)"/>
+              <line x1="500" y1="138" x2="530" y2="138" stroke="#94070a" stroke-width="1.4" marker-end="url(#mnA)"/>
+              <line x1="500" y1="176" x2="530" y2="176" stroke="#94070a" stroke-width="1.4" marker-end="url(#mnA)"/>
+              <line x1="574" y1="100" x2="634" y2="100" stroke="#94070a" stroke-width="1.4" marker-end="url(#mnA)"/>
+              <line x1="574" y1="138" x2="634" y2="138" stroke="#94070a" stroke-width="1.4" marker-end="url(#mnA)"/>
+              <line x1="574" y1="176" x2="634" y2="176" stroke="#94070a" stroke-width="1.4" marker-end="url(#mnA)"/>
+              <text x="414" y="216" font-size="10.5" fill="#1c1917">工具源只实现一次服务器，应用只实现一次客户端</text>
+              <text x="414" y="236" font-size="10.5" fill="#94070a">新增一侧，改动量与另一侧的数量无关</text>
+              <rect x="16" y="296" width="728" height="30" rx="6" fill="#ffffff" stroke="#94070a"/>
+              <text x="380" y="316" text-anchor="middle" font-size="11" fill="#94070a">协议的价值：把适配数从乘法降成加法——这也是判断「某格式算不算协议」的标准</text>
+            </svg>
+            <figcaption>左边每对组合都要单独适配，右边各方只实现一次：这就是「统一协议」换来的东西。</figcaption>
+          </figure>
+            <div class="note">所以协议的价值不在「先进」，而在把集成复杂度从乘积降为求和。这条也可反过来当作判据：若某种格式做不到「两边各自只实现一次」，它就不是协议，只是一份接口描述文档。</div>
+          </section>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">MCP 的定位</span></h2>
+            <p class="unit-lead">MCP 是一份开放规范：规定宿主应用与工具服务器之间，用什么方法名、按什么报文体交换「有哪些工具」和「调用某个工具」。</p>
+            <article class="kp-card">
+              <h3>通信的两端都不是模型</h3>
+              <p>全称里的「模型上下文」说的是目的——为模型准备上下文；真正通信的两端都是程序：一边是<strong>宿主应用</strong>（host，承载对话的那支程序），一边是<strong>工具服务器</strong>（server，提供工具的那支程序）。模型不发报文，也不知道服务器地址与令牌。</p>
+              <h3>分三层来看</h3>
+              <p>能力层：服务器能暴露什么；传输层：报文靠什么传输；报文层：报文是什么形状——用的是 JSON-RPC 2.0（一种轻量的远程调用报文格式）。换掉其中一层，另外两层不必改动。</p>
+              <h3>它不解决「是否应当调用」</h3>
+              <p>MCP 管的是「工具从哪来、怎么接上去」；「本次是否应当调用、调用哪一个」归模型判断，「到底能不能执行」归宿主裁定。三者各管一段，不应指望协议替你做决策。</p>
+            </article>
+<figure class="fig">
+              <svg viewBox="0 0 760 292" role="img" aria-label="大模型、宿主应用与工具服务器三者的连接关系：MCP 定义在宿主与服务器之间，模型与服务器之间没有连接">
+                <defs>
+                  <marker id="pvK1" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#7d736c"/></marker>
+                  <marker id="pvK2" markerWidth="8" markerHeight="8" refX="1" refY="4" orient="auto"><path d="M8,0 L0,4 L8,8 Z" fill="#7d736c"/></marker>
+                  <marker id="pvK3" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#94070a"/></marker>
+                </defs>
+                <rect x="16" y="16" width="190" height="76" rx="10" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="111" y="44" text-anchor="middle" font-size="13" font-weight="600" fill="#1c1917">对话大模型</text>
+                <text x="111" y="66" text-anchor="middle" font-size="11" fill="#7d736c">只收发文本</text>
+                <text x="111" y="86" text-anchor="middle" font-size="10.5" fill="#7d736c">不知道有工具存在</text>
+                <rect x="285" y="16" width="190" height="76" rx="10" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="380" y="44" text-anchor="middle" font-size="13" font-weight="600" fill="#94070a">宿主应用</text>
+                <text x="380" y="66" text-anchor="middle" font-size="11" fill="#94070a">持有地址、令牌与候选集</text>
+                <text x="380" y="86" text-anchor="middle" font-size="10.5" fill="#7d736c">决定调不调、调哪个</text>
+                <rect x="554" y="16" width="190" height="76" rx="10" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="649" y="44" text-anchor="middle" font-size="13" font-weight="600" fill="#1c1917">MCP 工具服务器</text>
+                <text x="649" y="66" text-anchor="middle" font-size="11" fill="#7d736c">暴露工具、执行工具</text>
+                <text x="649" y="86" text-anchor="middle" font-size="10.5" fill="#7d736c">校验令牌，只认调用方</text>
+                <line x1="380" y1="118" x2="111" y2="118" stroke="#7d736c" stroke-width="1.5" marker-start="url(#pvK2)" marker-end="url(#pvK1)"/>
+                <text x="245" y="110" text-anchor="middle" font-size="10.5" fill="#1c1917">模型接口：送提示词，收回答</text>
+                <line x1="380" y1="158" x2="649" y2="158" stroke="#94070a" stroke-width="1.5" marker-end="url(#pvK3)"/>
+                <text x="514" y="150" text-anchor="middle" font-size="10.5" fill="#94070a">MCP 协议：三个方法与报文</text>
+                <line x1="111" y1="200" x2="649" y2="200" stroke="#c9c2bc" stroke-width="1.5" stroke-dasharray="6 5"/>
+                <path d="M372,190 L388,210 M388,190 L372,210" stroke="#94070a" stroke-width="2"/>
+                <text x="380" y="222" text-anchor="middle" font-size="11" fill="#94070a">模型与工具服务器之间没有这条边</text>
+                <rect x="16" y="248" width="728" height="30" rx="6" fill="#ffffff" stroke="#94070a"/>
+                <text x="380" y="268" text-anchor="middle" font-size="11" fill="#94070a">MCP 定义的是右边那条边；大模型不在协议里，它只是结果的读者</text>
+              </svg>
+              <figcaption>三条边里只有中间那条是 MCP：模型与宿主之间只是普通的模型接口，模型与工具服务器之间什么都没有。</figcaption>
+            </figure>
+            <div class="note">「模型调用 MCP」这个说法不成立。模型只产出「我想调什么」这段结构化内容，真正发报文的是宿主应用——模型是结果的读者，不是协议的参与方。</div>
+          </section>
+
+          <section class="unit" id="u4">
+            <h2 class="unit-h"><span class="unit-n">4</span><span class="unit-t">与相近做法如何区分</span></h2>
+            <p class="unit-lead">工具接入这件事上有若干现成做法，容易混淆。按「各管一段」来区分就不会乱。</p>
+            <table>
+              <thead>
+                <tr><th>做法</th><th>管的是哪一段</th><th>与 MCP 的关系</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>函数调用（function calling / tool use）</td><td>模型侧接口：模型用结构化形式表达「要调哪个、参数是什么」</td><td>互补而非替代：它决定模型怎么开口要工具，MCP 决定工具从哪来</td></tr>
+                <tr><td>厂商私有的插件或工具格式</td><td>单个厂商生态内的工具接入</td><td>换一家厂商就要重写一遍；MCP 换来的正是免掉这份重写</td></tr>
+                <tr><td>OpenAPI（接口描述规范）+ 函数定义</td><td>把已有的 HTTP 接口描述成工具</td><td>接入成本低，能复用存量接口；但只有「调用」，缺少统一的发现过程与资源、提示等能力</td></tr>
+                <tr><td>智能体框架自带的工具抽象</td><td>框架内部的工具注册与调度</td><td>与协议正交：框架之内照样可以去连一台 MCP 服务器</td></tr>
+              </tbody>
+            </table>
+            <div class="note">小结：MCP 不与函数调用竞争。函数调用让模型「会开口要工具」，MCP 让工具「能被接上来」；两者结合才是一次完整的工具调用。</div>
+          </section>
+
+          <section class="unit" id="u5">
+            <h2 class="unit-h"><span class="unit-n">5</span><span class="unit-t">本课要求：练两端</span></h2>
+            <p class="unit-lead">六个知识点不是一张并列清单，它们分落在一次调用的两端——工具怎么被接上来，以及接上来以后要补什么。</p>
+            <p>一端是<strong>服务器</strong>：它须正确实现协议——初始化握手、列出工具、执行工具，并对令牌做校验。协议分层与工具声明主要落在这一端，实现者决定模型能看到哪些工具、每个工具的参数结构如何。</p>
+            <p>另一端是<strong>宿主里的编排</strong>：它须正确实现循环——把工具声明交给模型、解析模型提出的调用、按结构校验后执行、把结果作为工具消息回传、控制轮次与累计次数。调用循环、信任边界、可观测性落在这一端，实现者决定哪些动作真的能发生。</p>
+            <figure class="fig">
+              <svg viewBox="0 0 760 176" role="img" aria-label="本课两个交付：左边是一个会说协议的服务器，右边是一段会编排的宿主代码，六个知识点分布在这两端">
+                <rect x="16" y="16" width="348" height="144" rx="10" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="34" y="42" font-size="13" font-weight="600" fill="#1c1917">交付一：一个会说协议的服务器</text>
+                <line x1="34" y1="54" x2="346" y2="54" stroke="#e6e1dd"/>
+                <rect x="34" y="64" width="96" height="48" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="82" y="84" text-anchor="middle" font-size="11.5" fill="#1c1917">握手</text>
+                <text x="82" y="100" text-anchor="middle" font-size="10.5" fill="#7d736c">报能力</text>
+                <rect x="136" y="64" width="96" height="48" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="184" y="84" text-anchor="middle" font-size="11.5" fill="#1c1917">列出工具</text>
+                <text x="184" y="100" text-anchor="middle" font-size="10.5" fill="#7d736c">tools/list</text>
+                <rect x="238" y="64" width="96" height="48" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="286" y="84" text-anchor="middle" font-size="11.5" fill="#1c1917">执行工具</text>
+                <text x="286" y="100" text-anchor="middle" font-size="10.5" fill="#7d736c">tools/call</text>
+                <text x="34" y="132" font-size="10.5" fill="#7d736c">决定模型能看到哪些工具</text>
+                <text x="34" y="148" font-size="10.5" fill="#7d736c">每个工具叫什么、要什么参数</text>
+                <rect x="396" y="16" width="348" height="144" rx="10" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="414" y="42" font-size="13" font-weight="600" fill="#94070a">交付二：一段会编排的宿主代码</text>
+                <line x1="414" y1="54" x2="726" y2="54" stroke="#e6e1dd"/>
+                <rect x="414" y="64" width="96" height="48" rx="8" fill="#ffffff" stroke="#94070a"/>
+                <text x="462" y="84" text-anchor="middle" font-size="11.5" fill="#94070a">交给模型</text>
+                <text x="462" y="100" text-anchor="middle" font-size="10.5" fill="#7d736c">工具声明</text>
+                <rect x="516" y="64" width="96" height="48" rx="8" fill="#ffffff" stroke="#94070a"/>
+                <text x="564" y="84" text-anchor="middle" font-size="11.5" fill="#94070a">校验执行</text>
+                <text x="564" y="100" text-anchor="middle" font-size="10.5" fill="#7d736c">按结构核对</text>
+                <rect x="618" y="64" width="96" height="48" rx="8" fill="#ffffff" stroke="#94070a"/>
+                <text x="666" y="84" text-anchor="middle" font-size="11.5" fill="#94070a">回传循环</text>
+                <text x="666" y="100" text-anchor="middle" font-size="10.5" fill="#7d736c">有上限</text>
+                <text x="414" y="132" font-size="10.5" fill="#7d736c">决定哪些动作真的发生</text>
+                <text x="414" y="148" font-size="10.5" fill="#7d736c">留得下记录、停得下来</text>
+              </svg>
+              <figcaption>两端合起来才是一次完整的工具调用：服务器让工具「能被接上来」，编排让这一次调用可控、可解释、可追溯。</figcaption>
+            </figure>
+            <div class="note">只做一端，另一端便无从验证：没有服务器，编排便无可调用的工具；没有编排，工具接入后无人负责授权判定与收尾。</div>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="../index.html">← 概览</a>
+            <a class="btn btn-ghost" href="scope.html">本课重点 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

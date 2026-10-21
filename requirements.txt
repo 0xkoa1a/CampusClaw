@@ -2,3 +2,4 @@ Flask>=3.0,<4
 Werkzeug>=3.0,<4
 gunicorn>=22,<24
 PyJWT>=2.10,<3
+jsonschema>=4.23,<5

@@ -11,7 +11,7 @@ class GatewayUnavailable(RuntimeError):
     pass
 
 
-def _post(path, payload):
+def _post(path, payload, timeout=None):
     base = current_app.config["EMBEDDING_BASE_URL"].rstrip("/")
     key = current_app.config["EMBEDDING_API_KEY"]
     if not base or not key:
@@ -22,9 +22,13 @@ def _post(path, payload):
         headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
         method="POST",
     )
+    from .call_trace import record
+    record("llm_request" if path == "/chat/completions" else "embedding_request", {"path": path, "body": payload})
     try:
-        with urlopen(request, timeout=current_app.config["AI_TIMEOUT_SECONDS"]) as response:
-            return json.load(response)
+        with urlopen(request, timeout=min(current_app.config["AI_TIMEOUT_SECONDS"], timeout) if timeout is not None else current_app.config["AI_TIMEOUT_SECONDS"]) as response:
+            result = json.load(response)
+            record("llm_response" if path == "/chat/completions" else "embedding_response", result)
+            return result
     except (HTTPError, URLError, TimeoutError, ValueError) as exc:
         raise GatewayUnavailable("课程网关暂时不可用") from exc
 

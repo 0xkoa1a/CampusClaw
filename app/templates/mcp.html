@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}MCP 工具管理 · CampusClaw{% endblock %}
+{% block body %}
+<link rel="stylesheet" href="{{ url_for('static', filename='mcp.css') }}">
+<header class="site-header">
+  <div class="header-left"><div class="brand">Campus<span>Claw</span></div><span class="header-divider"></span><span class="class-name">{{ g.user.class_name }}</span></div>
+  <div class="header-right"><span>{{ g.user.display_name }} · 教师</span><form id="logout-form" method="post" action="{{ url_for('auth.logout') }}"><button class="text-button" type="submit">退出登录</button></form></div>
+</header>
+<main class="workspace mcp-workspace">
+  <p id="auth-status" class="form-error" role="alert"></p>
+  <p class="mcp-back"><a href="{{ url_for('conversations.page') }}">← 返回解题助手</a></p>
+  <div class="mcp-title-row"><div><p class="eyebrow">教师配置 · 外部工具</p><h1>MCP 工具管理</h1><p class="intro">登记本班 MCP 服务，发现可绑定的工具并查看调用记录。</p></div><button id="refresh-all" class="secondary-button" type="button">刷新数据</button></div>
+  <p id="page-status" class="mcp-status" role="status" aria-live="polite"></p>
+
+  <section class="mcp-panel" aria-labelledby="server-form-title">
+    <div class="panel-heading"><div><p class="eyebrow">服务连接</p><h2 id="server-form-title">登记 MCP 服务器</h2></div><span class="panel-index">01</span></div>
+    <form id="server-form" class="server-form">
+      <label>服务器名称<input name="name" required pattern="[a-z][a-z0-9-]*" maxlength="64" placeholder="例如 campus-tools" autocomplete="off"><span>小写字母开头，可含数字和连字符。</span></label>
+      <label>Base URL<input name="base_url" required type="url" placeholder="http://mcp-demo:8090" autocomplete="url"><span>仅允许服务端配置的地址。</span></label>
+      <label>令牌环境变量<input name="token_env" required pattern="MCP_[A-Z0-9_]+" value="MCP_AUTH_TOKEN" maxlength="128" autocomplete="off"><span>只填写变量名；令牌值由服务端读取。</span></label>
+      <div class="form-actions"><button id="save-server" class="primary-button" type="submit">登记服务器</button><button id="cancel-edit" class="secondary-button" type="button" hidden>取消编辑</button></div>
+    </form>
+  </section>
+
+  <section class="mcp-panel" aria-labelledby="servers-title">
+    <div class="panel-heading"><div><p class="eyebrow">已登记服务</p><h2 id="servers-title">服务器与发现工具</h2></div><span id="server-count" class="count-pill">0 台</span></div>
+    <p id="servers-empty" class="empty-state">还没有登记服务器。</p>
+    <div id="server-list" class="server-list" aria-live="polite"></div>
+  </section>
+
+  <section class="mcp-panel audit-panel" aria-labelledby="audit-title">
+    <div class="panel-heading"><div><p class="eyebrow">运行记录</p><h2 id="audit-title">MCP 调用审计</h2></div><button id="refresh-audit" class="secondary-button" type="button">刷新审计</button></div>
+    <p id="audit-status" class="mcp-status" role="status" aria-live="polite"></p>
+    <div class="audit-scroll"><table class="audit-table"><thead><tr><th>工具</th><th>状态</th><th>用户</th><th>会话</th><th>轮次</th><th>摘要</th><th>时间</th></tr></thead><tbody id="audit-rows"></tbody></table></div>
+    <p id="audit-empty" class="empty-state">暂无工具调用记录。</p>
+  </section>
+</main>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='mcp.js') }}" defer></script>{% endblock %}

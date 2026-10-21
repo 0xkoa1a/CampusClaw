@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>调用的可观测性 · 第 6 课 · MCP 与工具接入</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 6 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">预习</p>
+          <a href="preview.html">工具调用要解决什么</a>
+          <p class="nav-label">本课</p>
+          <a href="../index.html">概览</a>
+          <a href="scope.html">本课重点</a>
+          <a href="mcp-model.html">协议的三层</a>
+          <a href="binding.html">工具声明与候选集</a>
+          <a href="bridge.html">调用循环</a>
+          <a href="security.html">工具带来的风险面</a>
+          <a href="audit.html" class="active">调用的可观测性</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="apply.html">实践步骤与验收</a>
+          <a href="think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">调用的可观测性</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>调用的可观测性</h1>
+          <p class="lead">工具一旦可被真实调用，「到底发生了什么」就必须答得上来。本页讲一条调用记录要回答哪五个问题、进度如何先于正文送达前端，以及可观测性（observability）的三个层次。</p>
+
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">一条记录要回答五个问题</span></h2>
+            <p class="unit-lead">记录的价值不在「记了」，而在事后能不能回答。下面五个问题是一条调用记录的最低配置。</p>
+<figure class="fig">
+              <svg viewBox="0 0 760 192" role="img" aria-label="一条调用记录分别指向工具引用、用户与会话，可回答调了什么、谁触发、发生在哪次对话">
+                <defs><marker id="auA" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#94070a"/></marker></defs>
+                <rect x="16" y="26" width="728" height="46" rx="9" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="380" y="47" text-anchor="middle" font-size="12.5" font-weight="600" fill="#94070a">一条调用记录</text>
+                <text x="380" y="64" text-anchor="middle" font-size="10.5" fill="#94070a">调了什么 · 结果如何 · 谁触发 · 哪次对话 · 第几轮 · 何时发生</text>
+                <line x1="140" y1="72" x2="140" y2="106" stroke="#94070a" stroke-width="1.5" marker-end="url(#auA)"/>
+                <line x1="380" y1="72" x2="380" y2="106" stroke="#94070a" stroke-width="1.5" marker-end="url(#auA)"/>
+                <line x1="620" y1="72" x2="620" y2="106" stroke="#94070a" stroke-width="1.5" marker-end="url(#auA)"/>
+                <rect x="16" y="110" width="248" height="62" rx="9" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="140" y="134" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1c1917">工具引用 + 服务器</text>
+                <text x="140" y="154" text-anchor="middle" font-size="10.5" fill="#7d736c">调了什么</text>
+                <rect x="280" y="110" width="200" height="62" rx="9" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="380" y="134" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1c1917">用户</text>
+                <text x="380" y="154" text-anchor="middle" font-size="10.5" fill="#7d736c">谁触发的</text>
+                <rect x="496" y="110" width="248" height="62" rx="9" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="620" y="134" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1c1917">会话</text>
+                <text x="620" y="154" text-anchor="middle" font-size="10.5" fill="#7d736c">发生在哪次对话里</text>
+              </svg>
+              <figcaption>一条记录要回答五个问题：调了什么、成了没有、谁触发的、在哪次对话里、什么时候。</figcaption>
+            </figure>
+            <table>
+              <thead>
+                <tr><th>要回答的问题</th><th>记什么</th><th>为什么需要</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>调了什么</td><td>哪台服务器上的哪个工具</td><td>出问题时先要知道动作落在哪台外部服务上</td></tr>
+                <tr><td>成了没有</td><td>成功、被拒还是出错；成功记结果摘要，失败记原因</td><td>失败的调用必须显形，不能混在成功里</td></tr>
+                <tr><td>谁触发的</td><td>发起这次调用的用户</td><td>把动作归属到人，才谈得上追责与配额</td></tr>
+                <tr><td>在哪次对话里</td><td>哪次会话，以及这次提问里的第几轮</td><td>多轮调用要靠轮次排出先后顺序</td></tr>
+                <tr><td>什么时候</td><td>发生的时间</td><td>与其他日志对齐，还原当时的现场</td></tr>
+              </tbody>
+            </table>
+            <div class="note">调用记录与「会话消息」「智能体配置」不是同一类数据：它记录的是<strong>取用工具这一动作</strong>，而非回答的内容。三者可以互相回指，拼出一条完整的证据链——这也是记录中要带上会话与轮次的原因。</div>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">进度如何先于正文送达</span></h2>
+            <p class="unit-lead">不必等回答写完才知道用了工具：调用事件先到，它已带上这一轮调了什么、成了没有。多轮调用时按发生顺序推多次。</p>
+            <pre><code>event: meta
+data: {"status":"ok","skill":{"name":"数学解题引导"},
+"citations":[…],
+"tool_calls":[{"ref":"formula_hint@campus-tools","status":"ok",
+"text":"去括号时：括号前的系数要乘到括号内每一项……"}]}
+
+event: delta
+data: {"text":"先看这一步……"}</code></pre>
+            <p><code>tool_calls</code> 只在本次确有调用时出现；技能不带工具时这一项直接不出现，而不是给一个空数组——前端据此判断「要不要显示工具那一栏」。这与引用列表同一口径：有则带上，没有则省去。</p>
+            <p>为什么调用事件要先于正文：回答开始前就该把「出处」告诉页面，而这次调了哪些工具同样属于出处。反过来做，工具栏会迟一步才出现，用户多一次状态跳变。顺序由「哪些信息要在首字之前备齐」决定。</p>
+          </section>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">可观测性的三个层次</span></h2>
+            <p class="unit-lead">日志回答「这一条怎么了」，指标回答「整体健康吗」，追踪回答「这次为什么慢、为什么错」。</p>
+            <article class="kp-card">
+              <h3>日志（log，离散事件）</h3>
+              <p>每一次调用一条，带上五个问题的答案。它是追溯的最小单位，也是审计的依据。</p>
+              <h3>指标（metric，聚合量）</h3>
+              <p>调用次数、成功率、耗时分布、失败原因分布。它回答的是趋势与容量问题：哪台服务器在退化、哪个工具总是失败、配额是否即将耗尽。</p>
+              <h3>追踪（trace，一条链路）</h3>
+              <p>一次提问里的多轮调用按先后串成一条链，可看清「先查了什么、再算了什么、在哪一轮卡住」。工具调用尤其需要它，因为一次回答背后可能是好几轮调用。</p>
+            </article>
+            <div class="note">三者不是三选一：没有日志，追踪断了细节；没有指标，问题只能等用户来报；没有追踪，多轮调用的顺序与耗时无从还原。本课做到的是第一层，第二、三层属于第 8 课。</div>
+          </section>
+
+          <section class="unit" id="u4">
+            <h2 class="unit-h"><span class="unit-n">4</span><span class="unit-t">本课要求：管理侧要看到什么</span></h2>
+            <p class="unit-lead">把上面三层落到界面上，本课需要四类能力。</p>
+            <table>
+              <thead>
+                <tr><th>能力</th><th>要看什么</th><th>为什么</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>登记与维护</td><td>服务器名称、地址、是否已配令牌</td><td>令牌原文不出现在任何返回里，只显示是否配过</td></tr>
+                <tr><td>连接与断开</td><td>当前是否连通、失败原因</td><td>这是「配置」与「运行」的分界</td></tr>
+                <tr><td>查看已发现的工具</td><td>这台服务器暴露了哪些工具、各需要什么参数</td><td>写引用时对照的就是这份清单</td></tr>
+                <tr><td>查看最近的调用记录</td><td>按时间倒序看发生过哪些调用、状态如何</td><td>判断「工具配得对不对、服务器稳不稳」的第一手依据</td></tr>
+              </tbody>
+            </table>
+            <div class="note">这些能力对非管理角色一律拒绝：按标识访问不存在或不属于自己的服务器，返回的响应与访问一个不存在的标识完全一致——判定在服务端完成，前端隐藏入口不构成保护。这是第 3 课确立的规矩（认证与授权分离、默认拒绝），本课没有例外。</div>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="security.html">← 工具带来的风险面</a>
+            <a class="btn btn-ghost" href="apply.html">实践步骤与验收 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

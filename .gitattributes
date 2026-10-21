@@ -1,2 +1,5 @@
 # Preserve the VuePress export verbatim, including bundled JS template strings.
 docs/classroom/0930/authentication-and-knowledge-qa.html -whitespace linguist-generated=true
+docs/classroom/提交材料/week06/*.html -whitespace linguist-generated=true
+# Course snapshots are preserved as downloaded, including original formatting.
+docs/course/week06/sources/html/** -whitespace linguist-generated=true

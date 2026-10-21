@@ -37,14 +37,19 @@ def sse_data(stream):
 
 
 def chat_stream(messages):
+    from .call_trace import record
+    body = {"model": current_app.config["CHAT_MODEL"], "messages": messages,
+            "stream": True, "temperature": 0.2, "max_tokens": 450}
     provider = current_app.config.get("STREAM_PROVIDER")
     if provider is not None:
+        record("llm_request", {"mode": "test-provider", "body": body})
         upstream = iter(provider(messages))
         try:
             for text in upstream:
                 if not isinstance(text, str):
                     raise GatewayUnavailable("网关增量格式不正确")
                 if text:
+                    record("llm_test_delta", text)
                     yield text
         finally:
             if hasattr(upstream, "close"):
@@ -56,8 +61,8 @@ def chat_stream(messages):
         raise GatewayUnavailable("课程网关尚未配置")
     request = Request(base + "/chat/completions", method="POST",
                       headers={"Authorization": "Bearer " + key, "Content-Type": "application/json", "Accept": "text/event-stream"},
-                      data=json.dumps({"model": current_app.config["CHAT_MODEL"], "messages": messages,
-                                       "stream": True, "temperature": 0.2, "max_tokens": 450}, ensure_ascii=False).encode())
+                      data=json.dumps(body, ensure_ascii=False).encode())
+    record("llm_request", {"path": "/chat/completions", "body": body})
     deadline = time.monotonic() + current_app.config.get("STREAM_TIMEOUT_SECONDS", 120)
     try:
         with urlopen(request, timeout=current_app.config["AI_TIMEOUT_SECONDS"]) as response:
@@ -65,6 +70,7 @@ def chat_stream(messages):
                 raise GatewayUnavailable("课程网关未提供流式响应")
             finished = False
             for payload in sse_data(response):
+                record("llm_sse_data", payload)
                 if time.monotonic() > deadline:
                     raise GatewayUnavailable("回答超时")
                 if payload.strip() == "[DONE]":

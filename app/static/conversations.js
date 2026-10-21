@@ -258,6 +258,7 @@
       if (!gotDone) throw new Error('连接提前结束，已生成内容可能已保存为未完成回答。');
       if (meta) {
         if (meta.skill_name) appendText(assistant, 'div', meta.skill_name, 'message-meta');
+      if (meta.tool_calls) appendText(assistant, 'div', meta.tool_calls.map((call) => `${call.tool}：${call.status}`).join(' · '), 'message-meta');
         if (Array.isArray(meta.citations) && meta.citations.length) {
           const list = document.createElement('ol'); list.className = 'citations';
           meta.citations.forEach((citation) => {
@@ -324,6 +325,7 @@
   function editAgent(agent) {
     const form = $('#agent-form'); form.elements.id.value = agent.id; form.elements.name.value = agent.name || '';
     form.elements.role_prompt.value = agent.role_prompt || ''; form.elements.enabled.checked = Boolean(agent.enabled);
+    form.querySelectorAll('[name=tool_names]').forEach((input) => { input.checked = (agent.tool_names || []).includes(input.value); });
     form.querySelectorAll('[name=skill_ids]').forEach((input) => { input.checked = (agent.skill_ids || []).map(String).includes(input.value); });
     form.querySelectorAll('[name=material_ids]').forEach((input) => { input.checked = (agent.material_ids || []).map(String).includes(input.value); });
     setStatus($('#agent-status'), `正在编辑：${agent.name}`);
@@ -339,6 +341,7 @@
       enabled: form.elements.enabled.checked,
       skill_ids: Array.from(form.querySelectorAll('[name=skill_ids]:checked'), (input) => Number(input.value)),
       material_ids: Array.from(form.querySelectorAll('[name=material_ids]:checked'), (input) => Number(input.value)),
+      tool_names: Array.from(form.querySelectorAll('[name=tool_names]:checked'), (input) => input.value),
     };
     try {
       const data = await jsonRequest(id ? `/api/agents/${encodeURIComponent(id)}` : '/api/agents', { method: id ? 'PUT' : 'POST', body: JSON.stringify(payload) });

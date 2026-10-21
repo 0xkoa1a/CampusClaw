@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>调用循环 · 第 6 课 · MCP 与工具接入</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 6 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">预习</p>
+          <a href="preview.html">工具调用要解决什么</a>
+          <p class="nav-label">本课</p>
+          <a href="../index.html">概览</a>
+          <a href="scope.html">本课重点</a>
+          <a href="mcp-model.html">协议的三层</a>
+          <a href="binding.html">工具声明与候选集</a>
+          <a href="bridge.html" class="active">调用循环</a>
+          <a href="security.html">工具带来的风险面</a>
+          <a href="audit.html">调用的可观测性</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="apply.html">实践步骤与验收</a>
+          <a href="think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">调用循环</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>调用循环</h1>
+          <p class="lead">连接执行一次，调用可能走多轮。本页走一遍这条循环：模型在其中出场三次，宿主管执行与终止，失败也须按规则回传给模型。</p>
+
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">连接：握手与发现，只执行一次</span></h2>
+            <p class="unit-lead">连接是一次性动作：握手确认双方可用同一套协议，发现取回工具清单。产物是一份工具清单。</p>
+            <table>
+              <thead>
+                <tr><th>步</th><th>做什么</th><th>失败时</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>1</td><td>取出这台服务器的连接信息（地址与令牌）</td><td>不在可用范围内：按不存在处理</td></tr>
+                <tr><td>2</td><td>拼接端点地址</td><td>—</td></tr>
+                <tr><td>3</td><td><code>initialize</code> 握手，带上令牌</td><td>停在未连接，提示检查地址与令牌</td></tr>
+                <tr><td>4</td><td><code>tools/list</code> 取回工具清单</td><td>同上：停在未连接</td></tr>
+                <tr><td>5</td><td>用本次的清单整体替换旧的，标记为已连接</td><td>写入失败同样停在未连接</td></tr>
+              </tbody>
+            </table>
+            <p>第 5 步是<strong>替换</strong>而非追加：先清除旧清单，再写入本次的新清单。因此本地清单始终等于「最近一次成功的发现结果」，远端已删除的工具不会留下残留条目。</p>
+<figure class="fig">
+              <svg viewBox="0 0 760 210" role="img" aria-label="连接一次走五步：取登记信息、握手、发现、替换工具清单、标记已连接；任一远端步骤失败则置回未连接">
+                <defs><marker id="brA" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#7d736c"/></marker><marker id="brR" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#94070a"/></marker></defs>
+                <rect x="16" y="52" width="132" height="76" rx="9" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="82" y="82" text-anchor="middle" font-size="12" font-weight="600" fill="#1c1917">取登记信息</text>
+                <text x="82" y="102" text-anchor="middle" font-size="10" fill="#7d736c">按名字 + 班级</text>
+                <line x1="148" y1="90" x2="165" y2="90" stroke="#7d736c" stroke-width="1.5" marker-end="url(#brA)"/>
+                <rect x="169" y="52" width="132" height="76" rx="9" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="235" y="82" text-anchor="middle" font-size="12" font-weight="600" fill="#1c1917">握手</text>
+                <text x="235" y="102" text-anchor="middle" font-size="10" fill="#7d736c">initialize</text>
+                <line x1="301" y1="90" x2="318" y2="90" stroke="#7d736c" stroke-width="1.5" marker-end="url(#brA)"/>
+                <rect x="322" y="52" width="132" height="76" rx="9" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="388" y="82" text-anchor="middle" font-size="12" font-weight="600" fill="#1c1917">发现</text>
+                <text x="388" y="102" text-anchor="middle" font-size="10" fill="#7d736c">tools/list</text>
+                <line x1="454" y1="90" x2="471" y2="90" stroke="#7d736c" stroke-width="1.5" marker-end="url(#brA)"/>
+                <rect x="475" y="52" width="132" height="76" rx="9" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="541" y="82" text-anchor="middle" font-size="12" font-weight="600" fill="#94070a">替换清单</text>
+                <text x="541" y="102" text-anchor="middle" font-size="10" fill="#7d736c">用这次的结果</text>
+                <line x1="607" y1="90" x2="624" y2="90" stroke="#94070a" stroke-width="1.5" marker-end="url(#brR)"/>
+                <rect x="628" y="52" width="116" height="76" rx="9" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="686" y="82" text-anchor="middle" font-size="12" font-weight="600" fill="#94070a">标记已连接</text>
+                <text x="686" y="102" text-anchor="middle" font-size="10" fill="#7d736c">状态改为已连接</text>
+                <rect x="16" y="152" width="728" height="34" rx="6" fill="#ffffff" stroke="#94070a"/>
+                <text x="380" y="173" text-anchor="middle" font-size="11" fill="#94070a">握手或发现任一步失败：把该服务器置回未连接，并提示检查地址与令牌</text>
+              </svg>
+              <figcaption>五步里只有 3、4 两步真的走出本机；它们失败时清单与连接状态都不更新——不记住一次失败的发现结果。</figcaption>
+            </figure>
+<figure class="fig">
+              <svg viewBox="0 0 760 524" role="img" aria-label="连接阶段的时序图：教师、宿主应用、MCP 服务器与宿主侧存储之间的七次往返">
+                <defs>
+                  <marker id="brS1" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#7d736c"/></marker>
+                  <marker id="brS2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#94070a"/></marker>
+                </defs>
+                <rect x="16" y="16" width="150" height="48" rx="9" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="91" y="40" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1c1917">教师（浏览器）</text>
+                <text x="91" y="57" text-anchor="middle" font-size="10.5" fill="#7d736c">后台配置</text>
+                <rect x="196" y="16" width="170" height="48" rx="9" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="281" y="40" text-anchor="middle" font-size="12.5" font-weight="600" fill="#94070a">发起连接的一方</text>
+                <text x="281" y="57" text-anchor="middle" font-size="10.5" fill="#7d736c">编排与认证</text>
+                <rect x="396" y="16" width="160" height="48" rx="9" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="476" y="40" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1c1917">MCP 服务器</text>
+                <text x="476" y="57" text-anchor="middle" font-size="10.5" fill="#7d736c">mcp-server</text>
+                <rect x="580" y="16" width="164" height="48" rx="9" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="662" y="40" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1c1917">宿主侧存储</text>
+                <text x="662" y="57" text-anchor="middle" font-size="10.5" fill="#7d736c">登记信息与工具清单</text>
+                <line x1="91" y1="64" x2="91" y2="486" stroke="#e6e1dd" stroke-dasharray="4 4"/>
+                <line x1="281" y1="64" x2="281" y2="486" stroke="#e6e1dd" stroke-dasharray="4 4"/>
+                <line x1="476" y1="64" x2="476" y2="486" stroke="#e6e1dd" stroke-dasharray="4 4"/>
+                <line x1="662" y1="64" x2="662" y2="486" stroke="#e6e1dd" stroke-dasharray="4 4"/>
+                <line x1="96" y1="100" x2="276" y2="100" stroke="#7d736c" stroke-width="1.5" marker-end="url(#brS1)"/>
+                <text x="186" y="92" text-anchor="middle" font-size="11" fill="#1c1917">① 教师登记一台服务器</text>
+                <line x1="286" y1="140" x2="657" y2="140" stroke="#7d736c" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#brS1)"/>
+                <text x="471" y="132" text-anchor="middle" font-size="11" fill="#1c1917">令牌与地址只存服务端</text>
+                <line x1="96" y1="180" x2="276" y2="180" stroke="#7d736c" stroke-width="1.5" marker-end="url(#brS1)"/>
+                <text x="186" y="172" text-anchor="middle" font-size="11" fill="#1c1917">② 点「连接」</text>
+                <line x1="286" y1="220" x2="471" y2="220" stroke="#94070a" stroke-width="1.5" marker-end="url(#brS2)"/>
+                <text x="378" y="212" text-anchor="middle" font-size="11" fill="#94070a">③ initialize（Bearer 令牌）</text>
+                <line x1="471" y1="260" x2="286" y2="260" stroke="#94070a" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#brS2)"/>
+                <text x="378" y="252" text-anchor="middle" font-size="11" fill="#94070a">响应：协议版本与能力</text>
+                <line x1="286" y1="300" x2="471" y2="300" stroke="#94070a" stroke-width="1.5" marker-end="url(#brS2)"/>
+                <text x="378" y="292" text-anchor="middle" font-size="11" fill="#94070a">④ tools/list</text>
+                <line x1="471" y1="340" x2="286" y2="340" stroke="#94070a" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#brS2)"/>
+                <text x="378" y="332" text-anchor="middle" font-size="11" fill="#94070a">响应：result.tools 清单</text>
+                <line x1="286" y1="380" x2="657" y2="380" stroke="#7d736c" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#brS1)"/>
+                <text x="471" y="372" text-anchor="middle" font-size="11" fill="#1c1917">用新清单整体替换旧的</text>
+                <line x1="662" y1="420" x2="286" y2="420" stroke="#7d736c" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#brS1)"/>
+                <text x="471" y="412" text-anchor="middle" font-size="11" fill="#1c1917">写毕，标记为已连接</text>
+                <line x1="276" y1="460" x2="96" y2="460" stroke="#7d736c" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#brS1)"/>
+                <text x="186" y="452" text-anchor="middle" font-size="11" fill="#1c1917">完成：已发现 N 个工具</text>
+                <rect x="16" y="486" width="728" height="30" rx="6" fill="#ffffff" stroke="#94070a"/>
+                <text x="380" y="506" text-anchor="middle" font-size="11" fill="#94070a">③ ④ 任一步失败：置回未连接并清空清单</text>
+              </svg>
+              <figcaption>同一件事的两个视角：上面看宿主内部的五步，这张看跨进程的往返——只有 ③④ 真的离开本机。</figcaption>
+            </figure>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">调用循环：模型出场三次</span></h2>
+            <p class="unit-lead">在通用做法中，调用不是一个固定步骤，而是夹在模型两轮生成之间的一个循环。</p>
+            <article class="kp-card">
+              <h3>① 提问 + 工具声明一起发出</h3>
+              <p>宿主把候选集内的工具转换为工具声明，连同本次提问一起发给模型。声明中的三项都来自发现结果。</p>
+              <h3>② 模型回结构化的调用请求</h3>
+              <p>模型并非输出一句非结构化的调用意图，而是输出一段结构化内容：工具名加参数对象。它可能一次提出多个调用。</p>
+              <h3>③ 宿主校验后执行</h3>
+              <p>宿主按那份输入结构校验参数，通过后才真正发报文、带令牌、等结果。模型始终不接触地址与令牌——它只是提议者。</p>
+              <h3>④ 结果作为工具消息回传，再生成</h3>
+              <p>结果以「工具消息」这一角色追加进消息序列（messages），再次请求模型。模型可能还需要一个工具，于是回到 ②；不再需要，则输出回答。</p>
+            </article>
+<figure class="fig">
+              <svg viewBox="0 0 760 220" role="img" aria-label="一次提问的循环：组装请求、模型决策、执行调用、结果回传，可循环多轮后生成回答">
+                <defs><marker id="brB" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#7d736c"/></marker><marker id="brC" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#94070a"/></marker></defs>
+                <rect x="16" y="48" width="132" height="76" rx="9" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="82" y="78" text-anchor="middle" font-size="12" font-weight="600" fill="#1c1917">组装请求</text>
+                <text x="82" y="98" text-anchor="middle" font-size="10" fill="#7d736c">提问 + 工具声明</text>
+                <line x1="148" y1="86" x2="165" y2="86" stroke="#94070a" stroke-width="1.5" marker-end="url(#brC)"/>
+                <rect x="169" y="48" width="132" height="76" rx="9" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="235" y="78" text-anchor="middle" font-size="12" font-weight="600" fill="#94070a">模型决策</text>
+                <text x="235" y="98" text-anchor="middle" font-size="10" fill="#7d736c">回 tool_call 或直接答</text>
+                <line x1="301" y1="86" x2="318" y2="86" stroke="#94070a" stroke-width="1.5" marker-end="url(#brC)"/>
+                <rect x="322" y="48" width="132" height="76" rx="9" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="388" y="78" text-anchor="middle" font-size="12" font-weight="600" fill="#94070a">执行调用</text>
+                <text x="388" y="98" text-anchor="middle" font-size="10" fill="#7d736c">tools/call 带令牌</text>
+                <line x1="454" y1="86" x2="471" y2="86" stroke="#94070a" stroke-width="1.5" marker-end="url(#brC)"/>
+                <rect x="475" y="48" width="132" height="76" rx="9" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="541" y="78" text-anchor="middle" font-size="12" font-weight="600" fill="#94070a">结果回传</text>
+                <text x="541" y="98" text-anchor="middle" font-size="10" fill="#7d736c">作为工具消息追加</text>
+                <line x1="607" y1="86" x2="624" y2="86" stroke="#7d736c" stroke-width="1.5" marker-end="url(#brB)"/>
+                <rect x="628" y="48" width="116" height="76" rx="9" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="686" y="78" text-anchor="middle" font-size="12" font-weight="600" fill="#1c1917">生成与收尾</text>
+                <text x="686" y="98" text-anchor="middle" font-size="10" fill="#7d736c">delta → done</text>
+                <path d="M541,124 L541,160 L235,160 L235,124" fill="none" stroke="#94070a" stroke-width="1.5" marker-end="url(#brC)"/>
+                <text x="388" y="152" text-anchor="middle" font-size="10.5" fill="#94070a">还要工具？回到「模型决策」</text>
+                <rect x="16" y="182" width="728" height="34" rx="6" fill="#ffffff" stroke="#94070a"/>
+                <text x="380" y="203" text-anchor="middle" font-size="11" fill="#94070a">模型只提出调用，不执行调用：令牌、参数校验与记录都在「执行调用」这一环，由宿主完成</text>
+              </svg>
+              <figcaption>调用不是一个固定步骤，而是一个循环：只要模型还要工具，中间两步就会再来一轮；模型决定「要不要」，宿主决定「能不能」。</figcaption>
+            </figure>
+<figure class="fig">
+              <svg viewBox="0 0 760 524" role="img" aria-label="一次提问的时序图：学生、服务端、MCP 服务器与对话模型之间的十次往返，其中调用部分可循环多轮">
+                <defs>
+                  <marker id="brT1" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#7d736c"/></marker>
+                  <marker id="brT2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#94070a"/></marker>
+                </defs>
+                <rect x="16" y="16" width="150" height="48" rx="9" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="91" y="40" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1c1917">学生（浏览器）</text>
+                <text x="91" y="57" text-anchor="middle" font-size="10.5" fill="#7d736c">只做提问与显示</text>
+                <rect x="196" y="16" width="170" height="48" rx="9" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="281" y="40" text-anchor="middle" font-size="12.5" font-weight="600" fill="#94070a">发起连接的一方</text>
+                <text x="281" y="57" text-anchor="middle" font-size="10.5" fill="#7d736c">编排与执行</text>
+                <rect x="396" y="16" width="160" height="48" rx="9" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="476" y="40" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1c1917">MCP 服务器</text>
+                <text x="476" y="57" text-anchor="middle" font-size="10.5" fill="#7d736c">执行工具</text>
+                <rect x="580" y="16" width="164" height="48" rx="9" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="662" y="40" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1c1917">对话模型</text>
+                <text x="662" y="57" text-anchor="middle" font-size="10.5" fill="#7d736c">提出调用、组织回答</text>
+                <line x1="91" y1="64" x2="91" y2="486" stroke="#e6e1dd" stroke-dasharray="4 4"/>
+                <line x1="281" y1="64" x2="281" y2="486" stroke="#e6e1dd" stroke-dasharray="4 4"/>
+                <line x1="476" y1="64" x2="476" y2="486" stroke="#e6e1dd" stroke-dasharray="4 4"/>
+                <line x1="662" y1="64" x2="662" y2="486" stroke="#e6e1dd" stroke-dasharray="4 4"/>
+                <line x1="96" y1="100" x2="276" y2="100" stroke="#7d736c" stroke-width="1.5" marker-end="url(#brT1)"/>
+                <text x="186" y="92" text-anchor="middle" font-size="11" fill="#1c1917">① 提问（SSE）</text>
+                <line x1="281" y1="142" x2="292" y2="142" stroke="#7d736c" stroke-dasharray="3 3"/>
+                <rect x="292" y="126" width="176" height="32" rx="7" fill="#ffffff" stroke="#7d736c"/>
+                <text x="380" y="147" text-anchor="middle" font-size="11" fill="#1c1917">② 路由选技能，取候选工具</text>
+                <line x1="286" y1="190" x2="657" y2="190" stroke="#94070a" stroke-width="1.5" marker-end="url(#brT2)"/>
+                <text x="471" y="182" text-anchor="middle" font-size="11" fill="#94070a">③ 系统提示 + 用户消息 + 工具声明</text>
+                <line x1="657" y1="230" x2="286" y2="230" stroke="#94070a" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#brT2)"/>
+                <text x="471" y="222" text-anchor="middle" font-size="11" fill="#94070a">④ 模型回 tool_call：工具名 + 参数</text>
+                <line x1="286" y1="270" x2="471" y2="270" stroke="#94070a" stroke-width="1.5" marker-end="url(#brT2)"/>
+                <text x="378" y="262" text-anchor="middle" font-size="11" fill="#94070a">⑤ tools/call（Bearer + 参数）</text>
+                <line x1="471" y1="310" x2="286" y2="310" stroke="#94070a" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#brT2)"/>
+                <text x="378" y="302" text-anchor="middle" font-size="11" fill="#94070a">⑥ 响应：result.content 文本</text>
+                <line x1="281" y1="350" x2="292" y2="350" stroke="#7d736c" stroke-dasharray="3 3"/>
+                <rect x="292" y="334" width="176" height="32" rx="7" fill="#ffffff" stroke="#7d736c"/>
+                <text x="380" y="355" text-anchor="middle" font-size="11" fill="#1c1917">⑦ 安全校验 + 留一条记录</text>
+                <line x1="286" y1="392" x2="657" y2="392" stroke="#94070a" stroke-width="1.5" marker-end="url(#brT2)"/>
+                <text x="471" y="384" text-anchor="middle" font-size="11" fill="#94070a">⑧ 追加工具消息，再次请求（回到 ④）</text>
+                <line x1="657" y1="432" x2="286" y2="432" stroke="#94070a" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#brT2)"/>
+                <text x="471" y="424" text-anchor="middle" font-size="11" fill="#94070a">⑨ 流式 delta 逐段返回</text>
+                <line x1="276" y1="466" x2="96" y2="466" stroke="#94070a" stroke-width="1.5" marker-end="url(#brT2)"/>
+                <text x="186" y="458" text-anchor="middle" font-size="11" fill="#94070a">⑩ tool_calls 事件先到，正文后到</text>
+                <rect x="16" y="486" width="728" height="30" rx="6" fill="#ffffff" stroke="#94070a"/>
+                <text x="380" y="506" text-anchor="middle" font-size="11" fill="#94070a">④—⑧ 可循环多轮：终止条件是模型不再请求工具，或达到轮次上限</text>
+              </svg>
+              <figcaption>模型出场三次：收到工具声明、提出调用、取得结果后再组织回答。它决定「要不要调」，但从不自己发请求。</figcaption>
+            </figure>
+            <div class="note">同一份输入结构被使用两次：模型据此填写，宿主据此校验。这正是「工具声明必须来自发现结果」的原因——手写一份，模型与校验器就会各对一套不同的结构，错误会推迟到调用时才暴露。</div>
+          </section>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">循环如何终止</span></h2>
+            <p class="unit-lead">循环必须有明确的终止条件，否则一次提问可能无限往返下去。</p>
+            <table>
+              <thead>
+                <tr><th>终止条件</th><th>什么时候触发</th><th>触发之后</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>模型不再请求工具</td><td>它认为已有信息足够作答</td><td>正常输出回答</td></tr>
+                <tr><td>达到轮次上限</td><td>往返次数用完</td><td>停止调用，让模型用已有信息作答</td></tr>
+                <tr><td>达到调用次数或时间上限</td><td>单次会话内的累计用量用完</td><td>同上；一次提问里的并发调用也要计入</td></tr>
+                <tr><td>工具返回让它自行收敛</td><td>结果已经足够，或反复失败</td><td>模型自行决定不再调用</td></tr>
+              </tbody>
+            </table>
+            <p>上限不是优化项，而是必需品：模型可能陷入「调了不满意、再调一次」的循环，也可能被一段诱导文本反复带动。超限后的处理是<strong>优雅降级</strong>（graceful degradation）而非报错——停止调用，让模型基于已有信息作答，用户得到的是一段回答而不是一次失败。</p>
+            <div class="note">轮次与累计次数是两个不同的闸门：轮次管的是「一条链能走多深」，累计次数管的是「一次会话总共能做多少动作」。前者防死循环，后者防成本失控，两者都要有。</div>
+          </section>
+
+          <section class="unit" id="u4">
+            <h2 class="unit-h"><span class="unit-n">4</span><span class="unit-t">失败是局部失败：错误也须回传给模型</span></h2>
+            <p class="unit-lead">工具未调通，不等于本次对话无法继续。关键在于把失败如实告知模型，由它自行决定后续策略。</p>
+            <p>工具自报错误、超时、连接失败——这些都应当作为一条工具消息回传给模型，并带上「失败了、为什么」。模型据此可以换个参数重试、换一个工具，或者如实告知用户「这一步未查到」。反过来，若将失败静默丢弃，模型会误以为工具返回了空结果，于是自行编造一段内容填上。</p>
+            <p>无论成败，工具失败都不应中断整段对话：检索与生成照常进行。工具是增益，不是主路径。</p>
+            <table>
+              <thead>
+                <tr><th>结果</th><th>什么情况</th><th>是否记录</th><th>记录的内容</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>成功</td><td>服务器可达，工具执行成功</td><td>留</td><td>返回内容的一段摘要</td></tr>
+                <tr><td>工具出错</td><td>服务器可达但工具报错、超时、返回异常</td><td>留</td><td>错误原因</td></tr>
+                <tr><td>宿主拒绝</td><td>服务器不在可用范围，或未连接</td><td>视能否归属而定</td><td>「未连接」一类固定说明</td></tr>
+              </tbody>
+            </table>
+<figure class="fig">
+              <svg viewBox="0 0 760 432" role="img" aria-label="调用状态判定流程：查得到服务器、是否已连接、工具是否成功，逐级判出成功、被拒与出错">
+                <defs>
+                  <marker id="brU1" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#7d736c"/></marker>
+                </defs>
+                <rect x="290" y="16" width="180" height="36" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="380" y="39" text-anchor="middle" font-size="12" font-weight="600" fill="#1c1917">调用一条 tool@server</text>
+                <line x1="380" y1="52" x2="380" y2="74" stroke="#7d736c" stroke-width="1.5" marker-end="url(#brU1)"/>
+                <polygon points="380,74 520,100 380,126 240,100" fill="#ffffff" stroke="#7d736c" stroke-width="1.5"/>
+                <text x="380" y="105" text-anchor="middle" font-size="11.5" fill="#1c1917">能按名查到服务器？</text>
+                <line x1="520" y1="100" x2="556" y2="100" stroke="#7d736c" stroke-width="1.5" marker-end="url(#brU1)"/>
+                <text x="538" y="93" text-anchor="middle" font-size="10" fill="#7d736c">否</text>
+                <rect x="560" y="76" width="184" height="48" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="652" y="97" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1c1917">被拒 · 不留记录</text>
+                <text x="652" y="114" text-anchor="middle" font-size="10" fill="#7d736c">服务器已不存在</text>
+                <line x1="380" y1="126" x2="380" y2="164" stroke="#7d736c" stroke-width="1.5" marker-end="url(#brU1)"/>
+                <text x="394" y="148" text-anchor="middle" font-size="10" fill="#7d736c">是</text>
+                <polygon points="380,164 520,190 380,216 240,190" fill="#ffffff" stroke="#7d736c" stroke-width="1.5"/>
+                <text x="380" y="195" text-anchor="middle" font-size="11.5" fill="#1c1917">当前已连接？</text>
+                <line x1="520" y1="190" x2="556" y2="190" stroke="#7d736c" stroke-width="1.5" marker-end="url(#brU1)"/>
+                <text x="538" y="183" text-anchor="middle" font-size="10" fill="#7d736c">否</text>
+                <rect x="560" y="166" width="184" height="48" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="652" y="187" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1c1917">被拒 · 留记录</text>
+                <text x="652" y="204" text-anchor="middle" font-size="10" fill="#7d736c">原因：未连接</text>
+                <line x1="380" y1="216" x2="380" y2="252" stroke="#7d736c" stroke-width="1.5" marker-end="url(#brU1)"/>
+                <text x="394" y="238" text-anchor="middle" font-size="10" fill="#7d736c">是</text>
+                <rect x="290" y="252" width="180" height="36" rx="8" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="380" y="275" text-anchor="middle" font-size="12" font-weight="600" fill="#94070a">发出 tools/call</text>
+                <line x1="380" y1="288" x2="380" y2="314" stroke="#7d736c" stroke-width="1.5" marker-end="url(#brU1)"/>
+                <polygon points="380,314 520,340 380,366 240,340" fill="#ffffff" stroke="#7d736c" stroke-width="1.5"/>
+                <text x="380" y="345" text-anchor="middle" font-size="11.5" fill="#1c1917">工具执行成功？</text>
+                <line x1="520" y1="340" x2="556" y2="340" stroke="#7d736c" stroke-width="1.5" marker-end="url(#brU1)"/>
+                <text x="538" y="333" text-anchor="middle" font-size="10" fill="#7d736c">否</text>
+                <rect x="560" y="316" width="184" height="48" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="652" y="337" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1c1917">出错 · 留记录</text>
+                <text x="652" y="354" text-anchor="middle" font-size="10" fill="#7d736c">记下错误原因</text>
+                <line x1="380" y1="366" x2="380" y2="394" stroke="#7d736c" stroke-width="1.5" marker-end="url(#brU1)"/>
+                <text x="394" y="384" text-anchor="middle" font-size="10" fill="#7d736c">是</text>
+                <rect x="280" y="394" width="200" height="36" rx="8" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="380" y="417" text-anchor="middle" font-size="12" font-weight="600" fill="#94070a">成功 · 留记录（结果摘要）</text>
+              </svg>
+              <figcaption>两种「拒绝」，一条记录、一条不记录，差别在于能否归属到某台服务器。</figcaption>
+            </figure>
+            <div class="note">记录的前提是「本次调用能归属到某台服务器」：服务器已不存在时，这次失败只体现在本次应答的调用清单中，落不进一条独立记录。因此「有记录」不等于「记下了一切」——它记录的是可被归属的动作。</div>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="binding.html">← 工具声明与候选集</a>
+            <a class="btn btn-ghost" href="security.html">工具带来的风险面 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

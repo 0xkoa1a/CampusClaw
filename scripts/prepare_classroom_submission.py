@@ -55,7 +55,7 @@ def validate_entries(root: Path, entries: list[dict]) -> tuple[list[tuple[Path, 
     expected: set[Path] = {index}
     targets: set[Path] = set()
     for entry in entries:
-        if (not isinstance(entry, dict) or entry.get("date") not in ("0923", "0930")
+        if (not isinstance(entry, dict) or entry.get("date") not in ("0923", "0930", "week06")
                 or not isinstance(entry.get("title"), str) or not isinstance(entry.get("order"), str)
                 or not isinstance(entry.get("files"), list) or not entry["files"]):
             raise SubmissionError("malformed submission entry")
@@ -65,6 +65,8 @@ def validate_entries(root: Path, entries: list[dict]) -> tuple[list[tuple[Path, 
             source_rel, target_rel = item.get("source"), item.get("target")
             if not isinstance(source_rel, str) or not isinstance(target_rel, str):
                 raise SubmissionError("every file needs string source and target paths")
+            if "label" in item and (not isinstance(item["label"], str) or not item["label"]):
+                raise SubmissionError("file label must be a non-empty string")
             source = safe_path(root, source_rel)
             target = safe_path(root, target_rel)
             if target.parent != root / SUBMISSION_ROOT / entry["date"]:
@@ -76,8 +78,13 @@ def validate_entries(root: Path, entries: list[dict]) -> tuple[list[tuple[Path, 
             targets.add(target)
             expected.add(target)
             if item.get("canonical"):
-                if source != target or item.get("kind") != "txt":
-                    raise SubmissionError(f"canonical text must reference itself: {target_rel}")
+                allowed_kinds = {"txt"} if entry["date"] != "week06" else {
+                    "md", "html", "pdf", "png", "json",
+                }
+                kind = item.get("kind")
+                if (source != target or not isinstance(kind, str) or kind not in allowed_kinds
+                        or target.suffix.lstrip(".").lower() != kind):
+                    raise SubmissionError(f"invalid canonical file reference: {target_rel}")
             else:
                 if not source.is_file():
                     raise SubmissionError(f"missing source file: {source_rel}")
@@ -90,7 +97,9 @@ def validate_entries(root: Path, entries: list[dict]) -> tuple[list[tuple[Path, 
         if not target.is_file():
             raise SubmissionError(f"missing canonical text: {item['target']}")
 
-    known_dirs = {root / SUBMISSION_ROOT, root / SUBMISSION_ROOT / "0923", root / SUBMISSION_ROOT / "0930"}
+    known_dirs = {root / SUBMISSION_ROOT} | {
+        root / SUBMISSION_ROOT / entry["date"] for entry in entries
+    }
     for directory in known_dirs:
         if directory.exists():
             if directory.is_symlink() or not directory.is_dir():
@@ -108,8 +117,8 @@ def validate_entries(root: Path, entries: list[dict]) -> tuple[list[tuple[Path, 
 
 
 def render_index(entries: list[dict]) -> str:
-    lines = ["# 课堂派提交材料", "", "提交时按日期打开对应目录；文字作业复制同名 `.txt` 全文，截图和 PDF 按链接上传。", ""]
-    for date in ("0930", "0923"):
+    lines = ["# 课堂派提交材料", "", "按日期或课号打开目录；每项作业的文字、截图和 PDF 都在一起。文字答案复制全文，附件按链接上传。", ""]
+    for date in ("week06", "0930", "0923"):
         lines.extend((f"## {date}", "", "| 顺序 | 作业 | 提交材料 |", "| --- | --- | --- |"))
         for entry in entries:
             if entry["date"] != date:
@@ -119,12 +128,12 @@ def render_index(entries: list[dict]) -> str:
                 rel = PurePosixPath(item["target"])
                 link = "/".join(rel.parts[-2:])
                 suffix = rel.name.rsplit("-", 1)[-1].rsplit(".", 1)[0]
-                label = {"txt": "文字答案", "pdf": "方案 PDF"}.get(item["kind"],
+                label = item.get("label") or {"txt": "文字答案", "pdf": "方案 PDF"}.get(item["kind"],
                         suffix if len(entry["files"]) > 2 or entry["order"] == "02" and date == "0930" else "截图")
                 links.append(f"[{label}](<{link}>)")
             lines.append(f"| {entry['order']} | {entry['title']} | {'<br>'.join(links)} |")
         lines.append("")
-    lines.extend(("## 同步", "", "在仓库根目录运行 `python3 scripts/prepare_classroom_submission.py` 同步附件并生成本索引。五份文字答案直接编辑同名 TXT，脚本保留其内容。", "", "运行 `python3 scripts/prepare_classroom_submission.py --check` 检查附件、额外文件和索引是否最新。", ""))
+    lines.extend(("## 同步", "", "在仓库根目录运行 `python3 scripts/prepare_classroom_submission.py` 同步附件并生成本索引。报告与文字答案直接在对应目录维护；脚本检查这些文件，并同步已有截图附件。", "", "运行 `python3 scripts/prepare_classroom_submission.py --check` 检查附件、额外文件和索引是否最新。", ""))
     return "\n".join(lines)
 
 

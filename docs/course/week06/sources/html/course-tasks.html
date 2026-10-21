@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第 6 课 · 任务清单</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            line-height: 1.7;
+            color: #1c2530;
+            background: #f5f6f8;
+        }
+        a { color: #94070a; font-weight: 600; }
+        .wrap { max-width: 960px; margin: 0 auto; padding: 24px 32px 64px; }
+        .back { font-size: 14px; margin-bottom: 20px; }
+        .back a { color: rgba(28, 37, 48, 0.65); text-decoration: none; }
+        .back a:hover { color: #94070a; }
+        h1 {
+            font-size: 26px; font-weight: 800; color: #94070a; margin-bottom: 8px;
+        }
+        .subtitle { font-size: 15px; color: rgba(28, 37, 48, 0.65); margin-bottom: 28px; }
+        .block {
+            background: #fff; border: 1px solid #e6e8ec; border-radius: 12px;
+            padding: 18px 20px; margin-bottom: 16px;
+        }
+        .block h2 { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
+        .checklist { list-style: none; font-size: 15px; }
+        .checklist li {
+            position: relative; padding-left: 28px; margin-bottom: 10px;
+            color: rgba(28, 37, 48, 0.85);
+        }
+        .checklist li::before {
+            content: "□"; position: absolute; left: 0; color: #94070a; font-weight: 700;
+        }
+        .links { font-size: 14px; margin-top: 12px; }
+        .hint {
+            font-size: 13px; color: rgba(28, 37, 48, 0.55); margin-top: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <p class="back"><a href="index.html#schedule">← 返回课程入口</a></p>
+        <h1>第 6 课任务清单</h1>
+        <p class="subtitle">MCP 与工具接入 · 按下面清单完成，可对照 <a href="/week06/" target="_blank" rel="noopener">系统原型</a> 理解效果</p>
+
+        <div class="block">
+            <h2>一、自建 MCP 服务器（<code>mcp-server/</code>）</h2>
+            <ul class="checklist">
+                <li>在本课仓库内新增 <code>mcp-server/</code> 目录（与主应用<strong>同仓</strong>，由 <code>docker-compose.yml</code> 一并构建启动；不另开第二个 Git 仓库）。</li>
+                <li>提供 <code>POST /mcp</code>（JSON-RPC 2.0）与 <code>/health</code>；Bearer 令牌从环境变量读取（如 <code>MCP_AUTH_TOKEN</code>），<strong>不进 Git、不进镜像层、不进前端</strong>。</li>
+                <li>至少实现 <code>initialize</code>、<code>tools/list</code>、<code>tools/call</code>；无令牌或令牌错误返回 401，非法请求返回可读的 JSON-RPC 错误。</li>
+                <li>至少暴露 <strong>2 个工具</strong>（名称符合主机侧引用规则：小写字母开头、无连字符）。示范仓为 <code>formula_hint</code>、<code>unit_convert</code>；你可换成与本班场景更贴切的实现，但须能在 <code>tools/list</code> 里被发现并在 <code>tools/call</code> 里返回文本结果。</li>
+                <li>Compose 中 MCP 服务与 API 同网互通；主应用通过 Base URL（如 <code>http://mcp-demo:8090</code>）连到自建的 MCP 服务，而不是只 mock 主机侧逻辑。</li>
+            </ul>
+            <p class="links">
+                对照：<code>project-src/week06-harness/mcp-server/</code>（课程示范，可 fork 后改工具语义）
+            </p>
+        </div>
+
+        <div class="block">
+            <h2>二、主机侧登记与工具发现</h2>
+            <ul class="checklist">
+                <li>教师能登记本班 MCP 服务器（名称、Base URL）；<strong>Bearer 令牌只保存在 CampusClaw 服务端</strong>，接口响应不得带回密钥。</li>
+                <li>教师能「连接」服务器：完成握手并执行 <code>tools/list</code>，把工具清单缓存到本系统；「断开」后清空缓存且不可再调用。</li>
+                <li>连接失败时有明确错误提示，且不阻断第 5 课已有的检索与流式对话主路径。</li>
+                <li>登记 Base URL 指向你在 Compose 里自建的 MCP 服务；连接成功后能在管理界面看到你在 <code>mcp-server</code> 里实现的工具名。</li>
+            </ul>
+        </div>
+
+        <div class="block">
+            <h2>三、技能绑定与鉴权调用</h2>
+            <ul class="checklist">
+                <li>技能文件「工具」除 <code>knowledge_search</code> 外，支持 MCP 引用格式 <code>工具名@服务器名</code>（例如 <code>formula_hint@campus-tools</code>）。</li>
+                <li>保存技能时校验：绑定的 MCP 工具必须属于本班、服务器已连接且已通过发现列入缓存；否则拒绝保存。</li>
+                <li>学生提问命中带 MCP 工具的技能时，服务端带令牌调用远端 <code>tools/call</code>；结果作为<strong>数据</strong>拼进用户消息，不当作系统指令。</li>
+                <li>流式响应 <code>meta</code> 中能看见 <code>tool_calls</code>（含工具引用与状态）；未连接或越权调用记为 <code>denied</code>，不静默成功。</li>
+                <li>继续沿用第 3–5 课：班级只取自会话、跨班 404 一致、Bearer 鉴权。</li>
+            </ul>
+        </div>
+
+        <div class="block">
+            <h2>四、审计与 Swagger</h2>
+            <ul class="checklist">
+                <li>教师能查看本班 MCP 工具调用审计（至少含 <code>tool@server</code>、状态、用户与时间）。</li>
+                <li>补充 MCP 相关 OpenAPI 注解并生成文档；浏览器能打开 Swagger 试调 connect / tools / 技能保存等主要接口。</li>
+            </ul>
+            <p class="links">
+                参考：<a href="/week06/swagger/" target="_blank" rel="noopener">Swagger</a> ·
+                <a href="/week06/openapi.json" target="_blank" rel="noopener">openapi.json</a>
+            </p>
+        </div>
+
+        <div class="block">
+            <h2>五、接口测试（建议）</h2>
+            <ul class="checklist">
+                <li>在 <code>apitest/</code> 为 MCP 管理接口增加用例（登记、连接、列出工具、断开；非教师应 403）。</li>
+                <li>至少一条用例：连接演示 MCP → 注册含 <code>formula_hint@…</code> 的技能 → 会话提问 → 审计表出现 <code>ok</code> 记录。</li>
+                <li>用 <code>run_all.py</code> 生成 HTML 报告（报告不要提交到 Git）。</li>
+            </ul>
+        </div>
+
+        <div class="block">
+            <h2>六、验收证据（自查）</h2>
+            <ul class="checklist">
+                <li>单独验证 <code>mcp-server</code>：<code>/health</code> 正常；带 Bearer 的 <code>tools/list</code> 返回你实现的工具；<code>tools/call</code> 能拿到文本内容。</li>
+                <li>主机侧：连接 MCP → 发现工具 → 技能绑定并在对话中触发 → 审计含服务器与工具标识。</li>
+                <li>断开后：同一技能不再能成功调用 MCP（保存/调用路径至少一处明确拒绝）。</li>
+                <li>主机 <code>.env</code> 里的 MCP 令牌与 <code>mcp-server</code> 环境变量一致；令牌未出现在前端、Git 或镜像中。</li>
+            </ul>
+        </div>
+
+        <p class="hint">在第 5 课仓库上增量实现：主应用仍是一个 CampusClaw，另加同仓的 <code>mcp-server/</code>。课堂补充要求以 <a href="课件/第6课-课件-MCP与工具接入/index.html">第 6 课课件</a> 为准；密钥只放在本机 <code>.env</code>。</p>
+    </div>
+</body>
+</html>

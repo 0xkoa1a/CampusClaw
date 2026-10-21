@@ -132,6 +132,10 @@ def migrate(path):
                 insert_chunks(connection, row["material_id"], row["class_id"], row["body"])
         from .agent_store import migrate_week05
         migrate_week05(connection)
+        from .call_trace import migrate_platform
+        migrate_platform(connection)
+        from .mcp_registry import migrate_mcp
+        migrate_mcp(connection)
     finally:
         connection.close()
 

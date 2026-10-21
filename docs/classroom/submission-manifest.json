@@ -2,6 +2,97 @@
   "version": 1,
   "entries": [
     {
+      "date": "week06",
+      "order": "01",
+      "title": "个人AI应用平台与MCP验证报告",
+      "files": [
+        {
+          "kind": "md",
+          "source": "docs/classroom/提交材料/week06/个人AI应用平台与MCP验证报告.md",
+          "target": "docs/classroom/提交材料/week06/个人AI应用平台与MCP验证报告.md",
+          "canonical": true,
+          "label": "Markdown 正文"
+        },
+        {
+          "kind": "html",
+          "source": "docs/classroom/提交材料/week06/个人AI应用平台与MCP验证报告.html",
+          "target": "docs/classroom/提交材料/week06/个人AI应用平台与MCP验证报告.html",
+          "canonical": true,
+          "label": "HTML 正文"
+        },
+        {
+          "kind": "pdf",
+          "source": "docs/classroom/提交材料/week06/个人AI应用平台与MCP验证报告.pdf",
+          "target": "docs/classroom/提交材料/week06/个人AI应用平台与MCP验证报告.pdf",
+          "canonical": true,
+          "label": "PDF 报告"
+        },
+        {
+          "kind": "png",
+          "source": "docs/classroom/提交材料/week06/01-MCP服务器与发现工具.png",
+          "target": "docs/classroom/提交材料/week06/01-MCP服务器与发现工具.png",
+          "canonical": true,
+          "label": "MCP 服务器与发现工具"
+        },
+        {
+          "kind": "png",
+          "source": "docs/classroom/提交材料/week06/02-MCP调用审计.png",
+          "target": "docs/classroom/提交材料/week06/02-MCP调用审计.png",
+          "canonical": true,
+          "label": "MCP 调用审计"
+        },
+        {
+          "kind": "png",
+          "source": "docs/classroom/提交材料/week06/03-手机端MCP管理.png",
+          "target": "docs/classroom/提交材料/week06/03-手机端MCP管理.png",
+          "canonical": true,
+          "label": "手机端 MCP 管理"
+        },
+        {
+          "kind": "png",
+          "source": "docs/classroom/提交材料/week06/04-提示词模板与技能上传.png",
+          "target": "docs/classroom/提交材料/week06/04-提示词模板与技能上传.png",
+          "canonical": true,
+          "label": "提示词模板与技能上传"
+        },
+        {
+          "kind": "png",
+          "source": "docs/classroom/提交材料/week06/05-学生工具回答.png",
+          "target": "docs/classroom/提交材料/week06/05-学生工具回答.png",
+          "canonical": true,
+          "label": "学生工具回答"
+        },
+        {
+          "kind": "png",
+          "source": "docs/classroom/提交材料/week06/06-模型请求与工具参数.png",
+          "target": "docs/classroom/提交材料/week06/06-模型请求与工具参数.png",
+          "canonical": true,
+          "label": "模型请求与工具参数"
+        },
+        {
+          "kind": "png",
+          "source": "docs/classroom/提交材料/week06/07-PDF首页.png",
+          "target": "docs/classroom/提交材料/week06/07-PDF首页.png",
+          "canonical": true,
+          "label": "PDF 首页"
+        },
+        {
+          "kind": "json",
+          "source": "docs/classroom/提交材料/week06/模型与MCP调用验证.json",
+          "target": "docs/classroom/提交材料/week06/模型与MCP调用验证.json",
+          "canonical": true,
+          "label": "模型与 MCP 调用验证"
+        },
+        {
+          "kind": "json",
+          "source": "docs/classroom/提交材料/week06/知识库范围验证.json",
+          "target": "docs/classroom/提交材料/week06/知识库范围验证.json",
+          "canonical": true,
+          "label": "知识库范围验证"
+        }
+      ]
+    },
+    {
       "date": "0930",
       "order": "01",
       "title": "0930-课后任务-整理身份认证以及知识库问答的实现方案",

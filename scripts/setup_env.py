@@ -20,6 +20,7 @@ def main():
             "SEED_TEACHER_PASSWORD",
             "SEED_STUDENT_A_PASSWORD",
             "SEED_STUDENT_B_PASSWORD",
+            "MCP_AUTH_TOKEN",
         )
     }
     values.update(

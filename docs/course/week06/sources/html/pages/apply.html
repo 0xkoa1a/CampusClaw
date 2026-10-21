@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>实践步骤与验收 · 第 6 课 · MCP 与工具接入</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 6 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">预习</p>
+          <a href="preview.html">工具调用要解决什么</a>
+          <p class="nav-label">本课</p>
+          <a href="../index.html">概览</a>
+          <a href="scope.html">本课重点</a>
+          <a href="mcp-model.html">协议的三层</a>
+          <a href="binding.html">工具声明与候选集</a>
+          <a href="bridge.html">调用循环</a>
+          <a href="security.html">工具带来的风险面</a>
+          <a href="audit.html">调用的可观测性</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="apply.html" class="active">实践步骤与验收</a>
+          <a href="think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">实践步骤与验收</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>实践步骤与验收</h1>
+          <p class="lead">本课在上一课成果上增量实现：环境沿用，新增的是一个自己编写的 MCP 工具服务，以及宿主里把它接进对话的那段编排。下面给出推进顺序、故障定位方法，以及需要同伴交叉验证的几项。</p>
+
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">推进顺序</span></h2>
+            <p class="unit-lead">按下面五段自下而上推进，每段完成都有一个可验证的现象；前一段没通，后一段无从验证。</p>
+            <table>
+              <thead>
+                <tr><th>段落</th><th>做什么</th><th>完成后的可验证点</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>工具服务</td><td>编写一个独立的服务：支持初始化握手、列出工具、执行工具三个方法，实现至少两个工具，以令牌完成认证</td><td>带令牌能列出你写的工具名、能调用并返回文本；令牌错则被拒</td></tr>
+                <tr><td>登记与存储</td><td>把三类信息存下来：服务器的登记信息、发现到的工具清单、调用记录</td><td>服务重启后登记过的服务器还在；同名再登记会被拒；连续连接两次，清单条数不翻倍</td></tr>
+                <tr><td>连接与发现</td><td>连接＝握手 + 发现，任一步失败就停在未连接并给出可读原因；断开＝清空清单</td><td>连上自建服务能列出工具；把令牌改错再连接，失败提示可读</td></tr>
+                <tr><td>调用循环</td><td>引用解析与保存前校验；生成工具声明；执行调用并留一条记录（含轮次）；结果先过检查再作为工具消息；回传后循环，并设轮次与调用次数上限</td><td>命中技能后记录里新增一条；清单外的工具名保存被拒；把上限调小后，超限即停止调用</td></tr>
+                <tr><td>界面与可观测性</td><td>每轮调用先推事件再推正文；管理页面看服务器与最近调用；对话页显示本次用到的工具</td><td>抓包可见调用事件早于第一个正文分片；命中工具时在回答开始前即可看到用了哪个</td></tr>
+              </tbody>
+            </table>
+            <div class="note">令牌只写在本地的环境变量文件中，不进代码仓库、不进容器镜像。两侧的令牌须一致，否则握手会在第一步即被拒绝。</div>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">常见故障如何定位</span></h2>
+            <p class="unit-lead">先把「真故障」与「设计如此」分开：把第二类当成缺陷去「修」，往往会把一条刻意的约束改坏。</p>
+            <table>
+              <thead>
+                <tr><th>现象</th><th>优先排查项</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>连接失败</td><td>地址是否可达、令牌是否与工具服务侧配置一致、服务名能否解析；握手与列出工具任一步失败都会走这条</td></tr>
+                <tr><td>引用保存被拒，提示不支持的工具</td><td>格式是否符合「工具名@服务器名」；工具名是否已在该服务器的发现清单里</td></tr>
+                <tr><td>工具确实存在，保存仍被拒</td><td>多半是服务器当前处于未连接——清单已清空；重新连接后再保存</td></tr>
+                <tr><td>提问后完全不发起调用</td><td>本次是否路由到带工具的技能、工具声明是否真的发出；声明中没有合适工具时，模型不发起调用是正确行为</td></tr>
+                <tr><td>调用一轮接一轮无法收敛</td><td>轮次与调用次数上限是否生效、工具说明是否写得过宽以致把模型带偏；先收紧说明，再核对上限计数</td></tr>
+                <tr><td>有调用事件但状态为「被拒」</td><td>服务器被断开了；重新连接即可</td></tr>
+                <tr><td>调用了工具但回答未体现结果</td><td>结果是否为空、是否命中句式检查被整条丢弃、工具是否自报错误</td></tr>
+                <tr><td>记录中查不到本次调用</td><td>服务器是否被改名或删除——这两种情况的失败无处归属，不写记录</td></tr>
+              </tbody>
+            </table>
+            <p>以下三种现象是预期行为，不是缺陷：</p>
+            <table>
+              <thead>
+                <tr><th>现象</th><th>为什么这样设计</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>非管理角色调用管理接口被拒</td><td>这些接口只对管理角色开放；隐藏入口不构成保护，服务端必须拒绝</td></tr>
+                <tr><td>引用不属于自己的服务器时被拒</td><td>按「不存在」处理，与查询一个不存在的标识完全一致——不给探测存在性的空间</td></tr>
+                <tr><td>连接失败，但对话主路径照常</td><td>工具是增益而非主路径；一台服务器连不上不应让检索与问答停摆</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">这四项需同伴交叉验证</span></h2>
+            <p class="unit-lead">下面四项涉及「另一个身份看到什么」，需请同伴以自己的账号在同一套环境上交叉验证。</p>
+            <table>
+              <thead>
+                <tr><th>验证项</th><th>验证方法</th><th>预期结果</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>服务器与工具的隔离</td><td>请同伴用他自己的账号列出服务器，并用你的服务器标识直接访问</td><td>看不到你的服务器；直接访问得到的响应与访问一个不存在的标识完全一致</td></tr>
+                <tr><td>令牌不回传</td><td>同伴检查列表的响应内容</td><td>整份返回里搜不到令牌字符串，只有「是否已配令牌」这个标记为真</td></tr>
+                <tr><td>断开即失效</td><td>由同伴断开一台服务器后，用引用了它上面工具的技能提问</td><td>应答里该引用状态为「被拒」，且记录里多出一条拒绝</td></tr>
+                <tr><td>记录只看自己的范围</td><td>同伴打开调用记录</td><td>只应看到他自己范围内的调用；你触发的那几条不出现在对方的列表里</td></tr>
+              </tbody>
+            </table>
+            <div class="note">四项均需留存证据（请求与响应的截图或日志片段），写入本人学期仓的验证记录，便于期末回溯。</div>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="audit.html">← 调用的可观测性</a>
+            <a class="btn btn-ghost" href="think.html">思考与分析 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>
