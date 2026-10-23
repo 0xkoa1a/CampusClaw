@@ -2,6 +2,22 @@
 
 在仓库根目录执行本文命令。Mac 保存源码和提交材料，通过 SSH 访问 CLab。CLab 是部署环境，GitHub 保存代码与文档版本；推送代码后，CLab 需要拉取并重建才能运行新版本。
 
+## CLab 当前目录
+
+远端项目统一放在 `/home/ubuntu/workspace/campusclaw/`。
+
+| 相对目录 | 用途 |
+| --- | --- |
+| `verification/week06/` | 当前运行的第六课验收环境，端口 18086 |
+| `deployments/campusclaw-yyx/` | 已停止的旧部署 |
+| `backups/` | 数据备份与迁移前配置 |
+| `archives/verification/`、`archives/evidence/` | 旧验收环境与历史证据 |
+| `archives/packages/`、`archives/macos-metadata/` | 压缩包与 macOS 元数据归档 |
+
+当前环境在 `verification/week06/` 运行 `sudo docker compose ps`、`sudo docker compose up -d --wait`。Compose 已固定项目名 `campusclaw-week06-20261021`，沿用原数据卷。旧部署项目名为 `campusclaw-yyx`，保持停止状态。目录内的 README 和 `relocation-20261023.json` 记录具体入口与旧新路径对应关系。
+
+2026-10-23 迁移时逐项核对文件内容、权限和大小，全部保留；重建容器后，3 个账号、6 份材料、13 个切片、7 个应用、7 个技能、6 个会话、12 条消息、6 份调用记录和 3 条 MCP 审计计数一致。私有 `.env` 仍为 0600。迁移后登录、读取已有回答、刷新和退出验证通过，见[服务截图](evidence/deployment/remote-workspace.png)。历史验收文档中的旧路径保留为当时执行记录。
+
 ## 从零启动
 
 需要 Python 3.10+、Docker Engine 与 Compose v2，在仓库根目录执行以下命令。初始化脚本生成随机密钥和三个独立的演示密码，`.env` 权限为 `0600`；已有文件时会拒绝覆盖。也可复制 `.env.example` 后手工填写。不要提交 `.env`。
