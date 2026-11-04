@@ -22,6 +22,8 @@ ORDER = (
     "api/conversations/POST.py", "api/conversations/GET.py",
     "api/conversations/id/messages/POST.py", "api/conversations/id/GET.py",
     "api/conversations/id/DELETE.py",
+    "api/assignments/POST.py", "api/assignments/id/submissions/POST.py",
+    "api/tasks/id/GET.py",
 )
 SECRET_NAMES = ("SEED_TEACHER_PASSWORD", "SEED_STUDENT_A_PASSWORD", "SEED_STUDENT_B_PASSWORD")
 

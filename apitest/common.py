@@ -5,14 +5,15 @@ import urllib.parse
 import urllib.request
 
 
-def request(context, method, path, *, token=None, payload=None, stream=False):
+def request(context, method, path, *, token=None, payload=None, stream=False, headers=None):
     data = None if payload is None else json.dumps(payload, ensure_ascii=False).encode()
-    headers = {"Accept": "text/event-stream" if stream else "application/json"}
+    request_headers = {"Accept": "text/event-stream" if stream else "application/json"}
     if data is not None:
-        headers["Content-Type"] = "application/json; charset=utf-8"
+        request_headers["Content-Type"] = "application/json; charset=utf-8"
+    request_headers.update(headers or {})
     if token:
-        headers["Authorization"] = "Bearer " + token
-    req = urllib.request.Request(context["base_url"] + path, data=data, headers=headers, method=method)
+        request_headers["Authorization"] = "Bearer " + token
+    req = urllib.request.Request(context["base_url"] + path, data=data, headers=request_headers, method=method)
     try:
         with urllib.request.urlopen(req, timeout=context.get("timeout", 60)) as response:
             return response.status, response.headers, response.read()

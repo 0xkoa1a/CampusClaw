@@ -4,6 +4,8 @@ CampusClaw 集中管理班级教学材料，让教师上传资料、学生查阅
 
 当前支持 `.txt` / `.md` 上传、原文件下载、Cookie 与 Bearer 登录、混合检索、多个 AI 应用、提示词模板、技能导入、多轮流式回答，以及 HTTP MCP 工具发现与调用。Flask 提供页面和 API，SQLite 保存身份、材料、会话与调用记录，Qdrant 保存向量；课程网关负责嵌入和对话模型调用。
 
+作业页 `/assignments` 支持教师出题、学生提交和批改进度查询。提交、任务和发件箱先写入 SQLite，独立 worker 通过 RabbitMQ 消费并批改；本地验证与 CLab 验证状态见[第 7、8 课记录](docs/week08-verification.md)。
+
 ## 启动
 
 需要 Python 3.10+、Docker Engine 和 Compose v2。在仓库根目录执行：
@@ -26,6 +28,8 @@ docker compose exec -T app python -m scripts.reindex_all
 - [第 5 课参考材料](docs/course/week05/README.md)：在线文档快照、详细功能要求、实践与验收清单。
 - [第 6 课参考材料](docs/course/week06/README.md)：HTTP MCP、技能工具引用、调用循环与审计要求。
 - [第 6 课实现与验证](docs/week06-verification.md)：实现计划、真实网关证据、页面验证和 PDF 入口。
+- [第 7 课要求](docs/course/week07/README.md)、[第 8 课要求](docs/course/week08/README.md)：原文快照、工程规范、异步改造与安全自查要求。
+- [工程规范](docs/engineering/README.md)、[第 7、8 课实现与验证](docs/week08-verification.md)：开发约束、测试入口、作业截图与待验项目；第 9、10 课暂缓。
 - [方案报告源文件与导出记录](docs/classroom/0930/README.md)：Markdown、HTML、PDF 和打印样式。
 - [截图采集记录](docs/classroom/evidence.md)：截图环境、认证值脱敏和验证记录。
 - [第三课验收](docs/week03-verification.md)、[第四课验收](docs/week04-verification.md)：各阶段的实际验证结果。
@@ -45,5 +49,6 @@ docker compose exec -T app python -m scripts.reindex_all
 | `docs/classroom/提交材料/` | 课堂派上传文件和可复制的文字答案 |
 | `docs/classroom/0930/` | 方案报告源文件及导出产物 |
 | `docs/evidence/` | 运行截图原件与仓库验证截图 |
+| `reports/` | 并发、事务与安全基线观察记录 |
 
 本学期范围不含家长端、多校区运营和学科交易市场。各课的实际测试和部署状态见验证记录；互联网发布继续按[学期项目要求](docs/classroom/requirements.md#学期项目交付)推进。

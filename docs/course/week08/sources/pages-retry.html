@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>失败重试与幂等 · 第 8 课 · 异步任务与消息队列</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 8 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">本课流程</p>
+          <a href="../index.html">概览</a>
+          <a href="problems.html">同步执行的问题</a>
+          <a href="async.html">异步：契约与状态</a>
+          <a href="queue.html">消息队列：语义与机制</a>
+          <a href="redesign.html">系统改造：架构与任务模型</a>
+          <a href="retry.html" class="active">失败重试与幂等</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="apply.html">实践步骤与验收</a>
+          <a href="think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">失败重试与幂等</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>失败重试与幂等</h1>
+          <p class="lead">既然选择了「宁可多投一次也不丢任务」，同一条消息就可能被消费两次。这一页讲三件事：哪些失败值得重试、重试要有哪三个参数、以及怎么用幂等键和数据库唯一约束把重复吸收掉。</p>
+
+          <section class="unit" id="u0">
+            <h2 class="unit-h"><span class="unit-t">先说清几个词</span></h2>
+            <p class="unit-lead">这一页用到的词先在这里讲明白。</p>
+            <div class="terms">
+              <div><b>幂等</b><i>idempotent</i>：同一件事做两次，和做一次的结果完全一样，不会多出一份记录、不会多扣一次额度。</div>
+              <div><b>唯一约束</b>：数据库层面的一条规则，同一列不允许出现重复值，第二次插入会被直接拒绝。由数据库判定，比应用代码自己判断更可靠。</div>
+              <div><b>可重试失败</b><i>transient</i>：对方暂时不可用，等一会儿再来有可能成功，例如超时、限流、网络抖动。</div>
+              <div><b>不可重试失败</b><i>permanent</i>：输入或权限本身不成立，重试一百次也是同样结果，例如内容为空、密钥无效。</div>
+              <div><b>指数退避</b><i>exponential backoff</i>：重试间隔随次数成倍增长——等 1 秒、2 秒、4 秒、8 秒……给依赖方留出恢复时间。</div>
+              <div><b>抖动</b><i>jitter</i>：在退避间隔上再加一点随机量，避免一批失败任务在同一时刻集体重试，把刚恢复的服务再次压垮。</div>
+            </div>
+          </section>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">两类失败</span></h2>
+            <table>
+              <thead>
+                <tr><th>类别</th><th>成因</th><th>处理</th><th>本项目中的例子</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>可重试（transient）</td><td>依赖方暂时不可用，重试有成功可能</td><td>按策略重试，次数递增</td><td>模型服务超时、限流返回 429、网关 5xx、网络抖动</td></tr>
+                <tr><td>不可重试（permanent）</td><td>输入或权限本身不成立，重试必然同样失败</td><td>直接置为已失败，记录原因</td><td>提交内容为空、参数校验不通过、技能未启用、密钥无效</td></tr>
+              </tbody>
+            </table>
+            <div class="note">区分的意义在于成本与信号：对不可重试的错误反复重试，既消耗队列与调用额度，又把真正的缺陷淹没在大量重复日志里。</div>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">重试策略的三个参数</span></h2>
+            <article class="kp-card">
+              <h3>次数上限</h3>
+              <p>每次执行记入 <code>attempts</code>，达到上限即置为已失败并转入死信队列。没有上限的重试会把无法完成的任务永久留在队列里，掩盖故障。</p>
+            </article>
+            <article class="kp-card">
+              <h3>退避间隔</h3>
+              <p>采用指数退避（exponential backoff）：间隔随次数成倍增长，并叠加随机抖动（jitter）。立即重试会在依赖方恢复之前持续施压，也可能让一批任务在同一时刻集体重试，形成重试风暴。</p>
+            </article>
+            <article class="kp-card">
+              <h3>终态处置</h3>
+              <p>达到上限的任务进入死信队列，保留消息内容与失败原因，等待人工介入或依赖恢复后重放。死信队列的长度应纳入观测，其增长表明存在系统性失败，而非偶发抖动。</p>
+            </article>
+          </section>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">重复的两种来源</span></h2>
+            <article class="kp-card">
+              <h3>重复投递</h3>
+              <p>消费者取走消息后、发送确认之前进程终止，代理未收到确认，将消息重新投递给另一个消费者。这是至少一次语义的直接后果，与代码正确性无关。</p>
+            </article>
+            <article class="kp-card">
+              <h3>重复提交</h3>
+              <p>用户在前端重复点击、网络重试或重放请求，使同一份提交产生多条任务。这一来源在同步实现中同样存在，只是异步化之后更容易被观察到。</p>
+            </article>
+            <div class="note">两种来源的共同要求是同一个：同一份提交的批改只能产生一份结果。因此去重不能只做在入口，必须做在写入结果的那一刻。</div>
+          </section>
+
+          <section class="unit" id="u4">
+            <h2 class="unit-h"><span class="unit-n">4</span><span class="unit-t">幂等键与唯一约束</span></h2>
+            <p class="unit-lead">做法只有一句话：把幂等键写进结果表，并让它落在数据库唯一约束上。重复的那一次写入会被约束直接吸收，不产生第二条记录。</p>
+            <pre><code>-- 幂等键由业务含义构成，同一份提交的同一版本得到同一个键
+-- MySQL 写法：重复键的插入被静默忽略，语句照常返回成功
+INSERT IGNORE INTO grade_results (submission_id, score, idempotency_key)
+VALUES (1024, 82, 'grade:1024:v1');
+-- PostgreSQL 等价写法：
+-- INSERT INTO grade_results (...) VALUES (...)
+-- ON CONFLICT (idempotency_key) DO NOTHING;</code></pre>
+            <p>三个要点：其一，幂等键由业务含义派生，而不是随机生成——随机键每次都不一样，等于没法识别重复；其二，去重依赖数据库唯一约束，而不是「先查询是否已存在再决定是否写入」，后者在并发下存在竞态（race condition：两个请求同时查，都发现「不存在」，于是都写了进去）；其三，键中包含版本或内容标识，使内容更新后的重新批改可以正常写入，而不是被旧键挡住。</p>
+            <div class="note">判据：连续两次消费同一条消息、或连续两次提交同一份作业，结果表中同一 <code>submission_id</code> 只应存在一条生效记录，且 <code>attempts</code> 递增而结果不变。</div>
+            <div class="recap">一句话记住：<b>去重要落在写入结果的那一条语句上，靠数据库唯一约束判定，而不是靠「先查一遍」。</b></div>
+          </section>
+
+          <section class="unit" id="u5">
+            <h2 class="unit-h"><span class="unit-n">5</span><span class="unit-t">常见偏差</span></h2>
+            <table>
+              <thead>
+                <tr><th>偏差</th><th>表现</th><th>修正</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>用查询代替约束</td><td>先查是否存在，不存在才写入；并发下仍产生重复</td><td>改用唯一约束，由数据库判定冲突</td></tr>
+                <tr><td>幂等键随机生成</td><td>每次执行键都不同，去重失效</td><td>键由业务标识与版本派生</td></tr>
+                <tr><td>只做入口去重</td><td>重复投递绕过入口校验，仍产生重复结果</td><td>去重落在写入结果的语句上</td></tr>
+                <tr><td>无上限重试</td><td>失败任务长期占用队列，队列长度只增不减</td><td>设次数上限，超限转死信队列</td></tr>
+                <tr><td>不区分失败类型</td><td>参数错误被无限重试，日志被淹没</td><td>先分类，再决定是否重试</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="redesign.html">← 系统改造：架构与任务模型</a>
+            <a class="btn btn-ghost" href="apply.html">实践步骤与验收 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

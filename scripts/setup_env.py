@@ -21,6 +21,7 @@ def main():
             "SEED_STUDENT_A_PASSWORD",
             "SEED_STUDENT_B_PASSWORD",
             "MCP_AUTH_TOKEN",
+            "RABBITMQ_PASSWORD",
         )
     }
     values.update(

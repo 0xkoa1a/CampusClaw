@@ -6,7 +6,7 @@ services:
         PYTHON_IMAGE: ${PYTHON_IMAGE:-python:3.12-slim}
     ports:
       - "127.0.0.1:${APP_PORT:-8080}:8080"
-    environment:
+    environment: &classroom-environment
       SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env}
       SEED_TEACHER_PASSWORD: ${SEED_TEACHER_PASSWORD:?Set teacher password in .env}
       SEED_STUDENT_A_PASSWORD: ${SEED_STUDENT_A_PASSWORD:?Set A student password in .env}
@@ -21,8 +21,17 @@ services:
       CHAT_MODEL: ${CHAT_MODEL:-course-chat}
       QDRANT_URL: http://qdrant:6333
       MCP_AUTH_TOKEN: ${MCP_AUTH_TOKEN:?Set MCP_AUTH_TOKEN in .env}
+      MCP_MAX_ROUNDS: ${MCP_MAX_ROUNDS:-2}
+      MCP_MAX_CALLS: ${MCP_MAX_CALLS:-4}
+      MCP_TOOL_TEXT_MAX_CHARS: ${MCP_TOOL_TEXT_MAX_CHARS:-4000}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_USER: ${RABBITMQ_USER:-campusclaw}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}
+      TASK_MAX_ATTEMPTS: ${TASK_MAX_ATTEMPTS:-3}
+      TASK_LEASE_SECONDS: ${TASK_LEASE_SECONDS:-120}
+      TASK_RETRY_BASE_SECONDS: ${TASK_RETRY_BASE_SECONDS:-1}
       MCP_ALLOWED_BASE_URLS: ${MCP_ALLOWED_BASE_URLS:-http://mcp-demo:8090}
-    volumes:
+    volumes: &classroom-volumes
       - campusclaw_data:/app/data
       - campusclaw_uploads:/app/uploads
     healthcheck:
@@ -33,6 +42,36 @@ services:
     depends_on:
       - qdrant
       - mcp-demo
+
+  worker:
+    build:
+      context: .
+      args:
+        PYTHON_IMAGE: ${PYTHON_IMAGE:-python:3.12-slim}
+    command: ["python", "-m", "app.worker"]
+    environment: *classroom-environment
+    volumes: *classroom-volumes
+    restart: unless-stopped
+    stop_grace_period: 45s
+    depends_on:
+      app:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  rabbitmq:
+    image: ${RABBITMQ_IMAGE:-rabbitmq:4-alpine}
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-campusclaw}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}
+    volumes:
+      - campusclaw_queue:/var/lib/rabbitmq
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   mcp-demo:
     build:
@@ -56,3 +95,4 @@ volumes:
   campusclaw_data:
   campusclaw_uploads:
   campusclaw_vectors:
+  campusclaw_queue:

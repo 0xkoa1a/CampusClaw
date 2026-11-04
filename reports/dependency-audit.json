@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "status": "completed_with_vulnerabilities",
+  "completed_at_utc": "2026-11-04T03:50:08Z",
+  "tool": "pip-audit via uvx",
+  "command": [
+    "uvx",
+    "--from",
+    "pip-audit",
+    "pip-audit",
+    "--requirement",
+    "requirements-dev.txt",
+    "--requirement",
+    "mcp-server/requirements.txt",
+    "--format=json"
+  ],
+  "requirement_files": [
+    "requirements.txt",
+    "requirements-dev.txt",
+    "mcp-server/requirements.txt"
+  ],
+  "network_audit_completed": true,
+  "pip_audit_exit_code": 1,
+  "audited_dependency_count": 18,
+  "reported_vulnerability_entries": 2,
+  "unique_vulnerability_count": 1,
+  "vulnerabilities": [
+    {
+      "package": "pytest",
+      "installed_version": "8.4.2",
+      "id": "PYSEC-2026-1845",
+      "aliases": [
+        "GHSA-6w46-j5rx-g56g",
+        "CVE-2025-71176"
+      ],
+      "fix_versions": [
+        "9.0.3"
+      ],
+      "description": "pytest through 9.0.2 on UNIX relies on directories with the /tmp/pytest-of-{user} name pattern, which allows local users to cause a denial of service or possibly gain privileges."
+    }
+  ],
+  "notes": [
+    "pip-audit returned the same pytest advisory twice; the unique finding is recorded once above.",
+    "No dependency files were modified by this audit."
+  ]
+}

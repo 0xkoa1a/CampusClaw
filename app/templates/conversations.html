@@ -9,6 +9,7 @@
 <main class="workspace conversation-workspace" data-role="{{ g.user.role }}">
   <p id="auth-status" class="form-error" role="alert"></p>
   <h1>解题助手</h1>
+  <p><a href="/assignments">课堂作业 · 异步批改</a> · <a href="/materials">教学材料</a></p>
   <p class="intro">选择本班智能体，围绕课程材料逐步梳理解题思路。</p>
   {% if g.user.role == "teacher" %}
   <p><a href="/mcp">管理 MCP 服务器与调用审计</a> · <button id="install-apps" class="secondary-button" type="button">安装内置应用与技能</button></p>

@@ -1,0 +1,25 @@
+{
+  "mode": "local-synthetic-provider-and-memory-transport",
+  "browser": "Chromium via Playwright",
+  "browser_plugin": "Browser plugin not available",
+  "url": "http://127.0.0.1:18088/assignments",
+  "viewports": [
+    "1280x960",
+    "390x844"
+  ],
+  "accepted_status": 202,
+  "task_id": "b4f09be9-ee36-467f-9a6b-abb817846421",
+  "checks": {
+    "page_identity": true,
+    "meaningful_content": true,
+    "no_overlay": true,
+    "no_page_errors": true,
+    "no_console_errors": true,
+    "teacher_creation": true,
+    "student_question_visible": true,
+    "pending_to_success": true,
+    "refresh_persistence": true,
+    "mobile_no_horizontal_overflow": true
+  },
+  "errors": []
+}

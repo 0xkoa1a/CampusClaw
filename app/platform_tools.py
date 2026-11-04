@@ -65,6 +65,41 @@ def tool_definitions(refs, class_id):
     return result, mapping, unavailable
 
 
+def append_audit(ref, class_id, user_id, conversation_id, round_number, status, result, expected_id=None):
+    """Re-resolve identity at write time; a deleted/renamed server has no audit owner."""
+    from .db import get_db
+    if '@' not in ref:
+        return
+    tool, server_name = ref.split('@', 1)
+    db = get_db()
+    with db:
+        db.execute("""INSERT INTO mcp_audit(server_id,class_id,user_id,conversation_id,round,tool_ref,status,summary)
+            SELECT id,?,?,?,?,?,?,? FROM mcp_servers
+            WHERE name=? AND class_id=? AND (? IS NULL OR id=?)""",
+            (class_id, user_id, conversation_id, round_number, ref, status,
+             json.dumps(result, ensure_ascii=False)[:500], server_name, class_id, expected_id, expected_id))
+
+
+def bounded_result(result):
+    """Check the whole response before keeping a model-visible text prefix."""
+    text = json.dumps(result, ensure_ascii=False)
+    if re.search(r"忽略.{0,12}(指令|规则)|ignore.{0,20}instructions|system\s*prompt|泄露|执行命令", text, re.I):
+        return {"error": "工具结果包含指令式内容，已丢弃"}, 'filtered'
+    limit = current_app.config['MCP_TOOL_TEXT_MAX_CHARS']
+    if isinstance(result.get('content'), list):
+        parts = result['content']
+        if any(not isinstance(p, dict) or p.get('type') != 'text' or not isinstance(p.get('text'), str) for p in parts):
+            raise GatewayUnavailable('MCP 工具未返回受支持的文本内容')
+        combined = '\n'.join(p['text'] for p in parts)
+        if len(combined) > limit:
+            return {'content': [{'type': 'text', 'text': combined[:limit] + '（已截断）'}],
+                    'isError': False, 'truncated': True}, 'ok'
+        return {'content': [{'type': 'text', 'text': p['text']} for p in parts], 'isError': False}, 'ok'
+    elif len(text) > limit:
+        return {'content': [{'type': 'text', 'text': text[:limit] + '（已截断）'}], 'truncated': True}, 'ok'
+    return result, 'ok'
+
+
 def prepare_tool_messages(messages, refs, class_id, user_id, conversation_id):
     from jsonschema import Draft202012Validator, ValidationError
     from .agent_store import ApiProblem
@@ -77,19 +112,15 @@ def prepare_tool_messages(messages, refs, class_id, user_id, conversation_id):
     messages = list(messages)
     deadline, count = time.monotonic() + 30, 0
     if statuses:
-        from .db import get_db
         for item in statuses:
-            server_name = item["tool"].partition("@")[2]
-            server = get_db().execute("SELECT id FROM mcp_servers WHERE name=? AND class_id=?", (server_name, class_id)).fetchone()
-            with get_db():
-                get_db().execute("INSERT INTO mcp_audit(server_id,class_id,user_id,conversation_id,round,tool_ref,status,summary) VALUES (?,?,?,?,?,?,?,?)",
-                                 (server[0] if server else None, class_id, user_id, conversation_id, 0, item["tool"], "denied", "服务器未连接或工具引用已失效"))
+            append_audit(item['tool'], class_id, user_id, conversation_id, 0, 'denied', {'error': '服务器未连接或工具引用已失效'})
             record("tool_result", {**item, "result": {"error": "服务器未连接或工具引用已失效"}})
         messages.append({"role": "user", "content": "工具状态（数据）：" + json.dumps(statuses, ensure_ascii=False)})
     if not tools:
         return messages, statuses
-    for round_number in range(1, 3):
-        if time.monotonic() >= deadline or count >= 4:
+    max_calls = current_app.config['MCP_MAX_CALLS']
+    for round_number in range(1, current_app.config['MCP_MAX_ROUNDS'] + 1):
+        if time.monotonic() >= deadline or count >= max_calls:
             break
         payload = {"model": current_app.config["CHAT_MODEL"], "messages": messages,
                    "stream": False, "temperature": 0.2, "max_tokens": 450,
@@ -126,7 +157,7 @@ def prepare_tool_messages(messages, refs, class_id, user_id, conversation_id):
                         status = "denied"
                         raise GatewayUnavailable("工具不在允许集合内")
                     ref, schema = mapping[name]
-                    if count >= 4 or time.monotonic() >= deadline:
+                    if count >= max_calls or time.monotonic() >= deadline:
                         raise GatewayUnavailable("工具调用已达到配额")
                     count += 1
                     arguments = json.loads(call["function"]["arguments"])
@@ -144,20 +175,12 @@ def prepare_tool_messages(messages, refs, class_id, user_id, conversation_id):
                         result = rpc(server["base_url"], token, "tools/call", {"name": tool["name"], "arguments": arguments})
                         if not isinstance(result, dict) or result.get("isError") or not isinstance(result.get("content"), list):
                             raise GatewayUnavailable("MCP 工具返回错误")
-                    text = json.dumps(result, ensure_ascii=False)
-                    if re.search(r"忽略.{0,12}(指令|规则)|ignore.{0,20}instructions|system\s*prompt|泄露|执行命令", text, re.I):
-                        result = {"error": "工具结果包含指令式内容，已丢弃"}
-                        status = "filtered"
-                    else:
-                        status = "ok"
+                    result, status = bounded_result(result)
                 except (GatewayUnavailable, ApiProblem, ValidationError, ValueError, TypeError, KeyError):
                     result = {"error": "工具不可用、参数无效或超过配额；请依据已有信息回答"}
                 statuses.append({"tool": ref, "status": status})
                 record("tool_result", {"name": ref, "status": status, "result": result})
-                if "@" in ref:
-                    with get_db():
-                        get_db().execute("INSERT INTO mcp_audit(server_id,class_id,user_id,conversation_id,round,tool_ref,status,summary) VALUES (?,?,?,?,?,?,?,?)",
-                                         (server_id, class_id, user_id, conversation_id, round_number, ref, status, json.dumps(result, ensure_ascii=False)[:500]))
+                append_audit(ref, class_id, user_id, conversation_id, round_number, status, result, expected_id=server_id)
                 messages.append({"role": "tool", "tool_call_id": call["id"], "content": json.dumps(result, ensure_ascii=False)})
         except (KeyError, TypeError, ValueError, IndexError) as exc:
             record("tool_planning_error", {"error": "模型工具请求格式不正确"})

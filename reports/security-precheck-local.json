@@ -1,0 +1,45 @@
+{
+  "mode": "local-synthetic-Flask-test-client",
+  "SEC01": {
+    "/api/me": 401,
+    "/api/materials": 401,
+    "/api/agents": 401,
+    "/api/skills": 401,
+    "/api/conversations": 401,
+    "/api/assignments": 401,
+    "/api/tasks": 401
+  },
+  "SEC02": {
+    "foreign_material": 404,
+    "foreign_download": 404,
+    "foreign_search_no_a_material": true
+  },
+  "SEC03": {
+    "/api/agents": 403,
+    "/api/skills": 403,
+    "/api/assignments": 403
+  },
+  "SEC04": {
+    "direct_result_write": 404,
+    "direct_assignment_write": 403,
+    "no_write_side_effect": true
+  },
+  "SEC07": {
+    "observed": "MCP audit schema",
+    "columns": [
+      "id",
+      "server_id",
+      "class_id",
+      "user_id",
+      "conversation_id",
+      "round",
+      "tool_ref",
+      "status",
+      "summary",
+      "created_at"
+    ],
+    "missing_duration": true,
+    "missing_usage": true,
+    "verdict": "red: audit lacks duration and model usage; runtime log review pending"
+  }
+}

@@ -136,6 +136,8 @@ def migrate(path):
         migrate_platform(connection)
         from .mcp_registry import migrate_mcp
         migrate_mcp(connection)
+        from .task_store import migrate_tasks
+        migrate_tasks(connection)
     finally:
         connection.close()
 

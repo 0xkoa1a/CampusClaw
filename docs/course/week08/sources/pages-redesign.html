@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>系统改造：架构与任务模型 · 第 8 课 · 异步任务与消息队列</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 8 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">本课流程</p>
+          <a href="../index.html">概览</a>
+          <a href="problems.html">同步执行的问题</a>
+          <a href="async.html">异步：契约与状态</a>
+          <a href="queue.html">消息队列：语义与机制</a>
+          <a href="redesign.html" class="active">系统改造：架构与任务模型</a>
+          <a href="retry.html">失败重试与幂等</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="apply.html">实践步骤与验收</a>
+          <a href="think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">系统改造：架构与任务模型</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>系统改造：架构与任务模型</h1>
+          <p class="lead">改造之后学生的操作没变，仍然是「交作业 → 看分数」，变的只是批改在哪儿执行、分数怎么拿到。这一页给出改造后的链路、任务记录要存哪些字段、提交接口与消费者各自负责什么，以及为什么写入和入队必须放在同一个事务里。</p>
+
+          <section class="unit" id="u0">
+            <h2 class="unit-h"><span class="unit-t">先说清几个词</span></h2>
+            <p class="unit-lead">这一页用到的词先在这里讲明白。</p>
+            <div class="terms">
+              <div><b>消费者进程</b><i>worker</i>：独立于 Web 服务的干活进程。取任务、调模型、写回结果、发确认，可以随时启停与增减。</div>
+              <div><b>任务记录</b>：数据库里的一条行，代表一次待办的批改。它是连接「提交」与「执行」两头的唯一凭据。</div>
+              <div><b>事务</b><i>transaction</i>：一组数据库操作，要么全部成功，要么一个都不生效。不会出现「提交写进去了、任务却没建」这种半截结果。</div>
+              <div><b>事务性发件箱</b><i>transactional outbox</i>：先在同一个事务里写下「有待办要做」，再由独立组件把它投到队列。保证只要有提交，就一定有任务。</div>
+              <div><b>幂等键</b><i>idempotency_key</i>：代表「同一件事」的标识，由业务含义生成（例如提交号 + 版本），落在唯一约束上用来挡住重复。</div>
+              <div><b>只读接口</b>：只查询、不触发任何动作的接口。可以放心重复调用，刷新、重试、监控探活都不会带来副作用。</div>
+            </div>
+          </section>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">改造前后</span></h2>
+            <figure class="fig">
+              <svg viewBox="0 0 760 250" role="img" aria-label="改造前批改在请求内同步执行；改造后提交接口写入任务记录并投递消息后立即返回，消费者独立执行模型调用并写回结果">
+                <defs><marker id="rdA" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#94070a"/></marker></defs>
+                <text x="16" y="22" font-size="11.5" font-weight="600" fill="#1c1917">改造前</text>
+                <rect x="16" y="32" width="120" height="44" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="76" y="58" text-anchor="middle" font-size="11" fill="#1c1917">提交接口</text>
+                <line x1="136" y1="54" x2="160" y2="54" stroke="#94070a" stroke-width="1.5" marker-end="url(#rdA)"/>
+                <rect x="164" y="32" width="176" height="44" rx="8" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="252" y="52" text-anchor="middle" font-size="11" fill="#94070a">调用模型并等待</text>
+                <text x="252" y="68" text-anchor="middle" font-size="10" fill="#7d736c">占用请求处理单元</text>
+                <line x1="340" y1="54" x2="364" y2="54" stroke="#94070a" stroke-width="1.5" marker-end="url(#rdA)"/>
+                <rect x="368" y="32" width="140" height="44" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="438" y="58" text-anchor="middle" font-size="11" fill="#1c1917">同一次响应返回</text>
+                <text x="16" y="106" font-size="11.5" font-weight="600" fill="#1c1917">改造后</text>
+                <rect x="16" y="116" width="120" height="44" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="76" y="142" text-anchor="middle" font-size="11" fill="#1c1917">提交接口</text>
+                <line x1="136" y1="138" x2="160" y2="138" stroke="#94070a" stroke-width="1.5" marker-end="url(#rdA)"/>
+                <rect x="164" y="116" width="176" height="44" rx="8" fill="#ffffff" stroke="#94070a"/>
+                <text x="252" y="136" text-anchor="middle" font-size="11" fill="#94070a">写任务记录并投递</text>
+                <text x="252" y="152" text-anchor="middle" font-size="10" fill="#7d736c">立即返回 202</text>
+                <line x1="340" y1="138" x2="364" y2="138" stroke="#94070a" stroke-width="1.5" marker-end="url(#rdA)"/>
+                <rect x="368" y="116" width="140" height="44" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="438" y="142" text-anchor="middle" font-size="11" fill="#1c1917">返回任务标识</text>
+                <line x1="252" y1="164" x2="252" y2="182" stroke="#94070a" stroke-width="1.5" marker-end="url(#rdA)"/>
+                <rect x="112" y="186" width="280" height="48" rx="8" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="252" y="206" text-anchor="middle" font-size="11" font-weight="600" fill="#94070a">消费者进程：取消息 → 调模型 → 写回结果 → 确认</text>
+                <text x="252" y="224" text-anchor="middle" font-size="10" fill="#7d736c">独立于请求链路运行，可随时启停与增减实例</text>
+                <rect x="424" y="186" width="320" height="48" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="584" y="206" text-anchor="middle" font-size="11" fill="#1c1917">结果查询：凭任务标识读取状态与分数</text>
+                <text x="584" y="224" text-anchor="middle" font-size="10" fill="#7d736c">请求只读取数据，不触发执行</text>
+              </svg>
+              <figcaption>改造的本质是把「执行」从请求链路迁移到独立进程，并用一条持久化的任务记录把两个阶段连接起来。</figcaption>
+            </figure>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">任务记录字段</span></h2>
+            <table>
+              <thead>
+                <tr><th>字段</th><th>作用</th><th>缺失后果</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>task_id</code></td><td>对外暴露的任务标识，用于查询</td><td>调用方无法定位执行结果</td></tr>
+                <tr><td><code>submission_id</code></td><td>关联被批改的提交记录</td><td>结果无法回写到正确对象</td></tr>
+                <tr><td><code>status</code></td><td>状态机当前状态</td><td>前端与重试逻辑无依据</td></tr>
+                <tr><td><code>attempts</code></td><td>已执行次数</td><td>无法限制重试，失败任务无限循环</td></tr>
+                <tr><td><code>idempotency_key</code></td><td>幂等键，落唯一约束</td><td>重复投递产生重复结果</td></tr>
+                <tr><td><code>error</code></td><td>失败原因，供排查与展示</td><td>失败不可诊断，只能重放</td></tr>
+                <tr><td><code>started_at / finished_at</code></td><td>执行起止时刻</td><td>无法度量执行时间与积压</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">职责边界与事务一致性</span></h2>
+            <p class="unit-lead">改造中最容易出错的一处：业务写入与消息投递不在同一个原子操作内，会出现「提交了但任务没入队」或「任务入了队但提交没写进去」的情形。</p>
+            <pre><code>BEGIN;
+  INSERT INTO submissions (assignment_id, student_id, content) VALUES (...);
+  INSERT INTO grade_tasks (submission_id, status, idempotency_key)
+  VALUES (1024, 'pending', 'grade:1024:v1');
+COMMIT;   -- 业务写入与任务记录在同一事务
+-- 入队由独立投递器扫描 status='pending' 的记录完成，失败则下一轮继续</code></pre>
+            <p>这种做法称为事务性发件箱（transactional outbox）：先在本地事务中写下待办，再由独立组件把它投递到队列。它保证「只要有提交，就一定有任务」，代价是入队存在短暂延迟，且投递器本身要保证至少一次投递（宁可多投一次，也不能漏投）——消息重复由此产生，由下一页的幂等设计吸收。</p>
+            <div class="note">另一种写法是在事务提交后直接调用代理投递。它更简洁，但事务提交成功而投递失败时任务即丢失，需要额外补偿；本课要求前一种写法。</div>
+            <div class="recap">一句话记住：<b>改造的本质是把「执行」从请求里搬出去，用一条持久化的任务记录把两头接起来。</b>事务保证这根线不会断在中间。</div>
+          </section>
+
+          <section class="unit" id="u4">
+            <h2 class="unit-h"><span class="unit-n">4</span><span class="unit-t">结果查询方式</span></h2>
+            <table>
+              <thead>
+                <tr><th>方式</th><th>做法</th><th>适用与代价</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>轮询（polling）</td><td>前端按固定间隔请求任务状态接口，到达终态即停止</td><td>实现简单、无状态；代价是无谓请求与最长一个间隔的感知延迟。本课采用</td></tr>
+                <tr><td>服务端推送</td><td>通过 SSE 或 WebSocket 在状态变化时主动下发</td><td>实时性好；需要维护连接与重连，且消费者与连接层要打通。流式会话已具备该通道，可作为拓展</td></tr>
+              </tbody>
+            </table>
+            <div class="note">无论采用哪种方式，状态接口都只读取任务记录，不触发执行。接口具备幂等性与只读语义，是前端可以放心重复调用的前提。</div>
+          </section>
+
+          <section class="unit" id="u5">
+            <h2 class="unit-h"><span class="unit-n">5</span><span class="unit-t">问题与解法对照</span></h2>
+            <table>
+              <thead>
+                <tr><th>原问题</th><th>改造后的对应机制</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>超时与响应截断</td><td>请求只写入任务并投递，响应时间与执行时间解耦</td></tr>
+                <tr><td>处理单元被长任务占用</td><td>执行移出请求链路，Web 实例只处理短请求</td></tr>
+                <tr><td>不可中断、不可恢复查询</td><td>任务标识 + 状态接口，随时可查</td></tr>
+                <tr><td>失败无法恢复</td><td>任务持久化 + 确认与重投</td></tr>
+                <tr><td>算力无法独立伸缩</td><td>消费者实例独立扩容，与 Web 实例解耦</td></tr>
+                <tr><td>峰值无缓冲</td><td>队列堆积，按消费能力匀速处理</td></tr>
+              </tbody>
+            </table>
+            <div class="note">六项中有四项由「执行移出请求」解决，两项（可靠性与弹性）由队列机制解决。这也再次说明：异步与队列解决的是不同层面的问题。</div>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="queue.html">← 消息队列：语义与机制</a>
+            <a class="btn btn-ghost" href="retry.html">失败重试与幂等 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

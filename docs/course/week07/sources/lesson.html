@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>小组项目启动 · 第 7 课 · 实现教程</title>
+    <link rel="stylesheet" href="css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="index.html">CampusClaw<span>第 7 课 · 实现教程</span></a>
+          <nav aria-label="主导航">
+            <p class="nav-label">本课流程</p>
+            <a href="index.html" class="active">概览</a>
+            <a href="pages/project.html">项目启动：四步</a>
+            <a href="pages/repo.html">建仓库与协作约定</a>
+            <a href="pages/spec.html">定边界与规约</a>
+            <a href="pages/rules.html">工程规范写进规则与技能</a>
+            <a href="pages/skeleton.html">骨架与核查清单</a>
+            <a href="pages/discuss.html">研讨题</a>
+            <a href="pages/notes.html">参考思路</a>
+            <p class="nav-label">规范条目</p>
+            <a href="pages/std-product.html">产品设计规范</a>
+            <a href="pages/std-backend.html">后端开发规范</a>
+            <a href="pages/std-security.html">安全开发规范</a>
+            <a href="pages/std-testing.html">测试规范</a>
+            <a href="pages/std-ops.html">部署运维规范</a>
+            <a href="pages/std-ai.html">AI 应用规范</a>
+            <a href="pages/std-data.html">数据规范</a>
+            <a href="pages/std-review.html">评审与完成定义规范</a>
+            <p class="nav-label">案例与样例</p>
+            <a href="pages/case.html">规范案例：CampusClaw</a>
+            <a href="pages/spec-case.html">规约范例：一份变更</a>
+            <a href="pages/case-files.html">规范样例：八份文件</a>
+            <a href="pages/case-check.html">测评样例：单接口</a>
+          </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">概览</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>小组项目启动</h1>
+          <p class="lead">本课启动小组学期项目，四步一次做完：建仓库 → 定规约 → 立规范 → 落骨架。四步的产出各不相同，作用却是一致——让后续课次都能在同一个仓库上、按同一份规约增量交付，而不是每一课重新对齐一遍做法。立规范这一步要产出五类规范的文件：产品设计、后端开发、安全开发、测试、部署运维，课件里每类各有一页明细。仓库是协作与回溯的载体，规约是验收标准，规范是生成的约束，骨架是每课验收的基线。</p>
+
+          <section class="unit" id="u0">
+            <h2 class="unit-h"><span class="unit-n">词</span><span class="unit-t">先说清几个词</span></h2>
+            <div class="terms">
+              <div><b>小组项目</b><i>本课含义</i>本学期以小组为单位交付的学期项目；仓库、规约、规范与骨架都为它而设。</div><div><b>规约</b><i>本课含义</i>一份变更的四份文件：动因、设计、需求规约、任务清单。既是给 Harness 的指令，也是验收时逐条对照的表。</div><div><b>规范</b><i>本课含义</i>某一类工作要写清什么、为什么、怎么检查的条目清单，分五类必修加三类补充。</div><div><b>规则</b><i>本课含义</i>落在 Harness 规则目录里的常驻约束，每次改代码都会被读到。</div><div><b>技能</b><i>本课含义</i>按场景调用的流程文件，需要时被加载执行。</div><div><b>骨架</b><i>本课含义</i>一条命令可启动、健康检查返回成功的最小实现，后续课次的验收基线。</div>
+            </div>
+          </section>
+
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">本课要交付的四步</span></h2>
+            <p class="unit-lead">四步里只有最后一步产出代码；前三步产出的载体、标准与约束，决定这份代码在反复修改后仍能保持一致。</p>
+            <table>
+              <thead>
+                <tr><th>步骤</th><th>产出</th><th>完成后的可验证点</th><th>在哪一页</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>建仓库</td><td>仓库、README、忽略规则、协作约定</td><td>每人克隆（clone）后按 README 跑通一次；主干随时可启动</td><td>建仓库与协作约定</td></tr>
+                <tr><td>定规约</td><td>一份变更的四份文件与场景清单</td><td>校验命令通过；另起一次会话只给出仓库路径与变更名，Harness 能照做</td><td>定边界与规约</td></tr>
+                <tr><td>立规范</td><td>规则文件，以及按需调用的技能</td><td>修改一次代码，生成产物的分层与命名符合规范；另起一次会话结果仍一致</td><td>工程规范写进规则与技能</td></tr>
+                <tr><td>落骨架</td><td>可启动的最小实现、健康检查端点、版本标签</td><td>克隆 → 填入配置 → 一条命令 → 健康检查端点返回成功，四步无需人工补充说明</td><td>骨架与核查清单</td></tr>
+              </tbody>
+            </table>
+            <div class="note">顺序不是形式要求：前三步各产出一个后面要反复引用的东西——提交历史、场景清单、同一份约束——第四步才有可验证的基线。</div>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">先记住三条结论</span></h2>
+            <article class="kp-card">
+              <h3>规范要落在 Harness 读得到的地方</h3>
+              <p>常驻约束写成规则文件，每次改代码都会被读到；按场景执行的流程写成技能，需要时调用。写在会话里的规范，会话结束即失效，更换成员或更换机器即回到各自的编码习惯——规范只有落在规则文件与技能里，才谈得上持续生效。</p>
+            </article>
+            <article class="kp-card">
+              <h3>规约先于代码，且要判定得出来</h3>
+              <p>每条能力先写成场景：前置条件、操作、可观测结果，再交给 Harness 实现。规约既是给 Harness 的指令，也是验收时逐条对照的表。先写代码后补规约，判定是否完成缺乏客观依据。</p>
+            </article>
+            <article class="kp-card">
+              <h3>骨架是验收基线，不是业务代码</h3>
+              <p>骨架只做一件事：一条命令可启动、健康检查端点返回成功、配置全部外置。它不含任何业务，却是后续课次的起点——没有这条基线，出了问题是骨架缺陷还是当次新增功能的缺陷，无从判定。</p>
+            </article>
+          </section>
+
+          <figure class="fig">
+            <svg viewBox="0 0 760 250" role="img" aria-label="本课完成建仓库、定规约、立规范、落骨架四步，后续课次在同一仓库上走提变更、校验、实现、归档、打标签的增量循环">
+              <defs><marker id="gpA" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#94070a"/></marker></defs>
+              <rect x="16" y="16" width="168" height="64" rx="9" fill="#f8f6f4" stroke="#e6e1dd"/>
+              <text x="100" y="42" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1c1917">建仓库</text>
+              <text x="100" y="64" text-anchor="middle" font-size="10.5" fill="#7d736c">主干随时可启动</text>
+              <line x1="188" y1="48" x2="194" y2="48" stroke="#94070a" stroke-width="1.5" marker-end="url(#gpA)"/>
+              <rect x="196" y="16" width="168" height="64" rx="9" fill="#f8f6f4" stroke="#e6e1dd"/>
+              <text x="280" y="42" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1c1917">定规约</text>
+              <text x="280" y="64" text-anchor="middle" font-size="10.5" fill="#7d736c">每条能力的场景</text>
+              <line x1="368" y1="48" x2="374" y2="48" stroke="#94070a" stroke-width="1.5" marker-end="url(#gpA)"/>
+              <rect x="376" y="16" width="168" height="64" rx="9" fill="#f8f6f4" stroke="#e6e1dd"/>
+              <text x="460" y="42" text-anchor="middle" font-size="12.5" font-weight="600" fill="#1c1917">立规范</text>
+              <text x="460" y="64" text-anchor="middle" font-size="10.5" fill="#7d736c">规则文件与技能</text>
+              <line x1="548" y1="48" x2="554" y2="48" stroke="#94070a" stroke-width="1.5" marker-end="url(#gpA)"/>
+              <rect x="556" y="16" width="168" height="64" rx="9" fill="#fdf3f3" stroke="#94070a"/>
+              <text x="640" y="42" text-anchor="middle" font-size="12.5" font-weight="600" fill="#94070a">落骨架</text>
+              <text x="640" y="64" text-anchor="middle" font-size="10.5" fill="#7d736c">一条命令起得来</text>
+              <text x="748" y="38" text-anchor="end" font-size="10" fill="#7d736c">本课完成</text>
+              <text x="748" y="54" text-anchor="end" font-size="10" fill="#7d736c">做完一次</text>
+              <line x1="640" y1="84" x2="640" y2="94" stroke="#94070a" stroke-width="1.5" marker-end="url(#gpA)"/>
+              <rect x="16" y="98" width="724" height="90" rx="10" fill="#f8f6f4" stroke="#e6e1dd"/>
+              <text x="378" y="124" text-anchor="middle" font-size="12" font-weight="600" fill="#1c1917">后续课次：在同一个仓库上按同一份规约走一轮</text>
+              <rect x="28" y="138" width="128" height="34" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+              <text x="92" y="160" text-anchor="middle" font-size="10.5" fill="#1c1917">提变更</text>
+              <rect x="172" y="138" width="128" height="34" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+              <text x="236" y="160" text-anchor="middle" font-size="10.5" fill="#1c1917">校验规约</text>
+              <rect x="316" y="138" width="128" height="34" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+              <text x="380" y="160" text-anchor="middle" font-size="10.5" fill="#1c1917">实现一组</text>
+              <rect x="460" y="138" width="128" height="34" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+              <text x="524" y="160" text-anchor="middle" font-size="10.5" fill="#1c1917">归档变更</text>
+              <rect x="604" y="138" width="128" height="34" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+              <text x="668" y="160" text-anchor="middle" font-size="10.5" fill="#1c1917">打标签</text>
+              <rect x="16" y="200" width="724" height="32" rx="6" fill="#ffffff" stroke="#94070a"/>
+              <text x="378" y="221" text-anchor="middle" font-size="11" fill="#94070a">四步只做一次；缺任何一步，后续课次都要回头补，且代价一次比一次高</text>
+            </svg>
+            <figcaption>四步是后续各课的基线，之后每课只在其上走一轮增量交付；把它们一次做扎实，后面就只需要关心增量本身。</figcaption>
+          </figure>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">五个知识点，分别在哪一页</span></h2>
+            <p class="unit-lead">前两个讲「约束落在哪一处」，后三个讲「如何验证它真的生效」。</p>
+            <table>
+              <thead>
+                <tr><th>知识点</th><th>在哪一页</th><th>要点</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>顺序与产出</td><td>项目启动：四步</td><td>四步各留下什么、完成现象，以及三类常见的顺序偏差</td></tr>
+                <tr><td>仓库与协作约定</td><td>建仓库与协作约定</td><td>首次提交的三份文件、忽略规则先于代码入库、主干与变更分支约定、密钥边界</td></tr>
+                <tr><td>边界与规约</td><td>定边界与规约</td><td>价值三问与能力清单、规约四份文件、场景三段式与规约验收</td></tr>
+                <tr><td>规范的两个落点</td><td>工程规范写进规则与技能</td><td>规则与技能的分工、五类规范总表、规范生效的判定办法</td></tr>
+                <tr><td>骨架与核查</td><td>骨架与核查清单</td><td>骨架五件事与分层结构、四步完成现象、五维核查清单</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="unit" id="u4">
+            <h2 class="unit-h"><span class="unit-n">4</span><span class="unit-t">五类规范，分别在哪一页</span></h2>
+            <p class="unit-lead">总表在「工程规范写进规则与技能」一页，五类各有一页明细：条目、检查方式与本课的最小集合。</p>
+            <table>
+              <thead>
+                <tr><th>规范</th><th>管什么</th><th>本课必写的最小条目</th><th>在哪一页</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>产品设计规范</td><td>用户与场景、页面清单、视图四状态、文案与术语、视觉基线</td><td>用户与场景、页面清单、四状态文案模板、术语表</td><td><a href="pages/std-product.html">产品设计规范</a></td></tr>
+                <tr><td>后端开发规范</td><td>分层与依赖方向、接口命名与版本、响应结构与错误码、幂等、配置外置</td><td>分层与依赖方向、命名与版本、统一响应、错误码清单、配置外置</td><td><a href="pages/std-backend.html">后端开发规范</a></td></tr>
+                <tr><td>安全开发规范</td><td>默认拒绝与逐资源授权判定、密钥外置与轮换、输入校验与输出转义</td><td>默认拒绝、逐资源授权判定、密钥外置与轮换、校验白名单、参数绑定</td><td><a href="pages/std-security.html">安全开发规范</a></td></tr>
+                <tr><td>测试规范</td><td>用例来源与三类组织、数据隔离、一键运行与通过判定</td><td>一键运行命令、一条能力的三类用例、数据隔离约定</td><td><a href="pages/std-testing.html">测试规范</a></td></tr>
+                <tr><td>部署运维规范</td><td>可复现构建与环境分级、健康检查与日志字段、发布回滚与备份恢复</td><td>容器化编排文件入库、<code>/health</code> 免认证、单行 JSON 日志带请求标识、版本标签</td><td><a href="pages/std-ops.html">部署运维规范</a></td></tr>
+              </tbody>
+            </table>
+            <div class="note">五类是下限而非上限：可以加第六类（例如数据规范），但加之前先确认现有某一类写不下——分类本身不产生价值，被 Harness 读到并被执行才产生价值。写完可对照「规范案例：CampusClaw」检查：样例里最长的一条不超过五行，但每条都指向一个能当场执行的动作。</div>
+          </section>
+
+          <section class="unit" id="u5">
+            <h2 class="unit-h"><span class="unit-n">5</span><span class="unit-t">还缺的三类补充规范</span></h2>
+            <p class="unit-lead">五类之外，另有三类：它们不是必修，但缺了会在后续环节暴露。</p>
+            <table>
+              <thead>
+                <tr><th>规范</th><th>为什么需要</th><th>在哪一页</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>AI 应用规范</td><td>模型输出不可信、提示词会漂移、成本与依赖会失控；缺了它，问题表现为「同样的输入，这周与下周的回答不一样」</td><td><a href="pages/std-ai.html">AI 应用规范</a></td></tr>
+                <tr><td>数据规范</td><td>数据上线后难改：命名与迁移纪律、敏感分级、留存与删除（含向量库与对象存储的副本）</td><td><a href="pages/std-data.html">数据规范</a></td></tr>
+                <tr><td>评审与完成定义规范</td><td>小组作业最容易失分的地方不是功能没做，而是没人能说清做完了没有</td><td><a href="pages/std-review.html">评审与完成定义规范</a></td></tr>
+              </tbody>
+            </table>
+            <div class="note">另有两条已并入现有页面，不再单开：性能与容量、限流与配额并入部署运维规范；依赖引入审批与许可证白名单并入安全开发规范。</div>
+          </section>
+
+          <div class="grid">
+            <a class="tile" href="pages/project.html"><strong>项目启动：四步</strong><span>四步各产出什么、完成现象，以及三类常见的顺序偏差</span></a>
+            <a class="tile" href="pages/repo.html"><strong>建仓库与协作约定</strong><span>首次提交的三份文件、忽略规则先于代码入库、主干与变更分支约定、密钥边界</span></a>
+            <a class="tile" href="pages/spec.html"><strong>定边界与规约</strong><span>价值三问与能力清单、规约四份文件、场景三段式与规约验收</span></a>
+            <a class="tile" href="pages/rules.html"><strong>工程规范写进规则与技能</strong><span>规则与技能两种落地方式、五类规范、规范生效的判定办法</span></a>
+            <a class="tile" href="pages/skeleton.html"><strong>骨架与核查清单</strong><span>骨架五件事与分层、四步完成现象、五维核查清单</span></a>
+            <a class="tile" href="pages/std-product.html"><strong>产品设计规范</strong><span>用户与场景、页面清单、视图四状态、文案与术语、视觉基线</span></a>
+            <a class="tile" href="pages/std-backend.html"><strong>后端开发规范</strong><span>分层与依赖方向、接口命名与版本、响应结构与错误码、幂等与并发</span></a>
+            <a class="tile" href="pages/std-security.html"><strong>安全开发规范</strong><span>默认拒绝与逐资源授权判定、密钥外置与轮换、输入校验与输出转义</span></a>
+            <a class="tile" href="pages/std-testing.html"><strong>测试规范</strong><span>用例来源与三类组织、数据隔离、一键运行与通过判定</span></a>
+            <a class="tile" href="pages/std-ops.html"><strong>部署运维规范</strong><span>可复现构建与环境分级、健康检查与日志字段、发布回滚与备份恢复</span></a>
+            <a class="tile" href="pages/std-ai.html"><strong>AI 应用规范</strong><span>调用边界、提示词即代码、输出校验与不编造依据、评测集与用量观测</span></a>
+            <a class="tile" href="pages/std-data.html"><strong>数据规范</strong><span>命名与审计字段、迁移纪律、敏感分级、留存与删除的副本清单</span></a>
+            <a class="tile" href="pages/std-review.html"><strong>评审与完成定义规范</strong><span>完成定义、变更规模上限、评审检查表、例外书面化与证据归档</span></a>
+            <a class="tile" href="pages/spec-case.html"><strong>规约范例：一份变更</strong><span>动因、设计、需求规约、任务清单四份文件原样列出，每份配检查点</span></a>
+            <a class="tile" href="pages/case.html"><strong>规范案例：CampusClaw</strong><span>同一套五类规范的真实写法：术语表、跨班 404、断言判据、发布与回滚顺序</span></a>
+            <a class="tile" href="pages/case-files.html"><strong>规范样例：八份文件</strong><span>CampusClaw 八份规范文件的完整文本，可逐条对照，也可整份下载</span></a>
+            <a class="tile" href="pages/case-check.html"><strong>测评样例：单接口</strong><span>一份接口验收表的判定口径与功能、安全测评点，每条写明怎么测、怎样算缺陷</span></a>
+            <a class="tile" href="pages/discuss.html"><strong>研讨题</strong><span>二十九道讨论题，按四步、五类规范与协作节奏分组，每题给出判据与落点</span></a>
+            <a class="tile" href="pages/notes.html"><strong>参考思路</strong><span>每题一句要点与一句追问，讨论之后对照用</span></a>
+          </div>
+
+          <div class="recap">一句话记住：<b>规约是验收标准，规范是生成约束，骨架是判错基线</b>——四步一次做完，后续课次只走增量。</div>
+
+          <div class="pager">
+            <span></span>
+            <a class="btn btn-ghost" href="pages/project.html">项目启动：四步 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="js/app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第 6 课 · 任务清单</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            line-height: 1.7;
+            color: #1c2530;
+            background: #f5f6f8;
+        }
+        a { color: #94070a; font-weight: 600; }
+        .wrap { max-width: 960px; margin: 0 auto; padding: 24px 32px 64px; }
+        .back { font-size: 14px; margin-bottom: 20px; }
+        .back a { color: rgba(28, 37, 48, 0.65); text-decoration: none; }
+        .back a:hover { color: #94070a; }
+        h1 {
+            font-size: 26px; font-weight: 800; color: #94070a; margin-bottom: 8px;
+        }
+        .subtitle { font-size: 15px; color: rgba(28, 37, 48, 0.65); margin-bottom: 28px; }
+        .block {
+            background: #fff; border: 1px solid #e6e8ec; border-radius: 12px;
+            padding: 18px 20px; margin-bottom: 16px;
+        }
+        .block h2 { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
+        .checklist { list-style: none; font-size: 15px; }
+        .checklist li {
+            position: relative; padding-left: 28px; margin-bottom: 10px;
+            color: rgba(28, 37, 48, 0.85);
+        }
+        .checklist li::before {
+            content: "□"; position: absolute; left: 0; color: #94070a; font-weight: 700;
+        }
+        .links { font-size: 14px; margin-top: 12px; }
+        .hint {
+            font-size: 13px; color: rgba(28, 37, 48, 0.55); margin-top: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <p class="back"><a href="index.html#schedule">← 返回课程入口</a></p>
+        <h1>第 6 课任务清单</h1>
+        <p class="subtitle">MCP 与工具接入 · 六个知识点落到两个交付上：一个能暴露工具的服务，以及宿主里把它接进对话的那段编排。可对照 <a href="/week06/" target="_blank" rel="noopener">系统原型</a> 理解效果</p>
+
+        <div class="block">
+            <h2>一、自建 MCP 工具服务（<code>mcp-server/</code>）</h2>
+            <ul class="checklist">
+                <li>在主应用所在目录下新增 <code>mcp-server/</code> 子目录（与主应用同一套工程，由 <code>docker-compose.yml</code> 一并构建启动）。</li>
+                <li>实现协议的三个方法：<code>initialize</code>（能力协商）、<code>tools/list</code>（工具发现）、<code>tools/call</code>（执行工具）；报文为 <strong>JSON-RPC 2.0</strong>，以 <code>POST /mcp</code> 作单入口，另提供 <code>/health</code>。</li>
+                <li>令牌从环境变量读取（如 <code>MCP_AUTH_TOKEN</code>），<strong>不写进代码、不进镜像层、不进前端</strong>；无令牌或令牌错误即拒绝，非法请求返回可读的 JSON-RPC 错误。</li>
+                <li>至少暴露 <strong>2 个工具</strong>，且每个工具都要写全三项——<strong>名称、说明、输入结构</strong>。示范仓为 <code>formula_hint</code>、<code>unit_convert</code>，可换成更贴切的实现。</li>
+                <li><strong>说明决定模型会不会选它</strong>：写清适用条件与边界，写得太宽会把模型带偏；<strong>输入结构决定参数能不能被校验</strong>：宿主会按同一份结构核对模型填的参数。</li>
+                <li>工具返回的是供模型组织回答的文本内容；不要在返回里夹带指令式语句。</li>
+                <li>Compose 中工具服务与 API 同网互通；主应用通过 Base URL（如 <code>http://mcp-demo:8090</code>）连到自建的服务，而不是只在宿主侧模拟调用逻辑。</li>
+            </ul>
+        </div>
+
+        <div class="block">
+            <h2>二、宿主侧登记、连接与工具发现</h2>
+            <ul class="checklist">
+                <li>管理角色（教师）能登记工具服务（名称、Base URL）；<strong>令牌只保存在服务端</strong>，接口响应只回「是否已配置令牌」这个标记，不得带回令牌本身。</li>
+                <li>「连接」＝<strong>握手 + 工具发现两步</strong>：任一步失败就停在未连接并给出可读原因；两步都成功才把工具清单整体替换，并标记为已连接。</li>
+                <li>「断开」＝清空清单且不可再调用；连续连接两次，清单条数不翻倍。</li>
+                <li>连接失败不阻断上一课已有的检索与流式对话主路径——工具是增益而非主路径。</li>
+                <li>登记地址指向你在 Compose 里自建的服务；连接成功后能在管理界面看到你在 <code>mcp-server</code> 里实现的工具名。</li>
+            </ul>
+        </div>
+
+        <div class="block">
+            <h2>三、工具声明与调用编排</h2>
+            <ul class="checklist">
+                <li>技能的「工具」项除内置的知识库检索外，支持引用格式 <code>工具名@服务器名</code>（例如 <code>formula_hint@campus-tools</code>）；工具名小写字母开头、不含连字符，服务器名可含连字符。</li>
+                <li><strong>保存前校验</strong>：格式是否正确、该工具是否在服务器的发现清单内、服务器当前是否已连接——任一条不满足即拒绝保存，并给出可读的错误提示。</li>
+                <li><strong>候选集与最小权限</strong>：一次请求只带必要的工具，先按用途划定上限，再让模型在上限之内自主决定。</li>
+                <li><strong>决策归模型、执行归宿主</strong>：把工具声明随请求交给模型；模型提出调用后，宿主按同一份输入结构校验参数，再带上令牌发起 <code>tools/call</code>。</li>
+                <li>执行结果<strong>先过检查</strong>（命中指令式句式的整条丢弃、过长的截断），再作为<strong>工具消息回传</strong>给模型，由模型组织最终回答；结果是数据不是指令，落在用户消息一侧。</li>
+                <li><strong>循环必须有终止也有上限</strong>：设轮次上限与累计调用次数上限；超限后<strong>优雅降级</strong>——改用已有信息作答，而不是报错中断。</li>
+                <li>调用事件<strong>先于正文推送</strong>；流式响应的 <code>meta</code> 中能看见本次用到了哪些工具及其状态；未连接或越权调用记为「被拒」，不静默成功。</li>
+                <li>继续沿用前面几课：范围只取自会话、跨范围按「不存在」处理、Bearer 令牌认证。</li>
+            </ul>
+        </div>
+
+        <div class="block">
+            <h2>四、调用记录</h2>
+            <ul class="checklist">
+                <li>每次调用留<strong>一条记录</strong>，要能回答五个问题：调了什么（<code>tool@server</code>）、成了没有（成功／被拒／出错）、谁触发的、在哪次对话里（含第几轮）、什么时候。</li>
+                <li>记录只增不改；三种结果在界面上各能看到一条。</li>
+                <li>管理角色能查看自己范围内的调用记录；查询默认带条数上限。</li>
+                <li>服务器被改名或删除时，本次调用无处归属、不写记录——这是预期行为，不是缺陷。</li>
+            </ul>
+        </div>
+
+        <div class="block">
+            <h2>五、接口文档（Swagger）</h2>
+            <ul class="checklist">
+                <li>补齐本课新增接口的 OpenAPI 描述（路径、入参出参、错误码、要不要登录）。</li>
+                <li>浏览器能打开 Swagger 页面，并能对照文档试调登记、连接、工具、技能保存等主要接口。</li>
+            </ul>
+            <p class="links">
+                参考：<a href="/week06/swagger/" target="_blank" rel="noopener">Swagger</a> ·
+                <a href="/week06/openapi.json" target="_blank" rel="noopener">openapi.json</a>
+            </p>
+        </div>
+
+        <div class="block">
+            <h2>六、接口测试（建议）</h2>
+            <ul class="checklist">
+                <li>在 <code>apitest/</code> 为本课新增的管理与调用接口增加用例（登记、连接、列出工具、断开；非管理角色应被拒）。</li>
+                <li>至少一条端到端用例：连接自建工具服务 → 保存引用了 <code>formula_hint@…</code> 的技能 → 会话提问 → 记录中出现一条成功。</li>
+                <li>不只对状态码：还要核对返回内容与记录里的结果是否一致。</li>
+                <li>用 <code>run_all.py</code> 一键跑完并生成 HTML 报告（报告不随作业提交）。</li>
+            </ul>
+        </div>
+
+        <div class="block">
+            <h2>七、验收证据（自查 + 同伴交叉验证）</h2>
+            <ul class="checklist">
+                <li><strong>服务单独可验</strong>：<code>/health</code> 正常；带令牌的 <code>tools/list</code> 返回你实现的工具名；<code>tools/call</code> 能返回文本内容。</li>
+                <li><strong>端到端可验</strong>：连接 → 发现 → 绑定并在对话中触发 → 记录含工具引用与服务器名。</li>
+                <li><strong>断开后不可再调用</strong>：用引用了它上面工具的技能提问，保存或调用路径至少一处明确拒绝。</li>
+                <li><strong>上限生效</strong>：把轮次上限调小后，超限即停止调用，改用已有信息作答。</li>
+                <li><strong>令牌不外泄</strong>：宿主 <code>.env</code> 里的令牌与 <code>mcp-server</code> 的环境变量一致；令牌未出现在前端、代码或镜像中。</li>
+                <li><strong>同伴交叉验证（peer review）</strong>：以下四项需请同伴以自己的账号在同一套环境上验证，并留存证据（请求与响应的截图或日志片段），归入本人的验证记录，便于期末回溯。
+                    <br>· 服务与工具的隔离：同伴列出服务器、并用你的服务器标识直接访问 → 看不到你的；直接访问的响应与访问一个不存在的标识完全一致。
+                    <br>· 令牌不回传：同伴检查列表响应 → 整份返回里搜不到令牌字符串，只有「是否已配置令牌」为真。
+                    <br>· 断开即失效：由同伴断开一台服务器后，用引用了它上面工具的技能提问 → 该引用状态为「被拒」，记录里多出一条拒绝。
+                    <br>· 记录只看自己范围：同伴打开调用记录 → 只看到他自己范围内的调用。
+                </li>
+            </ul>
+        </div>
+
+        <p class="hint">在上一课成果上增量实现：主应用仍是一个 CampusClaw，另加同一工程下的 <code>mcp-server/</code>。课堂补充要求以 <a href="课件/第6课-课件-MCP与工具接入/index.html">第 6 课课件</a> 为准；令牌只放在本机 <code>.env</code>。</p>
+    </div>
+</body>
+</html>

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>实践步骤与验收 · 第 8 课 · 异步任务与消息队列</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 8 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">本课流程</p>
+          <a href="../index.html">概览</a>
+          <a href="problems.html">同步执行的问题</a>
+          <a href="async.html">异步：契约与状态</a>
+          <a href="queue.html">消息队列：语义与机制</a>
+          <a href="redesign.html">系统改造：架构与任务模型</a>
+          <a href="retry.html">失败重试与幂等</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="apply.html" class="active">实践步骤与验收</a>
+          <a href="think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">实践步骤与验收</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>实践步骤与验收</h1>
+          <p class="lead">这一课要动手做的是：把现在的同步批改改成异步执行，并且用三条能当场复现的判据证明改成了。下面是五步实施顺序、三条判据怎么复现、证据放在哪里。每一步的产出都要能在仓库里被找到，而不是只存在于「我跑通了」这句话里。</p>
+
+          <section class="unit" id="u0">
+            <h2 class="unit-h"><span class="unit-t">先说清几个词</span></h2>
+            <p class="unit-lead">这一页用到的词先在这里讲明白。</p>
+            <div class="terms">
+              <div><b>判据</b>：一句可复核的判断标准，写成「前置条件 / 操作 / 可观测结果」三段式。谁照着做都能得出同一个结论。</div>
+              <div><b>P95</b>：把一批响应时间从短到长排列，处在第 95% 位置的值。代表绝大多数请求的实际体感，避免被个别极慢的请求带偏。</div>
+              <div><b>复现</b>：换一台机器、换一个同学，按仓库里记下的命令重做一遍，能得到同样的结果。</div>
+              <div><b>回归</b>：改动之后把之前已经验证过的判据再跑一遍，确认没有把原来的能力弄坏。</div>
+              <div><b>证据归档</b>：把命令、输出、结论存进仓库根目录的 <code>reports/</code>，让别人事后可查。</div>
+              <div><b>只读接口</b>：只查询、不触发执行的接口，可以放心反复调用。</div>
+            </div>
+          </section>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">五步实施</span></h2>
+            <table>
+              <thead>
+                <tr><th>步骤</th><th>产出</th><th>完成判定</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>引入消息代理</td><td>编排文件中新增队列服务，配置外置</td><td>按仓库说明从零启动后，队列服务处于可用状态</td></tr>
+                <tr><td>建任务记录</td><td>任务表结构与迁移脚本，含幂等键唯一约束</td><td>迁移可重复执行；重复插入同一幂等键被约束拒绝</td></tr>
+                <tr><td>改提交接口</td><td>写入任务记录并返回 <code>202</code> 与任务标识；同步调用路径关闭</td><td>提交响应不含分数；代码库中不再存在请求内调用模型的分支</td></tr>
+                <tr><td>实现消费者</td><td>独立执行进程：取消息、调模型、写回结果、确认</td><td>消费者可独立启停；停止后任务停留在待处理</td></tr>
+                <tr><td>补状态接口与重试</td><td>任务状态查询接口；次数上限、退避与死信处置</td><td>状态接口只读；达到上限的任务转入死信并保留失败原因</td></tr>
+              </tbody>
+            </table>
+            <div class="note">顺序不可颠倒：先有能启动的队列与任务表，再改接口、再实现消费者。先改接口而没有落地的消费者，会形成「提交成功但永远停在待处理」的状态，而且分不清是改造没做完，还是消费失败了。</div>
+            <div class="recap">一句话记住：<b>三条判据要能被别人照着复现一遍，得出的结论和你一样。</b>只写「已实现」而没有复现过程，后续课次的回归无从对照。</div>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">三条判据的复现方式</span></h2>
+            <article class="kp-card">
+              <h3>判据一：请求不再等待执行</h3>
+              <p>连续提交 20 次作业，用 <code>curl -w '%{time_total}'</code> 逐次记录提交接口的响应时间，排序后取 P95；与改造前一次批改的执行耗时对比。判定：提交响应时间的 P95 显著小于一次批改的执行时间，且响应体中不含评分结果。</p>
+            </article>
+            <article class="kp-card">
+              <h3>判据二：任务不因进程终止而丢失</h3>
+              <p>用 <code>docker compose stop &lt;消费者服务名&gt;</code> 停止消费者后提交一次作业，查询任务状态；随后 <code>docker compose start &lt;消费者服务名&gt;</code> 并轮询状态接口直至 succeeded。判定：提交返回成功、状态停留在待处理；消费者启动后该任务被自动执行，无需重新提交。</p>
+            </article>
+            <article class="kp-card">
+              <h3>判据三：重复不产生重复结果</h3>
+              <p>对同一份提交连续发送两次请求；再人为制造一次重复投递——在代理管理界面将同一条消息重新发布一次，或在消费者确认前用 <code>docker compose kill &lt;消费者服务名&gt;</code> 终止进程再重启以触发重投。判定：结果表中该提交只有一条生效记录，<code>attempts</code> 增加而评分不变。</p>
+            </article>
+            <div class="note">三条判据均写入本次变更的场景清单，采用「前置条件 / 操作 / 可观测结果」三段式表述。首轮可以手工复现一次，随后必须转成用例进 <code>apitest/cases/</code>、随 <code>make check</code> 自动跑——否则每次回归都要人重做一遍。后续课次的自动化回归直接以这三条为用例，不必重新设计。</div>
+          </section>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">证据归档</span></h2>
+            <table>
+              <thead>
+                <tr><th>证据</th><th>存放位置</th><th>要求</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>变更四份文件</td><td>openspec 变更目录（归档后进入其 archive 子目录）</td><td>动因、设计、需求规约、任务清单齐备</td></tr>
+                <tr><td>判据复现记录</td><td><code>reports/</code>（仓库根目录）</td><td>三条判据各一份：命令、输出、结论；并发与事务两条按「用什么手段查 / 查了什么 / 判据 / 结果」写全，分别存 <code>reports/risk-concurrency.md</code> 与 <code>reports/risk-transaction.md</code></td></tr>
+                <tr><td>队列与消费者观测</td><td>同一目录</td><td>队列长度变化、消费耗时（<code>finished_at − started_at</code>）、重试次数（<code>attempts</code>）与死信数量</td></tr>
+                <tr><td>版本标记</td><td>提交历史中的标签</td><td>与本次迭代说明同名，便于回溯对照（如 <code>git tag async-202</code>，以 <code>git tag -l</code> 输出为证）</td></tr>
+              </tbody>
+            </table>
+            <div class="note">证据的作用是让判定可复核：换了机器、换了成员，按仓库中的命令与记录仍能得出相同结论。只留下「已实现」的结论而没有复现过程，后续课次的回归无从对照。</div>
+          </section>
+
+          <section class="unit" id="u4">
+            <h2 class="unit-h"><span class="unit-n">4</span><span class="unit-t">与后续课次的关系</span></h2>
+            <table>
+              <thead>
+                <tr><th>本课产出</th><th>后续课次如何使用</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>三条判据</td><td>固化为回归套件中的用例，一键运行即可复核</td></tr>
+                <tr><td>判据复现记录（并发 / 事务）</td><td>归档为 <code>reports/risk-concurrency.md</code> 与 <code>reports/risk-transaction.md</code>，是最终项目报告「高风险三查」的并发与事务两条</td></tr>
+                <tr><td>任务状态与执行次数</td><td>纳入运行观测，作为失败率与延迟的数据源</td></tr>
+                <tr><td>消费者进程</td><td>纳入部署单元与容量规划，压测时作为独立考察对象</td></tr>
+                <tr><td>审计所需的执行记录</td><td>安全检查中据此追溯「谁在何时触发了哪次批改」</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="retry.html">← 失败重试与幂等</a>
+            <a class="btn btn-ghost" href="think.html">思考与分析 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

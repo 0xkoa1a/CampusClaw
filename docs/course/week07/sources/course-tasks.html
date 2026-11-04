@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第 7 课 · 任务清单</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            line-height: 1.7;
+            color: #1c2530;
+            background: #f5f6f8;
+        }
+        a { color: #94070a; font-weight: 600; }
+        .wrap { max-width: 960px; margin: 0 auto; padding: 24px 32px 64px; }
+        .back { font-size: 14px; margin-bottom: 20px; }
+        .back a { color: rgba(28, 37, 48, 0.65); text-decoration: none; }
+        .back a:hover { color: #94070a; }
+        h1 {
+            font-size: 26px; font-weight: 800; color: #94070a; margin-bottom: 8px;
+        }
+        .subtitle { font-size: 15px; color: rgba(28, 37, 48, 0.65); margin-bottom: 28px; }
+        .block {
+            background: #fff; border: 1px solid #e6e8ec; border-radius: 12px;
+            padding: 18px 20px; margin-bottom: 16px;
+        }
+        .block h2 { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
+        .checklist { list-style: none; font-size: 15px; }
+        .checklist li {
+            position: relative; padding-left: 28px; margin-bottom: 10px;
+            color: rgba(28, 37, 48, 0.85);
+        }
+        .checklist li::before {
+            content: "□"; position: absolute; left: 0; color: #94070a; font-weight: 700;
+        }
+        .links { font-size: 14px; margin-top: 12px; }
+        .hint {
+            font-size: 13px; color: rgba(28, 37, 48, 0.55); margin-top: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <p class="back"><a href="index.html#schedule">← 返回课程入口</a></p>
+        <h1>第 7 课任务清单</h1>
+        <p class="subtitle">小组项目任务 · 四件事按顺序完成：<strong>建仓库 → 定规约 → 立规范 → 落骨架</strong>。规范要写在 Harness 读得到的地方，后面几课都在这个基础上增量交付</p>
+
+        <div class="block">
+            <h2>一、创建小组仓库</h2>
+            <ul class="checklist">
+                <li>组长新建一个仓库，仓库名用课题短名（小写字母与连字符），成员全部加入；<strong>主干保护规则在写第一行代码之前设好</strong>。</li>
+                <li>首次提交只有三样：<code>README.md</code>（一句话定位 + 本机怎么跑起来）、<code>.gitignore</code>、可选的 <code>LICENSE</code>。</li>
+                <li><code>.gitignore</code> <strong>必须先于任何代码入库</strong>；仓库留一份只写键名的 <code>.env.example</code>，明文值只存在于各人本机的 <code>.env</code>。</li>
+                <li>每次改动开一条变更，以 <code>YYYY-MM-DD-短横小写英文名</code> 命名，验收通过后归档；提交信息写清「改了什么、依据哪条规约」。</li>
+                <li>每人 clone 后按 <code>README.md</code> 跑通一次，确认不存在「只在某人机器上能跑」。</li>
+            </ul>
+        </div>
+
+        <div class="block">
+            <h2>二、明确功能边界，完成规约制定</h2>
+            <ul class="checklist">
+                <li>用 <code>openspec init --tools &lt;你的 Harness&gt;</code> 把仓库规约化；本课用到四个命令：<code>/opsx-propose</code>、<code>/opsx-validate</code>、<code>/opsx-apply</code>、<code>/opsx-archive</code>。</li>
+                <li>先说清三件事：<strong>给谁用、解决什么问题、比现有做法好在哪</strong>；再把本次要交付的能力写成编号清单，并写明这次不做的事。</li>
+                <li>用 <code>/opsx-propose</code> 起草变更，四份文件齐全：<code>proposal.md</code>（为什么做与边界）、<code>design.md</code>（选型与取舍）、<code>specs/&lt;能力&gt;/spec.md</code>（每条能力一组 Scenario）、<code>tasks.md</code>（可执行清单，骨架排最前）。</li>
+                <li>Scenario 写三段——<strong>前置条件 / 操作 / 可观测结果</strong>；失败路径至少四条（参数非法、无权限、资源不存在、依赖不可达），同样写成 Scenario；数值写具体，不写「大量」「较快」。</li>
+                <li><strong>规约的验收</strong>：<code>/opsx-validate &lt;变更名&gt; --strict</code> 通过；另起一个不带历史上下文的 Harness 会话，只给仓库路径与变更名，它能照 <code>tasks.md</code> 实现；每条能力与 Scenario 的对应关系能列成两列表。</li>
+            </ul>
+        </div>
+
+        <div class="block">
+            <h2>三、制定工程规范（写进 Harness 的规则与技能）</h2>
+            <p>规范只有两种落法：<strong>常驻约束写成规则</strong>（规则目录里的规则文件，或根目录的 <code>AGENTS.md</code> / <code>CLAUDE.md</code>），每次改代码都会被读到；<strong>按场景执行的流程写成技能</strong>（如「按规范补测试」）。没落进这两处的规范，等于没有规范。每条都要写清检查方式；对照课件里的 CampusClaw 样例文件自查——差距通常在判据，不在篇幅。</p>
+            <ul class="checklist">
+                <li><strong>产品设计规范</strong>：用户与场景、页面（路由）清单、视图四状态（加载中 / 正常 / 错误 / 空状态）、文案与术语表、表单校验时机、视觉基线（间距刻度与字号层级）；状态与流程（枚举、流转、每状态允许的操作）；导入导出（上限、整批校验、错误明细行号）。</li>
+                <li><strong>后端开发规范</strong>：分层与依赖方向、接口命名与版本、请求与响应结构、错误码清单、参数校验的位置、数据访问与事务、幂等声明、配置外置；非法筛选必须明确报错，不得返回全量；事务内不得夹带外部调用；排序要有唯一兜底键。</li>
+                <li><strong>安全开发规范</strong>：默认拒绝与逐资源授权判定、越权失败场景、密钥外置与轮换、输入校验与输出转义、依赖漏洞扫描频率；附件读取挂钩业务权限，禁止通用按标识读取的接口；令牌存放位置；出站地址白名单。</li>
+                <li><strong>测试规范</strong>：测试层次与用例来源、用例按<strong>正常路径 / 失败路径 / 边界</strong>三类组织、数据隔离、一键运行的命令与通过判定（失败即阻断）；缺陷判定口径（先定用哪套信号，再定「被当成成功 / 被放行 / 被误拒 / 未处理故障」）。</li>
+                <li><strong>部署运维规范</strong>：可复现构建与环境分级、健康检查（health check）与优雅停机、结构化日志字段、发布与回滚、数据变更顺序、备份与恢复目标。</li>
+                <li><strong>按需补充三类</strong>：<strong>AI 应用规范</strong>——调用边界、工具只走已有服务层、提示词随版本入库并带版本号、输出校验与不编造依据、评测集（十到二十条，含必须拒答的题）；<strong>数据规范</strong>——命名与审计字段、迁移只增且可回滚、敏感分级清单、留存期与删除时的副本清单（业务库 / 向量库 / 对象存储 / 缓存 / 备份）；<strong>评审与完成定义规范</strong>——写一条完成定义、变更规模上限、评审检查表、门禁必跑、例外书面化。</li>
+            </ul>
+        </div>
+
+        <div class="block">
+            <h2>四、创建项目框架（骨架）</h2>
+            <ul class="checklist">
+                <li>用 <code>/opsx-apply</code> 只跑 <code>tasks.md</code> 里的骨架这一组，先得到一个能启动的壳，<strong>不要一次生成整套业务代码</strong>；壳的结构要符合上节定的分层。</li>
+                <li>配置全部外置；入口提供免认证的 <code>/health</code>；日志从骨架起就按规范写成一行一条 JSON。</li>
+                <li><strong>骨架完成的现象</strong>：clone → 填 <code>.env</code> → 一条命令启动 → <code>/health</code> 成功，按 <code>README.md</code> 走，中间不需要口头补充。</li>
+                <li>归档这次变更并打标签（如 <code>v0.0.1-skeleton</code>）；实现过程中的调整同步回 <code>design.md</code>、<code>tasks.md</code> 与规范文件。</li>
+            </ul>
+        </div>
+
+        <div class="block">
+            <h2>五、核查清单（提交前逐条打勾）</h2>
+            <ul class="checklist">
+                <li><strong>仓库</strong>：地址可访问且教师有权限；按 <code>README.md</code> 能从零跑起来；在全部提交历史中搜不到任何密钥明文值。</li>
+                <li><strong>规约</strong>：变更四份文件齐；<code>--strict</code> 校验通过；每条能力至少一组 Scenario，其中失败路径不少于四条；能力与 Scenario 一一对应。</li>
+                <li><strong>规范</strong>：五类规范都写成了文件，且放在 Harness 读得到的位置；改一次代码验证它真的生效——生成的代码确实按规范分层、按规范命名；另起一次会话结果仍一致；测评点写明怎么测、怎样算缺陷。</li>
+                <li><strong>骨架</strong>：分层无反向依赖；配置全部外置且缺失即启动失败；<code>/health</code> 免认证可访问并返回依赖连通状态；日志一行一条 JSON 且带请求标识。</li>
+                <li><strong>交付</strong>：骨架标签存在；验证记录已归档到仓库 <code>docs/lesson-07/</code>；<strong>交叉评审（peer review）</strong>——组内另一人在自己机器上从零启动成功。</li>
+            </ul>
+        </div>
+
+        <p class="hint">密钥只放在各人本机的 <code>.env</code>，不进代码、不进镜像层、不进前端，也不进版本历史。</p>
+    </div>
+</body>
+</html>

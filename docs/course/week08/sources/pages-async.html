@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>异步：契约与状态 · 第 8 课 · 异步任务与消息队列</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 8 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">本课流程</p>
+          <a href="../index.html">概览</a>
+          <a href="problems.html">同步执行的问题</a>
+          <a href="async.html" class="active">异步：契约与状态</a>
+          <a href="queue.html">消息队列：语义与机制</a>
+          <a href="redesign.html">系统改造：架构与任务模型</a>
+          <a href="retry.html">失败重试与幂等</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="apply.html">实践步骤与验收</a>
+          <a href="think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">异步：契约与状态</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>异步：契约与状态</h1>
+          <p class="lead">异步把一次交互拆成两步：先「发起」，后「取结果」。学生点提交之后不必等模型算完，服务端先记下这件事、返回一张号码牌；真正的批改在请求之外继续进行，结果凭号码牌来取。这一页讲清这套接口约定、任务有哪些状态，以及异步到底改变了什么、没有改变什么。</p>
+
+          <section class="unit" id="u0">
+            <h2 class="unit-h"><span class="unit-t">先说清几个词</span></h2>
+            <p class="unit-lead">这一页用到的词先在这里讲明白。</p>
+            <div class="terms">
+              <div><b>异步执行</b><i>asynchronous</i>：发起之后不原地等结果。服务端记下任务就返回，执行在请求之外继续。</div>
+              <div><b>任务</b><i>task</i>：一次待办工作在系统里的记录。它至少要有编号、类型、输入、状态、执行次数这五项，并且写在数据库里。</div>
+              <div><b>202 Accepted</b>：一个状态码，语义是「收到了，还没办完」。用它而不是 200，调用方一眼就能分清「这是结果」还是「这是号码牌」。</div>
+              <div><b>状态机</b>：一个任务从生到死能处于哪几种状态，以及什么条件下从一种变成另一种。画出来就是状态机图。</div>
+              <div><b>最终一致性</b>：结果不是立刻就有，但只要你持续查询，最终一定会到达确定的状态。中间那段「已提交、尚未生效」的窗口必须被正确处理。</div>
+              <div><b>轮询</b><i>polling</i>：按固定间隔反复查询状态，查到终态就停。实现简单，代价是有一点延迟和一些无谓请求。</div>
+            </div>
+          </section>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">定义</span></h2>
+            <article class="kp-card">
+              <h3>异步执行</h3>
+              <p>调用方发起请求后不阻塞等待结果，服务端接收请求、记录任务并立即返回；执行过程在请求上下文之外进行，结果由调用方凭任务标识在之后查询，或由服务端在完成后通知。相对的概念是同步执行（synchronous execution）：调用方在收到响应前保持阻塞，响应中包含执行结果。</p>
+            </article>
+            <article class="kp-card">
+              <h3>任务（task）</h3>
+              <p>一次可执行的工作单元，在系统中以持久化记录的形式存在，至少包含：标识、类型、输入参数、状态、执行次数。任务被持久化，是本课后续所有机制（重试、去重、可观测）的前提。</p>
+            </article>
+            <div class="note">异步与并行不是同一概念：异步描述的是调用方是否等待，并行描述的是是否有多个执行体同时工作。单线程事件循环同样可以实现异步。</div>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">接口契约</span></h2>
+            <p class="unit-lead">契约的核心是一句话：这次请求的响应只承诺「已接收」，不承诺「已完成」。</p>
+            <pre><code>POST /api/submissions/1024/grade
+→ 202 Accepted
+{
+  "task_id": "task_01J8Z4Q7",
+  "status": "pending",
+  "status_url": "/api/tasks/task_01J8Z4Q7"
+}
+
+GET /api/tasks/task_01J8Z4Q7
+→ 200 OK
+{ "task_id": "task_01J8Z4Q7", "status": "succeeded",
+  "result": { "score": 82, "submission_id": 1024 } }</code></pre>
+            <div class="note"><code>202 Accepted</code> 的语义是「请求已被接收、尚未处理完毕」。用它而不是 200，是为了让调用方从状态码即可区分「这是结果」与「这是凭证」。</div>
+          </section>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">任务状态机</span></h2>
+            <p class="unit-lead">状态是任务模型的核心字段：它决定前端展示什么、消费者取哪些任务、以及失败后是否重新执行。</p>
+            <figure class="fig">
+              <svg viewBox="0 0 760 196" role="img" aria-label="任务状态机：待处理进入执行中，执行成功转为已完成，执行失败在未达重试上限时回到待处理，达到上限后转为已失败">
+                <defs><marker id="asA" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#94070a"/></marker></defs>
+                <rect x="24" y="70" width="132" height="56" rx="9" fill="#ffffff" stroke="#94070a"/>
+                <text x="90" y="94" text-anchor="middle" font-size="12" font-weight="600" fill="#94070a">pending</text>
+                <text x="90" y="114" text-anchor="middle" font-size="10" fill="#7d736c">待处理</text>
+                <rect x="252" y="70" width="132" height="56" rx="9" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="318" y="94" text-anchor="middle" font-size="12" font-weight="600" fill="#94070a">running</text>
+                <text x="318" y="114" text-anchor="middle" font-size="10" fill="#7d736c">执行中</text>
+                <rect x="480" y="24" width="132" height="56" rx="9" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="546" y="48" text-anchor="middle" font-size="12" font-weight="600" fill="#1c1917">succeeded</text>
+                <text x="546" y="68" text-anchor="middle" font-size="10" fill="#7d736c">已完成</text>
+                <rect x="480" y="116" width="132" height="56" rx="9" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="546" y="140" text-anchor="middle" font-size="12" font-weight="600" fill="#1c1917">failed</text>
+                <text x="546" y="160" text-anchor="middle" font-size="10" fill="#7d736c">已失败</text>
+                <line x1="156" y1="98" x2="244" y2="98" stroke="#94070a" stroke-width="1.5" marker-end="url(#asA)"/>
+                <text x="200" y="88" text-anchor="middle" font-size="10" fill="#94070a">被消费者取走</text>
+                <line x1="384" y1="84" x2="472" y2="56" stroke="#94070a" stroke-width="1.5" marker-end="url(#asA)"/>
+                <text x="452" y="60" text-anchor="middle" font-size="10" fill="#94070a">成功</text>
+                <line x1="384" y1="112" x2="472" y2="136" stroke="#94070a" stroke-width="1.5" marker-end="url(#asA)"/>
+                <text x="452" y="132" text-anchor="middle" font-size="10" fill="#94070a">失败且已达上限</text>
+                <path d="M318,126 C318,170 120,170 90,132" fill="none" stroke="#94070a" stroke-width="1.5" stroke-dasharray="5 3" marker-end="url(#asA)"/>
+                <text x="204" y="164" text-anchor="middle" font-size="10" fill="#94070a">失败且未达上限：退回待处理，等待重试</text>
+                <rect x="632" y="24" width="112" height="148" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="688" y="46" text-anchor="middle" font-size="10.5" font-weight="600" fill="#1c1917">配套字段</text>
+                <text x="688" y="70" text-anchor="middle" font-size="10" fill="#7d736c">attempts 执行次数</text>
+                <text x="688" y="90" text-anchor="middle" font-size="10" fill="#7d736c">error 失败原因</text>
+                <text x="688" y="110" text-anchor="middle" font-size="10" fill="#7d736c">started_at</text>
+                <text x="688" y="130" text-anchor="middle" font-size="10" fill="#7d736c">finished_at</text>
+                <text x="688" y="154" text-anchor="middle" font-size="10" fill="#7d736c">idempotency_key</text>
+              </svg>
+              <figcaption>四个状态覆盖一次任务的完整生命周期；「失败退回待处理」这一条转移，是自动重试得以实现的状态基础。</figcaption>
+            </figure>
+          </section>
+
+          <section class="unit" id="u4">
+            <h2 class="unit-h"><span class="unit-n">4</span><span class="unit-t">改变与未改变</span></h2>
+            <table>
+              <thead>
+                <tr><th>维度</th><th>同步执行</th><th>异步执行</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>响应语义</td><td>响应中携带执行结果</td><td>响应中携带任务标识，状态码 202</td></tr>
+                <tr><td>请求占用时间</td><td>等于执行时间</td><td>等于入队时间，与执行时间无关</td></tr>
+                <tr><td>失败可见性</td><td>只在当次调用里能看到；进程一重启就没了</td><td>写成任务状态保存在库里，随时可查、可重试</td></tr>
+                <tr><td>结果何时确定</td><td>响应返回时结果就确定了</td><td>结果稍后才到达（最终一致性），中间存在「已提交、尚未生效」的窗口</td></tr>
+                <tr><td>总执行时间</td><td>—</td><td>不减少，还因入队与调度略有增加</td></tr>
+                <tr><td>总工作量</td><td>—</td><td>不减少，同一段模型调用仍然要执行一次</td></tr>
+              </tbody>
+            </table>
+            <div class="note">异步不提升执行速度，它把「等待」从请求链路上移走，并把执行过程变成可查询、可重试的记录。把它当成性能优化手段，是这一课最常见的误读。</div>
+            <div class="recap">一句话记住：<b>异步不改变做完这件事要多久，只改变谁在等、等多久。</b>学生不再等，等的是后台那个进程。</div>
+          </section>
+
+          <section class="unit" id="u5">
+            <h2 class="unit-h"><span class="unit-n">5</span><span class="unit-t">适用边界</span></h2>
+            <article class="kp-card">
+              <h3>不应异步化的情形</h3>
+              <p>其一，执行时间在毫秒量级的操作：入队与调度的开销会超过收益，且引入了不必要的延迟。其二，调用方必须立即依据结果决定后续动作的链路：登录、权限判定、支付结果确认——这些环节缺少结果就无法继续，异步只会把同步等待改写成轮询等待。其三，结果需要强一致读取的场景（强一致：写完立刻能读到最新值，与最终一致性相对）：异步引入了「已提交但尚未生效」的中间状态，读取方必须能正确处理该状态。</p>
+            </article>
+            <article class="kp-card">
+              <h3>异步引入的新问题</h3>
+              <p>任务积压（生产速率持续高于消费速率）、执行延迟（队列等待时间）、状态不一致（写入与入队不在同一事务中时尤为突出）、以及重复执行（重试与重复投递）。前三项靠监控与容量规划应对，最后一项靠幂等设计应对（同一件事做两次，结果不变，详见「失败重试与幂等」一页）。</p>
+            </article>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="problems.html">← 同步执行的问题</a>
+            <a class="btn btn-ghost" href="queue.html">消息队列：语义与机制 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

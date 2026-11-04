@@ -33,6 +33,14 @@ def create_app(test_config=None):
         EMBEDDING_DIM=int(os.environ.get("EMBEDDING_DIM", "2048")),
         CHAT_MODEL=os.environ.get("CHAT_MODEL", "course-chat"),
         MCP_AUTH_TOKEN=os.environ.get("MCP_AUTH_TOKEN", ""),
+        MCP_MAX_ROUNDS=int(os.environ.get("MCP_MAX_ROUNDS", "2")),
+        MCP_MAX_CALLS=int(os.environ.get("MCP_MAX_CALLS", "4")),
+        MCP_TOOL_TEXT_MAX_CHARS=int(os.environ.get("MCP_TOOL_TEXT_MAX_CHARS", "4000")),
+        TASK_MAX_ATTEMPTS=int(os.environ.get('TASK_MAX_ATTEMPTS', '3')),
+        TASK_LEASE_SECONDS=int(os.environ.get('TASK_LEASE_SECONDS', '120')),
+        TASK_RETRY_BASE_SECONDS=float(os.environ.get('TASK_RETRY_BASE_SECONDS', '1')),
+        TASK_QUEUE_NAME=os.environ.get('TASK_QUEUE_NAME', 'campusclaw.grading.v1'),
+        RABBITMQ_URL=os.environ.get('RABBITMQ_URL', ''),
         MCP_ALLOWED_BASE_URLS=os.environ.get("MCP_ALLOWED_BASE_URLS", "http://mcp-demo:8090").split(","),
         AI_TIMEOUT_SECONDS=int(os.environ.get("AI_TIMEOUT_SECONDS", "30")),
         QDRANT_URL=os.environ.get("QDRANT_URL", "http://qdrant:6333"),
@@ -48,6 +56,21 @@ def create_app(test_config=None):
         raise RuntimeError("SECRET_KEY is required")
     if app.config["MAX_UPLOAD_BYTES"] <= 0:
         raise RuntimeError("MAX_UPLOAD_BYTES must be positive")
+    for name, low, high in (("MCP_MAX_ROUNDS", 1, 8), ("MCP_MAX_CALLS", 1, 32),
+                            ("MCP_TOOL_TEXT_MAX_CHARS", 128, 16000), ('TASK_MAX_ATTEMPTS', 1, 10),
+                            ('TASK_LEASE_SECONDS', 10, 3600)):
+        value = app.config[name]
+        if type(value) is not int or not low <= value <= high:
+            raise RuntimeError(f"{name} must be an integer between {low} and {high}")
+    value = app.config['TASK_RETRY_BASE_SECONDS']
+    if type(value) not in (int, float) or not .001 <= value <= 60:
+        raise RuntimeError('TASK_RETRY_BASE_SECONDS must be between .001 and 60')
+    if not app.config['RABBITMQ_URL'] and os.environ.get('RABBITMQ_PASSWORD'):
+        from urllib.parse import quote
+        user = quote(os.environ.get('RABBITMQ_USER', 'campusclaw'), safe='')
+        password = quote(os.environ['RABBITMQ_PASSWORD'], safe='')
+        host = os.environ.get('RABBITMQ_HOST', 'rabbitmq')
+        app.config['RABBITMQ_URL'] = f'amqp://{user}:{password}@{host}:5672/%2F'
     app.config["DATABASE_PATH"] = str(Path(app.config["DATABASE_PATH"]).resolve())
     app.config["UPLOAD_DIR"] = str(Path(app.config["UPLOAD_DIR"]).resolve())
 
@@ -93,6 +116,8 @@ def create_app(test_config=None):
     app.extensions["conversation_locks"] = {"guard": threading.Lock(), "locks": {}}
     app.register_blueprint(agents_bp)
     app.register_blueprint(conversations_bp)
+    from .assignments import bp as assignments_bp
+    app.register_blueprint(assignments_bp)
     from .mcp_registry import bp as mcp_bp
     app.register_blueprint(mcp_bp)
     @app.get("/mcp")

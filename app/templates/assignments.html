@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}课堂作业 · CampusClaw{% endblock %}
+{% block body %}
+<link rel="stylesheet" href="{{ url_for('static', filename='assignments.css') }}">
+<header class="site-header">
+  <div class="header-left"><div class="brand">Campus<span>Claw</span></div><span class="header-divider"></span><span class="class-name">{{ g.user.class_name }}</span></div>
+  <div class="header-right"><span>{{ g.user.display_name }} · {{ "教师" if g.user.role == "teacher" else "学生" }}</span><form id="logout-form" method="post" action="{{ url_for('auth.logout') }}"><button class="text-button" type="submit">退出登录</button></form></div>
+</header>
+<main class="workspace assignments-workspace" data-role="{{ g.user.role }}">
+  <p id="auth-status" class="form-error" role="alert"></p>
+  <p class="assignments-back"><a href="{{ url_for('conversations.page') }}">← 返回解题助手</a></p>
+  <div class="assignments-title"><div><p class="eyebrow">课堂空间 · 作业</p><h1>课堂作业</h1><p class="intro">查看作业、提交答案并跟踪批改进度。</p></div><button id="refresh-tasks" class="secondary-button" type="button">刷新任务</button></div>
+  <p id="page-status" class="assignments-status" role="status" aria-live="polite"></p>
+
+  {% if g.user.role == "teacher" %}
+  <section class="assignment-panel" aria-labelledby="create-title">
+    <div class="panel-heading"><div><p class="eyebrow">教师配置</p><h2 id="create-title">创建作业</h2></div></div>
+    <form id="assignment-form" class="assignment-form">
+      <label>作业标题<input name="title" required maxlength="120"></label>
+      <label class="field-wide">题目<textarea name="question" required rows="4" maxlength="4000"></textarea></label>
+      <label>参考答案<textarea name="reference_answer" rows="4" maxlength="2000"></textarea></label>
+      <label>评分规程<textarea name="rubric" rows="4" maxlength="2000"></textarea></label>
+      <label>满分<input name="max_score" type="number" min="1" max="100" step="1" value="100" required></label>
+      <label>批改技能（可选）<select name="skill_id"><option value="">不指定</option></select></label>
+      <div class="form-actions"><button class="primary-button" type="submit">创建作业</button></div>
+      <p id="assignment-form-status" class="form-feedback" role="status" aria-live="polite"></p>
+    </form>
+  </section>
+  <section class="assignment-panel" aria-labelledby="assignment-list-title">
+    <div class="panel-heading"><div><p class="eyebrow">本班题目</p><h2 id="assignment-list-title">作业列表</h2></div></div>
+    <div id="assignment-list" class="assignment-list" aria-live="polite"></div>
+  </section>
+  {% else %}
+  <section class="assignment-panel" aria-labelledby="submit-title">
+    <div class="panel-heading"><div><p class="eyebrow">提交答案</p><h2 id="submit-title">选择作业并提交</h2></div></div>
+    <form id="submission-form" class="submission-form">
+      <label>作业<select name="assignment_id" required><option value="">正在加载作业…</option></select></label>
+      <section id="assignment-preview" class="assignment-preview" aria-live="polite" hidden>
+        <h3 id="assignment-preview-title"></h3>
+        <p id="assignment-preview-question" class="assignment-question"></p>
+        <p id="assignment-preview-score" class="assignment-meta"></p>
+      </section>
+      <label class="field-wide">你的答案<textarea name="content" required rows="7" maxlength="4000" placeholder="写下你的解答"></textarea></label>
+      <div class="form-actions"><button class="primary-button" type="submit">提交并查看进度</button></div>
+      <p id="submission-form-status" class="form-feedback" role="status" aria-live="polite"></p>
+    </form>
+  </section>
+  {% endif %}
+
+  <section class="assignment-panel task-panel" aria-labelledby="tasks-title">
+    <div class="panel-heading"><div><p class="eyebrow">异步批改</p><h2 id="tasks-title">{{ "本班任务" if g.user.role == "teacher" else "我的提交与批改" }}</h2></div><span id="task-count" class="count-pill">0 项</span></div>
+    <p id="tasks-empty" class="empty-state">正在加载任务…</p>
+    <div id="task-list" class="task-list" aria-live="polite"></div>
+  </section>
+</main>
+{% endblock %}
+{% block scripts %}<script src="{{ url_for('static', filename='assignments.js') }}" defer></script>{% endblock %}

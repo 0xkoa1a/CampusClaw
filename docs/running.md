@@ -76,6 +76,23 @@ docker compose exec -T app python -m scripts.verify_deployment after
 
 ## 本地开发与测试
 
+新增异步批改后，Compose 包含 `app`、`worker`、`rabbitmq`、`qdrant`、`mcp-demo`。已有私有 `.env` 需增加独立随机的 `RABBITMQ_PASSWORD`（例如用 `python3 -c 'import secrets; print(secrets.token_urlsafe(32))'` 生成后自行填入），保持权限 `0600`，不覆盖原密钥。新建配置时初始化脚本已生成该密码。队列数据保存在 `campusclaw_queue` volume，RabbitMQ 不开放宿主机端口。
+
+教师在 `/assignments` 创建题目，可填写参考答案、评分规程和批改技能；学生提交后收到 `202` 与任务编号，页面自动查询进度。`TASK_MAX_ATTEMPTS` 默认 3，`TASK_LEASE_SECONDS` 默认 120，`TASK_RETRY_BASE_SECONDS` 默认 1。消费者暂时停止不影响接收提交；恢复后从 outbox 补投。结果和任务终态在同一事务保存，确认后才 ACK。重投可能重复调用模型，数据库只允许同一提交保存一份结果。
+
+```sh
+docker compose --env-file .env config -q
+docker compose up --build -d --wait
+docker compose logs --tail 30 worker
+# 停机与恢复验收仅在隔离合成环境操作
+docker compose stop worker
+docker compose start worker
+```
+
+本地回归入口为 `make check`；单独启动消费者用 `make worker`。Mac 无 Docker daemon 时可运行确定性测试和本地页面替身，不能据此判断真实 RabbitMQ 持久化通过。CLab 第八课应另建 `verification/week08/` 和独立 Compose 项目，先完成隔离验收，不直接覆盖现有第六课环境。
+
+MCP 补充配置：`MCP_MAX_ROUNDS` 默认 2（1–8），`MCP_MAX_CALLS` 默认 4（1–32），`MCP_TOOL_TEXT_MAX_CHARS` 默认 4000（128–16000）。原始工具返回先检查指令式文本，再截断允许进入模型的文本；截断带固定标记。服务器失效或调用期间删除时，不新增无法归属的独立审计。
+
 使用 Python 3.10+，安装 `requirements-dev.txt` 后设置同样的环境变量。`python -m pytest -q` 运行所有自动化验收；`python -m flask --app wsgi run --port 8080` 在本机启动开发服务器。首次运行需要三个预置密码。需要单独初始化时，从仓库根目录运行 `python -m scripts.init_db`；该命令重复执行不会复制样本数据。`openspec validate --all --strict` 校验当前正式规格。
 
 正式规格入口见[仓库首页](../README.md#规约与目录)，检索实测见[第四课验收记录](week04-verification.md)。

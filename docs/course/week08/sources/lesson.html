@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>概览 · 第 8 课 · 异步任务与消息队列</title>
+    <link rel="stylesheet" href="css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="index.html">CampusClaw<span>第 8 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">本课流程</p>
+          <a href="index.html" class="active">概览</a>
+          <a href="pages/problems.html">同步执行的问题</a>
+          <a href="pages/async.html">异步：契约与状态</a>
+          <a href="pages/queue.html">消息队列：语义与机制</a>
+          <a href="pages/redesign.html">系统改造：架构与任务模型</a>
+          <a href="pages/retry.html">失败重试与幂等</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="pages/apply.html">实践步骤与验收</a>
+          <a href="pages/think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">概览</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>异步任务与消息队列</h1>
+          <p class="lead">这一课解决一个具体问题：现在的作业批改是在一次请求里做完的——学生点提交，服务端当场调用模型，等几十秒后把分数放在同一次响应里返回。这条路径会在超时、并发、失败恢复上连续出问题。本课先讲清这些问题，再讲异步改变了什么，消息队列又提供了什么，最后把现有系统改造成异步执行，并给出三条可以当场复现的验收判据。</p>
+
+          <section class="unit" id="u0">
+            <h2 class="unit-h"><span class="unit-t">先说清几个词</span></h2>
+            <p class="unit-lead">这一课用到的词先在这里讲明白，后面各页不再解释。</p>
+            <div class="terms">
+              <div><b>同步</b><i>synchronous</i>：发起请求后一直等到结果返回，这次交互才算结束。就像在窗口前排队，办完才离开。</div>
+              <div><b>异步</b><i>asynchronous</i>：发起请求后先拿到一张「号码牌」，结果稍后凭它来取。请求本身很快结束。</div>
+              <div><b>消息队列</b><i>message queue</i>：一个能持久保存待办事项的中间件（独立于你的应用、专门提供存储与转发能力的基础软件），有人往里放任务，有人从中取任务，办完才划掉。</div>
+              <div><b>任务标识</b><i>task_id</i>：那张号码牌。凭它可以随时查询这件事办到哪一步。</div>
+              <div><b>消费者</b><i>worker</i>：真正干活的独立进程，从队列里取任务执行，可以启停、可以加数量。</div>
+              <div><b>P95</b>：把一批响应时间从短到长排列，处在第 95% 位置的值。用它代表「绝大多数请求的实际体感」，避免被个别极慢或极快的请求带偏。</div>
+            </div>
+          </section>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">本课回答两个问题</span></h2>
+            <p class="unit-lead">两个问题属于不同层面，混为一谈会导致「引入队列就等于改成异步」这类误解。</p>
+            <article class="kp-card">
+              <h3>为什么要用异步</h3>
+              <p>这是<strong>接口契约</strong>层面的问题：一次交互是否必须等到结果产生才结束。同步调用要求请求方与服务端在整个执行期间保持连接；异步执行把「发起」与「完成」拆成两次交互，请求方只拿到一张凭证。</p>
+            </article>
+            <article class="kp-card">
+              <h3>为什么要用消息队列</h3>
+              <p>这是<strong>基础设施</strong>层面的问题：任务离开请求线程之后，由谁保存、如何分发、失败后如何重新执行。线程、内存队列、数据库任务表都能实现异步，消息队列提供的是持久化、竞争消费、确认与重投这组保证。</p>
+            </article>
+            <div class="note">异步可以用线程实现，队列也可以用于同步场景下的解耦。两者不是同一件事：异步决定「谁等谁」，队列决定「任务放在哪、怎么保证不丢」。</div>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">四段路径与对应页面</span></h2>
+            <table>
+              <thead>
+                <tr><th>段落</th><th>要解决的问题</th><th>结论</th><th>页面</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>现状</td><td>同步执行在当前系统中造成哪些后果</td><td>六类问题，其中超时与资源占用是设计层面的错误</td><td><a href="pages/problems.html">同步执行的问题</a></td></tr>
+                <tr><td>异步</td><td>交互契约如何改变</td><td><code>202 Accepted</code> + 任务标识，结果凭标识查询</td><td><a href="pages/async.html">异步：契约与状态</a></td></tr>
+                <tr><td>队列</td><td>任务离开请求线程后如何保证执行</td><td>持久化、竞争消费、确认与重投、削峰</td><td><a href="pages/queue.html">消息队列：语义与机制</a></td></tr>
+                <tr><td>改造</td><td>如何落到现有系统并保证不重复执行</td><td>提交接口入队、消费者执行、幂等键落唯一约束</td><td><a href="pages/redesign.html">改造</a> / <a href="pages/retry.html">重试与幂等</a></td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <figure class="fig">
+            <svg viewBox="0 0 760 268" role="img" aria-label="同步调用中客户端的等待区间覆盖整个模型执行过程并越过网关读超时；异步执行中请求在入队后立即返回，执行由消费者在请求之外完成">
+              <defs><marker id="ovA" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#94070a"/></marker></defs>
+              <text x="16" y="24" font-size="12" font-weight="600" fill="#1c1917">同步调用</text>
+              <line x1="16" y1="52" x2="744" y2="52" stroke="#e6e1dd"/>
+              <rect x="16" y="40" width="640" height="24" rx="5" fill="#fdf3f3" stroke="#94070a"/>
+              <text x="336" y="56" text-anchor="middle" font-size="10.5" fill="#94070a">客户端等待：提交 → 模型执行 → 返回分数</text>
+              <rect x="656" y="40" width="88" height="24" rx="5" fill="#f8f6f4" stroke="#7d736c"/>
+              <text x="700" y="56" text-anchor="middle" font-size="10.5" fill="#7d736c">504 超时</text>
+              <line x1="620" y1="30" x2="620" y2="76" stroke="#94070a" stroke-dasharray="4 3"/>
+              <text x="624" y="26" font-size="10" fill="#94070a">网关读超时 30s</text>
+              <text x="16" y="124" font-size="12" font-weight="600" fill="#1c1917">异步执行</text>
+              <line x1="16" y1="152" x2="744" y2="152" stroke="#e6e1dd"/>
+              <rect x="16" y="140" width="104" height="24" rx="5" fill="#fdf3f3" stroke="#94070a"/>
+              <text x="68" y="156" text-anchor="middle" font-size="10.5" fill="#94070a">提交并入队</text>
+              <rect x="120" y="140" width="96" height="24" rx="5" fill="#ffffff" stroke="#94070a"/>
+              <text x="168" y="156" text-anchor="middle" font-size="10.5" fill="#94070a">202 + task_id</text>
+              <rect x="232" y="140" width="360" height="24" rx="5" fill="#f8f6f4" stroke="#e6e1dd"/>
+              <text x="412" y="156" text-anchor="middle" font-size="10.5" fill="#7d736c">消费者执行：取任务 → 调模型 → 写回结果 → 确认</text>
+              <rect x="608" y="140" width="136" height="24" rx="5" fill="#f8f6f4" stroke="#e6e1dd"/>
+              <text x="676" y="156" text-anchor="middle" font-size="10.5" fill="#7d736c">凭标识查询到结果</text>
+              <line x1="124" y1="176" x2="124" y2="200" stroke="#94070a" stroke-width="1.5" marker-end="url(#ovA)"/>
+              <text x="132" y="196" font-size="10.5" fill="#94070a">请求在此结束，不等待执行结果</text>
+              <rect x="16" y="216" width="728" height="32" rx="6" fill="#ffffff" stroke="#94070a"/>
+              <text x="380" y="237" text-anchor="middle" font-size="11" fill="#94070a">总执行时间没有缩短，缩短的是请求占用时间；超时风险由此消失</text>
+            </svg>
+            <figcaption>同步与异步的分界不在「谁执行」，而在「请求何时结束」。同步调用中请求的生命周期覆盖整个执行过程，异步执行中请求在入队后即结束。</figcaption>
+          </figure>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">三条验收判据</span></h2>
+            <p class="unit-lead">三条判据都能在命令行与界面上复现，同时也是后续课次回归套件的用例来源。</p>
+            <article class="kp-card">
+              <h3>判据一：请求不再等待执行</h3>
+              <p>提交接口的 P95 响应时间显著小于一次批改的执行时间，且不随批改耗时增加而延长。</p>
+            </article>
+            <article class="kp-card">
+              <h3>判据二：任务不因进程终止而丢失</h3>
+              <p>停止消费者进程后提交作业，接口仍返回成功，任务状态停留在待处理；恢复消费者后任务被继续执行，无需重新提交。</p>
+            </article>
+            <article class="kp-card">
+              <h3>判据三：重复不产生重复结果</h3>
+              <p>同一份提交重复发送、或同一条消息被重复投递，最终只产生一份批改结果。</p>
+            </article>
+            <div class="recap">一句话记住：<b>异步决定「谁等谁」，队列决定「任务放在哪、怎么保证不丢」</b>。两者不是同一件事，缺了后者，异步只是把任务交给一个随时会消失的后台线程。</div>
+          </section>
+
+          <div class="grid">
+            <a class="tile" href="pages/problems.html"><strong>同步执行的问题</strong><span>同步调用链、六类问题与判定阈值</span></a>
+            <a class="tile" href="pages/async.html"><strong>异步：契约与状态</strong><span>202 Accepted、任务标识、状态机与适用边界</span></a>
+            <a class="tile" href="pages/queue.html"><strong>消息队列：语义与机制</strong><span>持久化、竞争消费、确认与重投、削峰与代价</span></a>
+            <a class="tile" href="pages/redesign.html"><strong>系统改造：架构与任务模型</strong><span>改造前后链路、任务记录字段、结果查询方式</span></a>
+            <a class="tile" href="pages/retry.html"><strong>失败重试与幂等</strong><span>可重试失败、退避策略、幂等键与唯一约束</span></a>
+            <a class="tile" href="pages/apply.html"><strong>实践步骤与验收</strong><span>五步实施、三条判据的复现方式、证据归档</span></a>
+            <a class="tile" href="pages/think.html"><strong>思考与分析</strong><span>十道研讨题，每题给出判据与考察点</span></a>
+          </div>
+
+          <div class="pager">
+            <span></span>
+            <a class="btn btn-ghost" href="pages/problems.html">同步执行的问题 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="js/app.js"></script>
+  </body>
+</html>

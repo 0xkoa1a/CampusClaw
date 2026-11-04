@@ -1,5 +1,7 @@
 # 项目规则
 
+- 修改相关模块前阅读 [工程规范](docs/engineering/README.md) 中对应的产品、后端、安全、测试和运维约束；验证状态以实际记录为准。
+
 - 先编写并 Review OpenSpec 规约，再依据 `tasks.md` 实现代码。没有可验收规约时不得开始实现。
 - 第二讲只完成 Propose、Review 与规约验收，不执行 Apply 或 Archive，不编写业务代码，不运行真实 Docker Compose。
 - 每项 Requirement 必须包含可以判定通过或失败的 Scenario；`tasks.md` 必须覆盖全部 Requirement，并为每项任务写明验证方法。

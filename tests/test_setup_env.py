@@ -14,7 +14,8 @@ def test_private_credentials_and_no_overwrite(tmp_path):
     content = target.read_text()
     values = dict(line.split("=", 1) for line in content.splitlines())
     secrets = [values[key] for key in values if key == "SECRET_KEY" or key.endswith("PASSWORD")]
-    assert len(set(secrets)) == 4
+    assert 'RABBITMQ_PASSWORD' in values
+    assert len(secrets) == 5 and len(set(secrets)) == len(secrets)
     assert all(len(value) >= 40 and value not in result.stdout for value in secrets)
     assert stat.S_IMODE(target.stat().st_mode) == 0o600
     again = subprocess.run(command, capture_output=True, text=True)
