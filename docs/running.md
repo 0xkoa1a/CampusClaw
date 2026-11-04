@@ -8,13 +8,22 @@
 
 | 相对目录 | 用途 |
 | --- | --- |
-| `verification/week06/` | 当前运行的第六课验收环境，端口 18086 |
+| `verification/week06/` | 第六课验收环境，端口 18086，仍在运行 |
+| `verification/week08/` | 第八课隔离验收项目 `campusclaw-week08-20261104`，loopback 端口 18088 |
 | `deployments/campusclaw-yyx/` | 已停止的旧部署 |
 | `backups/` | 数据备份与迁移前配置 |
 | `archives/verification/`、`archives/evidence/` | 旧验收环境与历史证据 |
 | `archives/packages/`、`archives/macos-metadata/` | 压缩包与 macOS 元数据归档 |
 
-当前环境在 `verification/week06/` 运行 `sudo docker compose ps`、`sudo docker compose up -d --wait`。Compose 已固定项目名 `campusclaw-week06-20261021`，沿用原数据卷。旧部署项目名为 `campusclaw-yyx`，保持停止状态。目录内的 README 和 `relocation-20261023.json` 记录具体入口与旧新路径对应关系。
+第六课环境在 `verification/week06/`，Compose 项目名为 `campusclaw-week06-20261021`，端口 18086，仍在运行。第八课使用独立目录 `verification/week08/` 和项目名 `campusclaw-week08-20261104`，服务绑定 `127.0.0.1:18088`。进入对应目录后可用 `sudo docker compose ps` 查看状态；需启动时使用 `sudo docker compose up -d --wait`。访问第八课页面前，在本机建立隧道：
+
+```sh
+ssh -i /path/to/key.pem -N -L 18088:127.0.0.1:18088 ubuntu@SERVER_IP
+```
+
+保持隧道终端开启，浏览器访问 <http://localhost:18088/login>。第八课演示配置将私有 `.env` 中的 `MCP_MAX_ROUNDS` 和 `MCP_MAX_CALLS` 均设为 `1`，用于限制演示调用轮次和次数；这属于该环境的私有 override。
+
+第八课验收记录位于 [week08-verification.md](week08-verification.md)，逐项机器证据位于 [`docs/evidence/classroom/week08/`](evidence/classroom/week08/)。验证覆盖 20 次提交的 P95 为 0.00724 秒、20 次真实网关批改均成功且得分 100；RabbitMQ 重启后 20 条持久消息仍在队列。SIGKILL 崩溃用例在第 2 次 attempt 成功且只保存 1 份结果；重建 app/worker 后 21 条结果及各表计数保持不变。数据与 uploads 备份位于 `backups/week08-20261104-data/`，未复制 `.env`。旧部署项目名为 `campusclaw-yyx`，保持停止状态。目录内的 README 和 `relocation-20261023.json` 记录具体入口与旧新路径对应关系。
 
 2026-10-23 迁移时逐项核对文件内容、权限和大小，全部保留；重建容器后，3 个账号、6 份材料、13 个切片、7 个应用、7 个技能、6 个会话、12 条消息、6 份调用记录和 3 条 MCP 审计计数一致。私有 `.env` 仍为 0600。迁移后登录、读取已有回答、刷新和退出验证通过，见[服务截图](evidence/deployment/remote-workspace.png)。历史验收文档中的旧路径保留为当时执行记录。
 
@@ -47,7 +56,7 @@ Linux 用户若没有 Docker socket 权限，在 `docker` 命令前加 `sudo`。
 ssh -i /path/to/key.pem -N -L 18080:127.0.0.1:8080 ubuntu@SERVER_IP
 ```
 
-保持终端开启，浏览器访问 <http://localhost:18080/login>。在服务器仓库目录用 `less .env` 查看演示账号密码。初始化后的密码保存在数据库哈希字段中，修改 `.env` 不会重置已有账号密码。
+保持终端开启，浏览器访问 <http://localhost:18080/login>。在服务器仓库目录查看私有配置中的演示账号；root 所有的 `.env` 需使用 `sudo less .env`。初始化后的密码保存在数据库哈希字段中，修改 `.env` 不会重置已有账号密码。
 
 数据保存在 Compose 命名 volume `campusclaw_data`、`campusclaw_uploads` 和 `campusclaw_vectors` 中，实际名称默认带项目名前缀。`docker compose down` 后再 `docker compose up -d --wait` 不会删除数据。不要使用 `down -v` 做持久化验证；该命令会删除 volume 中的数据。
 

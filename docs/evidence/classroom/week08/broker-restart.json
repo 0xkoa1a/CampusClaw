@@ -1,0 +1,10 @@
+{
+  "mode": "CLab-real-RabbitMQ",
+  "project": "campusclaw-week08-20261104",
+  "worker_stopped": true,
+  "published_confirmed": 20,
+  "ready_before_restart": 20,
+  "ready_after_restart": 20,
+  "persistent_messages_survived": true,
+  "method": "dispatch_pending via application, then docker compose restart rabbitmq; passive queue_declare counts"
+}

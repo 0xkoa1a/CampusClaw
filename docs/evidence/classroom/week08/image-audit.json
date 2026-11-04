@@ -1,0 +1,84 @@
+{
+  "mode": "CLab-installed-application-image-packages",
+  "tool": "pip-audit via uvx",
+  "command": "pip-audit --requirement installed-requirements.txt --no-deps --disable-pip --format=json",
+  "audited_dependency_count": 18,
+  "reported_vulnerability_entries": 12,
+  "unique_vulnerability_count": 6,
+  "vulnerabilities": [
+    {
+      "package": "pip",
+      "installed_version": "25.0.1",
+      "id": "PYSEC-2026-1795",
+      "aliases": [
+        "CVE-2025-8869",
+        "GHSA-4xh5-x5gv-qwph"
+      ],
+      "fix_versions": [
+        "25.3"
+      ]
+    },
+    {
+      "package": "pip",
+      "installed_version": "25.0.1",
+      "id": "PYSEC-2026-1796",
+      "aliases": [
+        "CVE-2026-1703",
+        "GHSA-6vgw-5pg2-w6jp"
+      ],
+      "fix_versions": [
+        "26.0"
+      ]
+    },
+    {
+      "package": "pip",
+      "installed_version": "25.0.1",
+      "id": "PYSEC-2026-2875",
+      "aliases": [
+        "CVE-2026-3219",
+        "GHSA-58qw-9mgm-455v"
+      ],
+      "fix_versions": [
+        "26.1"
+      ]
+    },
+    {
+      "package": "pip",
+      "installed_version": "25.0.1",
+      "id": "PYSEC-2026-2876",
+      "aliases": [
+        "CVE-2026-6357",
+        "GHSA-jp4c-xjxw-mgf9"
+      ],
+      "fix_versions": [
+        "26.1"
+      ]
+    },
+    {
+      "package": "pip",
+      "installed_version": "25.0.1",
+      "id": "PYSEC-2026-196",
+      "aliases": [
+        "CVE-2026-8643",
+        "GHSA-wf93-45jw-7689"
+      ],
+      "fix_versions": [
+        "26.1.2"
+      ]
+    },
+    {
+      "package": "pip",
+      "installed_version": "25.0.1",
+      "id": "PYSEC-2026-3721",
+      "aliases": [
+        "CVE-2026-13346",
+        "GHSA-qwm4-qh6w-59xr"
+      ],
+      "fix_versions": [
+        "26.2",
+        "26.2.0"
+      ]
+    }
+  ],
+  "remediation": "deferred with lessons 9 and 10; no dependency changes"
+}

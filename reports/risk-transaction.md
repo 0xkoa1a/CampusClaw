@@ -15,4 +15,6 @@
 
 测试入口：`tests/test_async_grading.py`、`tests/test_task_queue.py`、`tests/test_grading.py`。迁移用增量 ALTER/CREATE 保留原作业编号，可重复执行；DDL 事务失败也应回滚。
 
-代理发布与数据库提交不是同一事务。发布成功但 outbox 标记前崩溃会重复投递，靠消费端租约与结果唯一约束收敛。模型调用完成、结果提交前崩溃会重复计费，不能保证只调用一次。真实代理断电、消费者 ACK 前崩溃和正式数据迁移备份尚待 CLab 验证。
+代理发布与数据库提交不是同一事务。发布成功但 outbox 标记前崩溃会重复投递，靠消费端租约与结果唯一约束收敛。模型调用完成、结果提交前崩溃会重复计费，不能保证只调用一次。
+
+CLab 已验证代理进程重启保留 20 条消息、消费者运行中被终止后第二次尝试成功、已完成任务重复投递不新增结果。21 份提交、任务、结果在应用重建后计数一致，见[唯一性核对](../docs/evidence/classroom/week08/clab-uniqueness.json)和[重建计数](../docs/evidence/classroom/week08/clab-restart.json)。一致性数据库及上传备份位于 `backups/week08-20261104-data/`，没有复制私有配置。本次没有执行物理机器断电测试或覆盖旧第六课数据卷。

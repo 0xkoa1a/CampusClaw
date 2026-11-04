@@ -1,0 +1,56 @@
+{
+  "collected_at": "2026-11-04T08:10:29.895768+00:00",
+  "compose_project": "campusclaw-week08-20261104",
+  "containers": {
+    "app": [
+      {
+        "Id": "d2de2391eaaf9987ef1cbc53a1769d088671edf425ad1d6f09cb293546afe2f3",
+        "Image": "sha256:3928d099679571aebd740185ba68c7988b9c3ea535e7984a7f85a0c7310b10e2",
+        "Config.Image": "campusclaw-week08-20261104-app",
+        "State.Status": "running",
+        "State.Health.Status": "healthy",
+        "Mounts.Name": [
+          "campusclaw-week08-20261104_campusclaw_uploads",
+          "campusclaw-week08-20261104_campusclaw_data"
+        ]
+      }
+    ],
+    "worker": [
+      {
+        "Id": "100541e5a1ee26dcb7d2d9fcf99aff61de9dbb8e538a91f56cc39c13683be2e3",
+        "Image": "sha256:b4267b3c96e97e4eabdbccde795ff6cb799d1e013759476eab1e479d7229f2ea",
+        "Config.Image": "campusclaw-week08-20261104-worker",
+        "State.Status": "running",
+        "State.Health.Status": null,
+        "Mounts.Name": [
+          "campusclaw-week08-20261104_campusclaw_data",
+          "campusclaw-week08-20261104_campusclaw_uploads"
+        ]
+      }
+    ],
+    "mcp-demo": [
+      {
+        "Id": "f3f9db1a8bac368d8447285964907d8db0d9c4f3ffbe0883b815e099b193b210",
+        "Image": "sha256:caac9f511d6aea338787ffabc8ac01df90bb9cc1156d03e8ba338ed6cb56b866",
+        "Config.Image": "campusclaw-week08-20261104-mcp-demo",
+        "State.Status": "running",
+        "State.Health.Status": "healthy",
+        "Mounts.Name": []
+      }
+    ],
+    "rabbitmq": [
+      {
+        "Id": "836bf65f823dd87388a036a3d2d1bfcd294d568bab58cc05fd7e7554b857169b",
+        "Image": "sha256:21577d148f4f7563a87d761862fa353f59348a094833ca8b1b1a46a8102dffce",
+        "Config.Image": "public.ecr.aws/docker/library/rabbitmq:4-alpine@sha256:21577d148f4f7563a87d761862fa353f59348a094833ca8b1b1a46a8102dffce",
+        "State.Status": "running",
+        "State.Health.Status": "healthy",
+        "Mounts.Name": [
+          "campusclaw-week08-20261104_campusclaw_queue"
+        ]
+      }
+    ]
+  },
+  "rabbitmq_server_version": "Asking node rabbit@836bf65f823d for its RabbitMQ version...\n4.4.0",
+  "log_findings": []
+}

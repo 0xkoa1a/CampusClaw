@@ -1,0 +1,32 @@
+{
+  "data_backup": "/home/ubuntu/workspace/campusclaw/backups/week08-20261104-data",
+  "counts_before": {
+    "users": 3,
+    "materials": 5,
+    "skills": 4,
+    "agents": 3,
+    "conversations": 5,
+    "messages": 10,
+    "mcp_audit": 3,
+    "submissions": 21,
+    "grading_tasks": 21,
+    "grading_results": 21,
+    "task_outbox": 21
+  },
+  "counts_after": {
+    "users": 3,
+    "materials": 5,
+    "skills": 4,
+    "agents": 3,
+    "conversations": 5,
+    "messages": 10,
+    "mcp_audit": 3,
+    "submissions": 21,
+    "grading_tasks": 21,
+    "grading_results": 21,
+    "task_outbox": 21
+  },
+  "restart_preserved_data": true,
+  "MCP_MAX_ROUNDS": 1,
+  "MCP_MAX_CALLS": 1
+}

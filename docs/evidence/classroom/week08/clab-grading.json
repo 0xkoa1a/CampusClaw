@@ -1,0 +1,149 @@
+{
+  "status": "passed",
+  "task_count": 20,
+  "succeeded": 20,
+  "all_results_real_gateway": true,
+  "attempts": null,
+  "tasks": [
+    {
+      "task_id": "debfe9fb-3780-41e2-beba-320e05a313f1",
+      "status": "succeeded",
+      "attempts": 1,
+      "score": 100.0,
+      "source": "real-gateway"
+    },
+    {
+      "task_id": "bda817ed-ab28-4ee5-be1d-e59872ca9b45",
+      "status": "succeeded",
+      "attempts": 1,
+      "score": 100.0,
+      "source": "real-gateway"
+    },
+    {
+      "task_id": "8c53e34c-0eec-41f8-ab16-006070a9a6c8",
+      "status": "succeeded",
+      "attempts": 1,
+      "score": 100.0,
+      "source": "real-gateway"
+    },
+    {
+      "task_id": "974e0af2-6db6-4482-8bf7-2b3c62564118",
+      "status": "succeeded",
+      "attempts": 1,
+      "score": 100.0,
+      "source": "real-gateway"
+    },
+    {
+      "task_id": "6249a5dc-3488-45a3-8285-b585544be168",
+      "status": "succeeded",
+      "attempts": 1,
+      "score": 100.0,
+      "source": "real-gateway"
+    },
+    {
+      "task_id": "dc4ab6a2-8326-4008-86a4-0392a0cbd801",
+      "status": "succeeded",
+      "attempts": 1,
+      "score": 100.0,
+      "source": "real-gateway"
+    },
+    {
+      "task_id": "750c3978-056e-4d9a-898c-b18e78237a22",
+      "status": "succeeded",
+      "attempts": 1,
+      "score": 100.0,
+      "source": "real-gateway"
+    },
+    {
+      "task_id": "f8f766d2-5f1c-42fc-9be7-b7ae8ee0bf2d",
+      "status": "succeeded",
+      "attempts": 1,
+      "score": 100.0,
+      "source": "real-gateway"
+    },
+    {
+      "task_id": "cb9c446b-3bf6-4b65-8da6-87ed5df3e247",
+      "status": "succeeded",
+      "attempts": 1,
+      "score": 100.0,
+      "source": "real-gateway"
+    },
+    {
+      "task_id": "29046809-91cf-4089-a432-a2ac18ba7715",
+      "status": "succeeded",
+      "attempts": 1,
+      "score": 100.0,
+      "source": "real-gateway"
+    },
+    {
+      "task_id": "c0f66bd5-806b-41fc-b973-9cf0cc1d22f0",
+      "status": "succeeded",
+      "attempts": 1,
+      "score": 100.0,
+      "source": "real-gateway"
+    },
+    {
+      "task_id": "566a5ace-94b6-4020-936e-1ffac7c96e50",
+      "status": "succeeded",
+      "attempts": 1,
+      "score": 100.0,
+      "source": "real-gateway"
+    },
+    {
+      "task_id": "9de1c42b-bee8-4dcf-95b9-756a028c460f",
+      "status": "succeeded",
+      "attempts": 1,
+      "score": 100.0,
+      "source": "real-gateway"
+    },
+    {
+      "task_id": "6b406481-9e32-44e1-9b60-4c7650647910",
+      "status": "succeeded",
+      "attempts": 1,
+      "score": 100.0,
+      "source": "real-gateway"
+    },
+    {
+      "task_id": "cfa3bc99-47fe-429a-98ad-5be9ff208612",
+      "status": "succeeded",
+      "attempts": 1,
+      "score": 100.0,
+      "source": "real-gateway"
+    },
+    {
+      "task_id": "dab49a5b-662c-4182-b3c4-69e9ffead8e8",
+      "status": "succeeded",
+      "attempts": 1,
+      "score": 100.0,
+      "source": "real-gateway"
+    },
+    {
+      "task_id": "a2222427-155c-403c-8b37-a5b8d2fdaef6",
+      "status": "succeeded",
+      "attempts": 1,
+      "score": 100.0,
+      "source": "real-gateway"
+    },
+    {
+      "task_id": "a1071441-9e19-44da-a484-bccd3383d5e9",
+      "status": "succeeded",
+      "attempts": 1,
+      "score": 100.0,
+      "source": "real-gateway"
+    },
+    {
+      "task_id": "d2411c0f-f6a6-47a8-9575-87820097c1c1",
+      "status": "succeeded",
+      "attempts": 1,
+      "score": 100.0,
+      "source": "real-gateway"
+    },
+    {
+      "task_id": "a16ee694-10a7-4afb-9efe-d04812b6b67e",
+      "status": "succeeded",
+      "attempts": 1,
+      "score": 100.0,
+      "source": "real-gateway"
+    }
+  ]
+}

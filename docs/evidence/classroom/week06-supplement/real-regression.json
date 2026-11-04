@@ -1,0 +1,109 @@
+{
+  "status": "passed",
+  "checks": [
+    "初始化材料、空 agent 清单和 server 名称前置条件通过",
+    "campus-tools 已连接，calculate 与 unit_convert schema 已发现",
+    "三篇合成资料已上传并完成索引",
+    "四项技能和三个验收 agent 已创建",
+    "无工具问题完成真实流式回答，未发送工具 schema",
+    "知识问题含命中资料和技能，未命中技能及未绑定资料均未进入 trace",
+    "真实模型调用 calculate，schema、工具结果和 MCP 请求响应均已留痕",
+    "真实模型调用 unit_convert，schema、工具结果和 MCP 请求响应均已留痕",
+    "教师审计 API 中存在两条对应的 ok 调用",
+    "断开后已有 MCP 技能的新问题 denied、无远端调用、仍完成真实流回答"
+  ],
+  "turns": {
+    "no_tool": {
+      "conversation_id": 1,
+      "message_id": 2,
+      "delta_events": 36,
+      "skill_name": null,
+      "citations": [],
+      "tool_calls": [],
+      "trace_status": "complete",
+      "answer": "我可以帮你明确学习目标，将其拆解为可执行的小任务，合理分配时间并提醒进度调整，从而帮你制定适合的普通学习计划。"
+    },
+    "knowledge": {
+      "conversation_id": 2,
+      "message_id": 4,
+      "delta_events": 13,
+      "skill_name": "数学解题引导",
+      "citations": [
+        {
+          "number": 1,
+          "chunk_id": "5b92485b-8c52-4c9d-bc02-16ee5684f0cf",
+          "material_id": 3,
+          "title": "week06-equation.md",
+          "chunk_index": 0,
+          "start_offset": 0,
+          "end_offset": 100,
+          "heading": "",
+          "excerpt": "# WEEK06_SYNTH_EQUATION\n\nWEEK06_EQUATION_CONTEXT：解方程时先观察等式两边，再对两边做相同运算；移动未知数项之前检查符号。所有内容均为第六课合成验收材料。",
+          "source_url": "/materials?id=3&chunk=5b92485b-8c52-4c9d-bc02-16ee5684f0cf#source",
+          "score": 0.032787
+        },
+        {
+          "number": 2,
+          "chunk_id": "91a5e4af-5d20-4965-a886-088c047d71c9",
+          "material_id": 4,
+          "title": "week06-language.txt",
+          "chunk_index": 0,
+          "start_offset": 0,
+          "end_offset": 84,
+          "heading": "",
+          "excerpt": "# WEEK06_SYNTH_LANGUAGE\n\nWEEK06_LANGUAGE_CONTEXT：古诗中的比喻通过具体形象表达感受。本段是与方程问题无关的合成语文内容。",
+          "source_url": "/materials?id=4&chunk=91a5e4af-5d20-4965-a886-088c047d71c9#source",
+          "score": 0.016129
+        }
+      ],
+      "tool_calls": [],
+      "trace_status": "complete",
+      "answer": "依据资料[1]，解方程时第一步应先观察等式两边。"
+    },
+    "calculate": {
+      "conversation_id": 3,
+      "message_id": 6,
+      "delta_events": 15,
+      "skill_name": "MCP四则计算",
+      "citations": [],
+      "tool_calls": [
+        {
+          "tool": "calculate@campus-tools",
+          "status": "ok"
+        }
+      ],
+      "trace_status": "complete",
+      "answer": "The result of 23 + 19 is 42."
+    },
+    "unit_convert": {
+      "conversation_id": 4,
+      "message_id": 8,
+      "delta_events": 17,
+      "skill_name": "MCP单位换算",
+      "citations": [],
+      "tool_calls": [
+        {
+          "tool": "unit_convert@campus-tools",
+          "status": "ok"
+        }
+      ],
+      "trace_status": "complete",
+      "answer": "150 cm 换算为 m 的结果是 1.5 m。"
+    },
+    "disconnected": {
+      "conversation_id": 5,
+      "message_id": 10,
+      "delta_events": 10,
+      "skill_name": "MCP四则计算",
+      "citations": [],
+      "tool_calls": [
+        {
+          "tool": "calculate@campus-tools",
+          "status": "denied"
+        }
+      ],
+      "trace_status": "complete",
+      "answer": "23 + 19 = 42"
+    }
+  }
+}

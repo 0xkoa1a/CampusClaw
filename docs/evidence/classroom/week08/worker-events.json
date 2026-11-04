@@ -1,0 +1,233 @@
+[
+  {
+    "timestamp": 1793765392.8878934,
+    "level": "INFO",
+    "event": "grading",
+    "task_id": "29046809-91cf-4089-a432-a2ac18ba7715",
+    "class_id": 1,
+    "user_id": 2,
+    "status": "succeeded",
+    "attempt": 1,
+    "duration_ms": 1232
+  },
+  {
+    "timestamp": 1793765393.9941258,
+    "level": "INFO",
+    "event": "grading",
+    "task_id": "566a5ace-94b6-4020-936e-1ffac7c96e50",
+    "class_id": 1,
+    "user_id": 2,
+    "status": "succeeded",
+    "attempt": 1,
+    "duration_ms": 1100
+  },
+  {
+    "timestamp": 1793765397.2177024,
+    "level": "INFO",
+    "event": "grading",
+    "task_id": "6249a5dc-3488-45a3-8285-b585544be168",
+    "class_id": 1,
+    "user_id": 2,
+    "status": "succeeded",
+    "attempt": 1,
+    "duration_ms": 3216
+  },
+  {
+    "timestamp": 1793765401.0782125,
+    "level": "INFO",
+    "event": "grading",
+    "task_id": "6b406481-9e32-44e1-9b60-4c7650647910",
+    "class_id": 1,
+    "user_id": 2,
+    "status": "succeeded",
+    "attempt": 1,
+    "duration_ms": 3854
+  },
+  {
+    "timestamp": 1793765403.1768963,
+    "level": "INFO",
+    "event": "grading",
+    "task_id": "750c3978-056e-4d9a-898c-b18e78237a22",
+    "class_id": 1,
+    "user_id": 2,
+    "status": "succeeded",
+    "attempt": 1,
+    "duration_ms": 2090
+  },
+  {
+    "timestamp": 1793765404.5909097,
+    "level": "INFO",
+    "event": "grading",
+    "task_id": "8c53e34c-0eec-41f8-ab16-006070a9a6c8",
+    "class_id": 1,
+    "user_id": 2,
+    "status": "succeeded",
+    "attempt": 1,
+    "duration_ms": 1405
+  },
+  {
+    "timestamp": 1793765407.103351,
+    "level": "INFO",
+    "event": "grading",
+    "task_id": "974e0af2-6db6-4482-8bf7-2b3c62564118",
+    "class_id": 1,
+    "user_id": 2,
+    "status": "succeeded",
+    "attempt": 1,
+    "duration_ms": 2506
+  },
+  {
+    "timestamp": 1793765410.9083035,
+    "level": "INFO",
+    "event": "grading",
+    "task_id": "9de1c42b-bee8-4dcf-95b9-756a028c460f",
+    "class_id": 1,
+    "user_id": 2,
+    "status": "succeeded",
+    "attempt": 1,
+    "duration_ms": 3798
+  },
+  {
+    "timestamp": 1793765414.6841178,
+    "level": "INFO",
+    "event": "grading",
+    "task_id": "a1071441-9e19-44da-a484-bccd3383d5e9",
+    "class_id": 1,
+    "user_id": 2,
+    "status": "succeeded",
+    "attempt": 1,
+    "duration_ms": 3770
+  },
+  {
+    "timestamp": 1793765416.5795782,
+    "level": "INFO",
+    "event": "grading",
+    "task_id": "a16ee694-10a7-4afb-9efe-d04812b6b67e",
+    "class_id": 1,
+    "user_id": 2,
+    "status": "succeeded",
+    "attempt": 1,
+    "duration_ms": 1889
+  },
+  {
+    "timestamp": 1793765419.0202112,
+    "level": "INFO",
+    "event": "grading",
+    "task_id": "a2222427-155c-403c-8b37-a5b8d2fdaef6",
+    "class_id": 1,
+    "user_id": 2,
+    "status": "succeeded",
+    "attempt": 1,
+    "duration_ms": 2434
+  },
+  {
+    "timestamp": 1793765420.7643156,
+    "level": "INFO",
+    "event": "grading",
+    "task_id": "bda817ed-ab28-4ee5-be1d-e59872ca9b45",
+    "class_id": 1,
+    "user_id": 2,
+    "status": "succeeded",
+    "attempt": 1,
+    "duration_ms": 1739
+  },
+  {
+    "timestamp": 1793765422.8754497,
+    "level": "INFO",
+    "event": "grading",
+    "task_id": "c0f66bd5-806b-41fc-b973-9cf0cc1d22f0",
+    "class_id": 1,
+    "user_id": 2,
+    "status": "succeeded",
+    "attempt": 1,
+    "duration_ms": 2105
+  },
+  {
+    "timestamp": 1793765426.0951347,
+    "level": "INFO",
+    "event": "grading",
+    "task_id": "cb9c446b-3bf6-4b65-8da6-87ed5df3e247",
+    "class_id": 1,
+    "user_id": 2,
+    "status": "succeeded",
+    "attempt": 1,
+    "duration_ms": 3214
+  },
+  {
+    "timestamp": 1793765427.6706789,
+    "level": "INFO",
+    "event": "grading",
+    "task_id": "cfa3bc99-47fe-429a-98ad-5be9ff208612",
+    "class_id": 1,
+    "user_id": 2,
+    "status": "succeeded",
+    "attempt": 1,
+    "duration_ms": 1569
+  },
+  {
+    "timestamp": 1793765429.4917006,
+    "level": "INFO",
+    "event": "grading",
+    "task_id": "d2411c0f-f6a6-47a8-9575-87820097c1c1",
+    "class_id": 1,
+    "user_id": 2,
+    "status": "succeeded",
+    "attempt": 1,
+    "duration_ms": 1816
+  },
+  {
+    "timestamp": 1793765431.0045042,
+    "level": "INFO",
+    "event": "grading",
+    "task_id": "dab49a5b-662c-4182-b3c4-69e9ffead8e8",
+    "class_id": 1,
+    "user_id": 2,
+    "status": "succeeded",
+    "attempt": 1,
+    "duration_ms": 1507
+  },
+  {
+    "timestamp": 1793765432.9055355,
+    "level": "INFO",
+    "event": "grading",
+    "task_id": "dc4ab6a2-8326-4008-86a4-0392a0cbd801",
+    "class_id": 1,
+    "user_id": 2,
+    "status": "succeeded",
+    "attempt": 1,
+    "duration_ms": 1895
+  },
+  {
+    "timestamp": 1793765437.9933531,
+    "level": "INFO",
+    "event": "grading",
+    "task_id": "debfe9fb-3780-41e2-beba-320e05a313f1",
+    "class_id": 1,
+    "user_id": 2,
+    "status": "succeeded",
+    "attempt": 1,
+    "duration_ms": 5081
+  },
+  {
+    "timestamp": 1793765439.5982668,
+    "level": "INFO",
+    "event": "grading",
+    "task_id": "f8f766d2-5f1c-42fc-9be7-b7ae8ee0bf2d",
+    "class_id": 1,
+    "user_id": 2,
+    "status": "succeeded",
+    "attempt": 1,
+    "duration_ms": 1600
+  },
+  {
+    "timestamp": 1793765582.3917766,
+    "level": "INFO",
+    "event": "grading",
+    "task_id": "9903df5b-38b3-44b7-9bf2-135224b59a6d",
+    "class_id": 1,
+    "user_id": 2,
+    "status": "succeeded",
+    "attempt": 2,
+    "duration_ms": 1230
+  }
+]

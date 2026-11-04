@@ -6,7 +6,8 @@
 - [x] RabbitMQ适配、调度器、消费者租约、重试死信、批改结构校验；本地替身测试并发重复与故障恢复，真实代理另验。
 - [x] 教师/学生作业页面与OpenAPI；本地浏览器操作、刷新恢复和手机布局截图。
 - [x] 本地全量回归和第8课安全基线记录；SEC08仅准备素材，不执行注入实验，不修第9课红项。
-- [ ] SEC05真实运行日志扫描、SEC06部署镜像审计、SEC07真实调用日志采样。
-- [ ] 真实RabbitMQ和网关验收三判据，reports/risk-concurrency.md、risk-transaction.md留真实命令与输出。
+- [x] SEC05真实运行日志扫描、SEC06部署镜像审计、SEC07真实调用日志采样；发现项保留为红。
+- [x] 真实RabbitMQ和网关验收三判据，reports/risk-concurrency.md、risk-transaction.md留真实命令与输出。
 - [x] 本地阶段连同四张截图提交并push。
+- [x] CLab阶段连同真实截图、脱敏机器记录及复现脚本提交并push。
 - [ ] 真人同伴交叉复现，保留真实记录后复核归档。

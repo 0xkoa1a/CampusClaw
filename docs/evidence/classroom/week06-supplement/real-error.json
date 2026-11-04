@@ -1,0 +1,21 @@
+{
+  "status": "passed",
+  "case": "error",
+  "base_url": "http://127.0.0.1:18088",
+  "server": "campus-tools",
+  "agent": "W6四则计算",
+  "conversation_id": 8,
+  "tool_calls": [
+    {
+      "tool": "calculate@campus-tools",
+      "status": "error"
+    }
+  ],
+  "answer": "当前计算工具不可用，无法完成23+19的运算计算。",
+  "done_message_id": 16,
+  "trace_status": "complete",
+  "tool_unavailable": {
+    "observed": true,
+    "mcp_tools_call_requests": 1
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "status": "passed",
+  "case": "quota",
+  "base_url": "http://127.0.0.1:18088",
+  "server": "campus-tools",
+  "agent": "W6四则计算",
+  "conversation_id": 10,
+  "tool_calls": [
+    {
+      "tool": "calculate@campus-tools",
+      "status": "ok"
+    }
+  ],
+  "answer": "根据计算结果，23+19的结果是42，将该结果乘2后得到84。",
+  "done_message_id": 20,
+  "trace_status": "complete",
+  "planning_requests_stream_false": 1,
+  "mcp_tools_call_requests": 1
+}

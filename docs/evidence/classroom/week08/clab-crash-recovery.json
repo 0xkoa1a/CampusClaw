@@ -1,0 +1,16 @@
+{
+  "status": "passed",
+  "task_count": 1,
+  "succeeded": 1,
+  "all_results_real_gateway": true,
+  "attempts": 2,
+  "tasks": [
+    {
+      "task_id": "9903df5b-38b3-44b7-9bf2-135224b59a6d",
+      "status": "succeeded",
+      "attempts": 2,
+      "score": 100.0,
+      "source": "real-gateway"
+    }
+  ]
+}

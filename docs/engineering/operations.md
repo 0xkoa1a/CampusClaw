@@ -5,8 +5,8 @@
 - 从仓库根目录按 `docs/running.md` 配置和启动；私有 `.env` 不提交，权限保持 `0600`。新环境优先用 `python3 scripts/setup_env.py`，已有 `.env` 不覆盖。
 - 当前 `.env.example` 包含 `RABBITMQ_USER`、`RABBITMQ_PASSWORD`、`TASK_MAX_ATTEMPTS`、`TASK_LEASE_SECONDS` 和 `TASK_RETRY_BASE_SECONDS`；`RABBITMQ_PASSWORD` 必须由部署者填入私有配置。应用可读 `RABBITMQ_URL`，也可由用户名、密码和 `RABBITMQ_HOST` 组成连接地址；启动前核对 app、worker 与 Compose 的配置映射。
 - 必需 key 缺失或格式错误时启动失败并指出变量名，不打印其值。密钥轮换后同步更新应用与相应 MCP/队列服务，再验证旧凭据失效。
-- Flask、SQLite、Qdrant、MCP 与计划中的 RabbitMQ 各自使用外置配置；服务地址用 Compose 内部 DNS，凭据用环境变量/私有密钥文件，不写入镜像层。
-- 现有 `/health` 只表示 Flask 进程存活，不代表 Qdrant、网关、MCP 或未来 RabbitMQ 可用。各依赖故障应在对应功能和 worker 健康状态中单独观察。
+- Flask、SQLite、Qdrant、MCP 与 RabbitMQ 各自使用外置配置；服务地址用 Compose 内部 DNS，凭据用环境变量/私有密钥文件，不写入镜像层。
+- 现有 `/health` 只表示 Flask 进程存活，不代表 Qdrant、网关、MCP 或 RabbitMQ 可用。各依赖故障应在对应功能和 worker 运行状态中单独观察。
 
 ## 日志与观测
 

@@ -1,0 +1,17 @@
+{
+  "mode": "CLab-real-RabbitMQ-and-course-gateway",
+  "phase": "pending",
+  "url": "http://127.0.0.1:18088/assignments",
+  "browser": "Chromium via Playwright",
+  "browser_plugin": "Browser plugin not available",
+  "checks": {
+    "page_identity": true,
+    "meaningful_content": true,
+    "state_matches": true,
+    "no_runtime_or_console_errors": true,
+    "screenshot": true,
+    "reload": false
+  },
+  "task_count": 20,
+  "errors": []
+}

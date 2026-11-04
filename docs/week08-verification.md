@@ -1,4 +1,4 @@
-# 第 7、8 课实现与本地验证
+# 第 7、8 课实现与验证
 
 ## 已实现
 
@@ -17,6 +17,7 @@
 | 检查 | 结果与证据 |
 | --- | --- |
 | `make check` | 245 项通过；包含旧数据迁移、DDL 回滚、权限、并发、重试、租约、消息确认契约和批改输出校验 |
+| 新增验收脚本测试 | `tests/test_week08_verifier.py` 9 项通过，覆盖回环地址、状态文件、错误脱敏及日志采集 |
 | OpenSpec strict | 两项 change 通过 |
 | Compose | 新建合成私有配置，`docker compose --env-file <临时配置> config -q` 通过 |
 | 20 次 HTTP 提交 | 全部 202、无评分字段；P95 0.0038 秒，相比两秒测试批改无需等待，见 [async-local.json](../reports/async-local.json) |
@@ -37,8 +38,27 @@
 
 完整 HTTP 验收沿用 `apitest/run_all.py`；按 [apitest 运行说明](../apitest/README.md) 配置三个测试密码和同一实例的 SQLite 路径。报告的 20 次计时与上面的暂停消费者实验是独立轮次。
 
-## 尚需真实环境
+## CLab 真实验收
 
-Mac Docker daemon 当前不可用。本地替身没有验证 RabbitMQ 持久化、真实代理重投或课程模型效果。下一步需要 VPN 访问 CLab，在 `/home/ubuntu/workspace/campusclaw/verification/week08/` 创建隔离环境，完成三条课程判据、真实网关批改及日志采样。现有第六课环境不作为新版已部署的证据。
+部署目录 `/home/ubuntu/workspace/campusclaw/verification/week08/`，Compose 项目 `campusclaw-week08-20261104`，仅绑定 `127.0.0.1:18088`。业务源码为 `8f82774`；新增验收脚本在宿主机执行。原第六课服务使用独立目录、项目及数据卷。
 
-第 6 课新增的成功/拒绝/错误页面展示和调用上限降级也待真实环境补图。独立复核证据未齐前保留待办，不归档变更。课堂派提交由本人完成。
+| 课程判据 | 真实观察 | 证据 |
+| --- | --- | --- |
+| 提交不等待批改 | 暂停 worker 后连续 20 次提交均为 202，无评分字段；P95 为 7.24 ms。实际批改耗时中位数 1895 ms，范围 1100–5081 ms | [提交采样](evidence/classroom/week08/clab-acceptance.json)、[工作日志事件](evidence/classroom/week08/worker-events.json) |
+| 停止后恢复 | 20 条消息发布获确认；重启 RabbitMQ 后仍有 20 条。恢复 worker 后全部成功，结果来源均为真实课程网关 | [代理重启](evidence/classroom/week08/broker-restart.json)、[20 份结果](evidence/classroom/week08/clab-grading.json) |
+| 重复只保留一份结果 | 同键重提返回原任务；向真实代理重投已完成任务，执行次数和结果不变。运行中 SIGKILL 消费者后重启，任务第二次执行成功，结果仍只有一份 | [崩溃恢复](evidence/classroom/week08/clab-crash-recovery.json)、[唯一性核对](evidence/classroom/week08/clab-uniqueness.json) |
+| 应用重建 | 3 个用户、5 份材料、21 份提交/任务/结果及其余业务表重建前后计数一致 | [逐表计数](evidence/classroom/week08/clab-restart.json) |
+
+20 份合成答案均正确，模型均给出 100 分。手机与桌面页面显示“课程网关”，刷新后保留结果；见[真实等待截图](evidence/classroom/week08/05-CLab真实队列等待处理.png)、[真实批改截图](evidence/classroom/week08/06-CLab真实网关批改结果.png)、[手机截图](evidence/classroom/week08/07-CLab手机批改结果.png)。浏览器仍使用 Playwright/Chromium，通过 SSH 隧道访问，无页面或控制台错误。
+
+RabbitMQ 实测为 4.4.0。Docker Hub 超时后，采用 AWS 托管的官方镜像，并在私有配置中固定为 `public.ecr.aws/docker/library/rabbitmq:4-alpine@sha256:21577d148f4f7563a87d761862fa353f59348a094833ca8b1b1a46a8102dffce`。镜像、数据卷与日志扫描摘要见[运行元数据](evidence/classroom/week08/runtime-metadata.json)。
+
+数据库一致性快照和合成上传文件位于远端 `backups/week08-20261104-data/`，目录权限 0700。未额外备份私有 `.env`。应用包审计覆盖实际安装的 18 个包，pip 25.0.1 有 6 项去重公告；[安全基线](../reports/security-baseline.md)记录发现项，本轮不升级依赖。
+
+复现顺序为：`scripts.prepare_week08_acceptance` 建立全新环境；停止 worker 后执行 `scripts.verify_week08 prepare`；确认发布消息并重启代理；启动 worker 后执行 `verify`。故障验证执行 `crash-prepare`、`crash-wait-running`，在 running 时终止并启动 worker，再执行 `verify-crash`。脚本 state 只存合成任务标识，登录 token 仅在内存中使用，结束时撤销。
+
+## 待办
+
+第六课真实 MCP 回归的 10 项检查和 5 次会话已通过，见[摘要](evidence/classroom/week06-supplement/real-regression.json)。另实测服务停机时记录 error 并完成错误说明；恢复服务后，在一轮一次配额下只发生一次规划、一次 MCP 调用，最终回答完成。截图与摘要见[补充验收](evidence/classroom/week06-supplement/README.md)。
+
+MCP 服务已恢复，当前 app、MCP 和 RabbitMQ 健康探针通过，worker 运行中；[最新元数据](evidence/classroom/week08/runtime-current.json)的日志扫描无密钥命中。独立复核证据未齐前不归档 change；课堂派由本人提交。

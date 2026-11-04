@@ -54,3 +54,7 @@ Luna 从[课程网站](https://devops.hello1023.com/)确认最新可用材料为
 - 提交索引：`python scripts/prepare_classroom_submission.py --check`。
 
 当前变更保持活跃，等待用户后续提供阶段验收清单再逐项对账。课堂派提交由用户本人完成。
+
+## 补充验收
+
+新增边界修复及真实 MCP 成功、拒绝、错误和调用上限验证见[补充记录](evidence/classroom/week06-supplement/README.md)。原始阶段证据与报告保留。

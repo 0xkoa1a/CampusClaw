@@ -1,6 +1,6 @@
 # 工程规范
 
-本目录把第 7 课工程规范落成个人仓库可执行的检查条目，适用于现有 Flask、SQLite、Qdrant、MCP，以及规约中的 RabbitMQ 异步批改计划。
+本目录把第 7 课工程规范落成个人仓库可执行的检查条目，适用于 Flask、SQLite、Qdrant、MCP 和 RabbitMQ 异步批改。
 
 - [product.md](product.md)：用户、页面、状态和交互验收。
 - [backend.md](backend.md)：Flask API、SQLite 事务、Qdrant/MCP/队列边界。

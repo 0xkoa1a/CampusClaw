@@ -1,0 +1,12 @@
+{
+  "mode": "CLab-real-MCP-and-course-gateway",
+  "browser_plugin": "Browser plugin not available",
+  "viewport": "1280x960",
+  "checks": {
+    "audit_ok_denied_error": true,
+    "quota_answer": true,
+    "error_answer": true,
+    "no_runtime_or_console_errors": true
+  },
+  "errors": []
+}
