@@ -1,5 +1,7 @@
 # 安全基线
 
+当前第 9、10 课修复后的基线见[安全修复记录](security-fix-log.md)：安全套件 66 项通过、scanner 0 命中、pip-audit 未发现已知漏洞。最终原始输出见 [final-security-gate.txt](week10-local/final-security-gate.txt)，此前 CI 复跑见 [43905787819](https://github.com/0xkoa1a/CampusClaw/actions/runs/43905787819)。CLab 新镜像中 pip 不可导入，见[运行证据](week10-local/clab-runtime.json)。下文保留修复前的历史基线及其实际发现。
+
 执行于 2026-11-04，本地工作区及 CLab 第八课隔离项目。只记录实测，不修改依赖或修复第 9、10 课发现项。
 
 ## 密钥扫描

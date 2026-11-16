@@ -10,6 +10,7 @@
 | --- | --- |
 | `verification/week06/` | 第六课验收环境，端口 18086，仍在运行 |
 | `verification/week08/` | 第八课隔离验收项目 `campusclaw-week08-20261104`，loopback 端口 18088 |
+| `verification/week10/` | 第九、十课隔离项目 `campusclaw-week10-20261117`，loopback 端口 18100；验收版本 `bd68f97` |
 | `deployments/campusclaw-yyx/` | 已停止的旧部署 |
 | `backups/` | 数据备份与迁移前配置 |
 | `archives/verification/`、`archives/evidence/` | 旧验收环境与历史证据 |
@@ -40,7 +41,7 @@ docker compose exec -T app python -m scripts.reindex_all
 docker compose exec -T app python -m scripts.verify_retrieval
 ```
 
-访问 <http://localhost:8080/login>。三个预置用户名为 `teacher_a`、`student_a1`、`student_b1`；密码是你在 `.env` 中分别设置的值。访问 <http://localhost:8080/health> 应得到 `{"status":"ok"}`。首次启动会建立 A/B 班、三个账号和两班可区分的材料。重复启动不会覆盖账号或上传内容。
+访问 <http://localhost:8080/login>。三个预置用户名为 `teacher_a`、`student_a1`、`student_b1`；密码是你在 `.env` 中分别设置的值。访问 <http://localhost:8080/health> 应得到 `{"status":"ok"}`，`/ready` 应返回 `{"status":"ready"}`。首次启动会建立 A/B 班、三个账号和两班可区分的材料。重复启动不会覆盖账号或上传内容。
 
 第 4 课配置见 `.env.example`：网关 Base URL 只到 `/v1`，向量模型 `course-embedding`，对话模型 `course-chat`，维度 `2048`。登录[课程网关](https://ai-gateway.devops.hello1023.com/)后将自己的 API Key 填入仓库根目录的私有 `.env`，保持文件权限 `0600`。升级第三课数据库时会自动增加切片表并为旧材料建立关键词索引；上面的 `reindex_all` 命令负责为旧材料生成向量。上传失败的向量索引可在教师界面重试，原始材料不会因此丢失。Qdrant 数据保存在独立命名 volume，不开放宿主机端口。
 
@@ -111,6 +112,10 @@ MCP 补充配置：`MCP_MAX_ROUNDS` 默认 2（1–8），`MCP_MAX_CALLS` 默认
 网页登录通过 JSON 请求 `auth_mode=bearer`，取得 JWT 并在 API 请求中发送 `Authorization: Bearer ...`。token 保存在当前标签页的 sessionStorage；Cookie 继续支持页面和普通下载链接。服务端校验 JWT 后还查询有效 session，权限来自数据库；退出时同时撤销旧 JWT 和 Cookie。API 登录省略 auth_mode 时仍使用 Cookie，没有 JavaScript 的表单登录也保留。规范见 [Bearer 认证](../openspec/specs/bearer-auth/spec.md)。
 
 ## 提交材料维护
+
+第九、十课报告入口为根 [report.md](../report.md)，截图分别在 `docs/evidence/classroom/week09/` 和 `week10/`。当前课程课堂派日期尚未确认，沿用课次目录。教师在 `/monitoring` 查看观测与站内告警，在 `/api/audit-events` 回查本班审计。功能门禁为 `make check`，安全门禁为 `make check-security`；后者包含在线依赖审计，需要网络。
+
+多阶段镜像仅复制项目字节码及运行文件，运行用户为 10001。部署前设置 `VCS_REF` 为当前完整提交号，再运行 Compose 构建，以便从镜像标签回查源码。目录复现、流水线、告警、压测记录统一放在根 `reports/`。
 
 更新截图或报告后运行同步脚本；五份文字答案直接维护在提交目录。文件映射保存在 [submission-manifest.json](classroom/submission-manifest.json)，上传入口见[提交材料](classroom/提交材料/README.md)。
 

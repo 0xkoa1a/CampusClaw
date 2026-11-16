@@ -1,0 +1,9 @@
+{
+  "mode": "CLab-real-gateway-over-SSH",
+  "desktop": "1280x960",
+  "mobile": "390x844",
+  "three_skill_series": true,
+  "mobile_no_overflow": true,
+  "teacher_audit_403_record": true,
+  "errors": []
+}

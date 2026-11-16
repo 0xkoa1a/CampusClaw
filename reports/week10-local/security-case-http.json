@@ -1,0 +1,18 @@
+{
+  "case": "apitest/cases/api/security/POST.py",
+  "target": "http://127.0.0.1:18090",
+  "result": "passed",
+  "run_scope": "single security API case with a temporary in-memory context; full apitest suite and make check were not run",
+  "checks": [
+    "SQL injection search returned an empty result",
+    "teacher cookie included SameSite=Lax",
+    "GET /materials for the uploaded synthetic filename contained its HTML-escaped literal",
+    "raw hostile filename and executable img element were absent from the rendered page",
+    "form logout without the one-time CSRF token returned 403",
+    "cookie session logout returned 200",
+    "prompt injection checks, cross-class conversation denial, and conversation cleanup passed"
+  ],
+  "synthetic_material_uploads": 1,
+  "synthetic_material_retained": true,
+  "conversation_created_and_deleted": 1
+}

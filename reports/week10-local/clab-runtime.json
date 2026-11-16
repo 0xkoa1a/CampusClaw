@@ -1,0 +1,344 @@
+{
+  "project": "campusclaw-week10-20261117",
+  "port": 18100,
+  "containers": {
+    "app": {
+      "image": "sha256:f52222528ddc19afd549aace935f7d47e945252ed13ec9c22a7ffd80f6f8c47f",
+      "status": "running",
+      "health": "healthy",
+      "revision": "bd68f97143951041a6960fc627b750deb2dfc809"
+    },
+    "worker": {
+      "image": "sha256:9511a373b5863ee6475014596b8fce1b50a21eaf9514ff791323e4db5d5e8ff3",
+      "status": "running",
+      "health": null,
+      "revision": "bd68f97143951041a6960fc627b750deb2dfc809"
+    },
+    "rabbitmq": {
+      "image": "sha256:21577d148f4f7563a87d761862fa353f59348a094833ca8b1b1a46a8102dffce",
+      "status": "running",
+      "health": "healthy",
+      "revision": ""
+    },
+    "qdrant": {
+      "image": "sha256:808d42530f48a2b88abe960165ffe81e9ec71f505d72e6404145444e0e085822",
+      "status": "running",
+      "health": null,
+      "revision": ""
+    },
+    "mcp-demo": {
+      "image": "sha256:b555ace5c8f82e6bfcf0654945476be56b6e3c029ec126032d91f1acd514605e",
+      "status": "running",
+      "health": "healthy",
+      "revision": ""
+    }
+  },
+  "runtime_probe": {
+    "uid": 10001,
+    "project_py_files": 0,
+    "private_env_present": false,
+    "pip_importable": false,
+    "ready": {
+      "status": "ready"
+    },
+    "skill_events": [
+      {
+        "timestamp": "2026-11-16T16:31:02.843333+00:00",
+        "event": "skill_invocation",
+        "request_id": "task:5cdb4492-f947-43e1-af39-745b81e1b769",
+        "user_id": 2,
+        "class_id": 1,
+        "skill": "assignment_grading",
+        "status": 200,
+        "duration_ms": 2305.786,
+        "usage": null
+      },
+      {
+        "timestamp": "2026-11-16T16:31:02.244425+00:00",
+        "event": "llm_usage",
+        "request_id": "task:5cdb4492-f947-43e1-af39-745b81e1b769",
+        "user_id": 2,
+        "class_id": 1,
+        "skill": "assignment_grading",
+        "status": null,
+        "duration_ms": 1706.25,
+        "usage": {
+          "prompt_tokens": 251,
+          "completion_tokens": 83,
+          "total_tokens": 334
+        }
+      },
+      {
+        "timestamp": "2026-11-16T16:31:00.081153+00:00",
+        "event": "skill_invocation",
+        "request_id": "6e965137-58fe-4490-a58f-18676fee9c87",
+        "user_id": 2,
+        "class_id": 1,
+        "skill": "数学解题引导",
+        "status": 200,
+        "duration_ms": 34656.8,
+        "usage": null
+      },
+      {
+        "timestamp": "2026-11-16T16:31:00.062820+00:00",
+        "event": "llm_stream_usage",
+        "request_id": "6e965137-58fe-4490-a58f-18676fee9c87",
+        "user_id": 2,
+        "class_id": 1,
+        "skill": "数学解题引导",
+        "status": null,
+        "duration_ms": null,
+        "usage": {
+          "prompt_tokens": 233,
+          "completion_tokens": 470,
+          "total_tokens": 703
+        }
+      },
+      {
+        "timestamp": "2026-11-16T16:31:00.055059+00:00",
+        "event": "llm_stream_usage",
+        "request_id": "6e965137-58fe-4490-a58f-18676fee9c87",
+        "user_id": 2,
+        "class_id": 1,
+        "skill": "数学解题引导",
+        "status": null,
+        "duration_ms": null,
+        "usage": {
+          "prompt_tokens": null,
+          "completion_tokens": null,
+          "total_tokens": null
+        }
+      },
+      {
+        "timestamp": "2026-11-16T16:31:00.048107+00:00",
+        "event": "llm_stream_usage",
+        "request_id": "6e965137-58fe-4490-a58f-18676fee9c87",
+        "user_id": 2,
+        "class_id": 1,
+        "skill": "数学解题引导",
+        "status": null,
+        "duration_ms": null,
+        "usage": {
+          "prompt_tokens": null,
+          "completion_tokens": null,
+          "total_tokens": null
+        }
+      },
+      {
+        "timestamp": "2026-11-16T16:31:00.040044+00:00",
+        "event": "llm_stream_usage",
+        "request_id": "6e965137-58fe-4490-a58f-18676fee9c87",
+        "user_id": 2,
+        "class_id": 1,
+        "skill": "数学解题引导",
+        "status": null,
+        "duration_ms": null,
+        "usage": {
+          "prompt_tokens": null,
+          "completion_tokens": null,
+          "total_tokens": null
+        }
+      },
+      {
+        "timestamp": "2026-11-16T16:31:00.032023+00:00",
+        "event": "llm_stream_usage",
+        "request_id": "6e965137-58fe-4490-a58f-18676fee9c87",
+        "user_id": 2,
+        "class_id": 1,
+        "skill": "数学解题引导",
+        "status": null,
+        "duration_ms": null,
+        "usage": {
+          "prompt_tokens": null,
+          "completion_tokens": null,
+          "total_tokens": null
+        }
+      },
+      {
+        "timestamp": "2026-11-16T16:31:00.021263+00:00",
+        "event": "llm_stream_usage",
+        "request_id": "6e965137-58fe-4490-a58f-18676fee9c87",
+        "user_id": 2,
+        "class_id": 1,
+        "skill": "数学解题引导",
+        "status": null,
+        "duration_ms": null,
+        "usage": {
+          "prompt_tokens": null,
+          "completion_tokens": null,
+          "total_tokens": null
+        }
+      },
+      {
+        "timestamp": "2026-11-16T16:31:00.013287+00:00",
+        "event": "llm_stream_usage",
+        "request_id": "6e965137-58fe-4490-a58f-18676fee9c87",
+        "user_id": 2,
+        "class_id": 1,
+        "skill": "数学解题引导",
+        "status": null,
+        "duration_ms": null,
+        "usage": {
+          "prompt_tokens": null,
+          "completion_tokens": null,
+          "total_tokens": null
+        }
+      },
+      {
+        "timestamp": "2026-11-16T16:31:00.005438+00:00",
+        "event": "llm_stream_usage",
+        "request_id": "6e965137-58fe-4490-a58f-18676fee9c87",
+        "user_id": 2,
+        "class_id": 1,
+        "skill": "数学解题引导",
+        "status": null,
+        "duration_ms": null,
+        "usage": {
+          "prompt_tokens": null,
+          "completion_tokens": null,
+          "total_tokens": null
+        }
+      },
+      {
+        "timestamp": "2026-11-16T16:30:59.996188+00:00",
+        "event": "llm_stream_usage",
+        "request_id": "6e965137-58fe-4490-a58f-18676fee9c87",
+        "user_id": 2,
+        "class_id": 1,
+        "skill": "数学解题引导",
+        "status": null,
+        "duration_ms": null,
+        "usage": {
+          "prompt_tokens": null,
+          "completion_tokens": null,
+          "total_tokens": null
+        }
+      },
+      {
+        "timestamp": "2026-11-16T16:30:59.987428+00:00",
+        "event": "llm_stream_usage",
+        "request_id": "6e965137-58fe-4490-a58f-18676fee9c87",
+        "user_id": 2,
+        "class_id": 1,
+        "skill": "数学解题引导",
+        "status": null,
+        "duration_ms": null,
+        "usage": {
+          "prompt_tokens": null,
+          "completion_tokens": null,
+          "total_tokens": null
+        }
+      },
+      {
+        "timestamp": "2026-11-16T16:30:59.972759+00:00",
+        "event": "llm_stream_usage",
+        "request_id": "6e965137-58fe-4490-a58f-18676fee9c87",
+        "user_id": 2,
+        "class_id": 1,
+        "skill": "数学解题引导",
+        "status": null,
+        "duration_ms": null,
+        "usage": {
+          "prompt_tokens": null,
+          "completion_tokens": null,
+          "total_tokens": null
+        }
+      },
+      {
+        "timestamp": "2026-11-16T16:30:59.963776+00:00",
+        "event": "llm_stream_usage",
+        "request_id": "6e965137-58fe-4490-a58f-18676fee9c87",
+        "user_id": 2,
+        "class_id": 1,
+        "skill": "数学解题引导",
+        "status": null,
+        "duration_ms": null,
+        "usage": {
+          "prompt_tokens": null,
+          "completion_tokens": null,
+          "total_tokens": null
+        }
+      },
+      {
+        "timestamp": "2026-11-16T16:30:59.956211+00:00",
+        "event": "llm_stream_usage",
+        "request_id": "6e965137-58fe-4490-a58f-18676fee9c87",
+        "user_id": 2,
+        "class_id": 1,
+        "skill": "数学解题引导",
+        "status": null,
+        "duration_ms": null,
+        "usage": {
+          "prompt_tokens": null,
+          "completion_tokens": null,
+          "total_tokens": null
+        }
+      },
+      {
+        "timestamp": "2026-11-16T16:30:59.946025+00:00",
+        "event": "llm_stream_usage",
+        "request_id": "6e965137-58fe-4490-a58f-18676fee9c87",
+        "user_id": 2,
+        "class_id": 1,
+        "skill": "数学解题引导",
+        "status": null,
+        "duration_ms": null,
+        "usage": {
+          "prompt_tokens": null,
+          "completion_tokens": null,
+          "total_tokens": null
+        }
+      },
+      {
+        "timestamp": "2026-11-16T16:30:59.937628+00:00",
+        "event": "llm_stream_usage",
+        "request_id": "6e965137-58fe-4490-a58f-18676fee9c87",
+        "user_id": 2,
+        "class_id": 1,
+        "skill": "数学解题引导",
+        "status": null,
+        "duration_ms": null,
+        "usage": {
+          "prompt_tokens": null,
+          "completion_tokens": null,
+          "total_tokens": null
+        }
+      },
+      {
+        "timestamp": "2026-11-16T16:30:59.929437+00:00",
+        "event": "llm_stream_usage",
+        "request_id": "6e965137-58fe-4490-a58f-18676fee9c87",
+        "user_id": 2,
+        "class_id": 1,
+        "skill": "数学解题引导",
+        "status": null,
+        "duration_ms": null,
+        "usage": {
+          "prompt_tokens": null,
+          "completion_tokens": null,
+          "total_tokens": null
+        }
+      },
+      {
+        "timestamp": "2026-11-16T16:30:59.915659+00:00",
+        "event": "llm_stream_usage",
+        "request_id": "6e965137-58fe-4490-a58f-18676fee9c87",
+        "user_id": 2,
+        "class_id": 1,
+        "skill": "数学解题引导",
+        "status": null,
+        "duration_ms": null,
+        "usage": {
+          "prompt_tokens": null,
+          "completion_tokens": null,
+          "total_tokens": null
+        }
+      }
+    ]
+  },
+  "mcp_regression": {
+    "status": "passed",
+    "checks_count": 10,
+    "turns_count": 5
+  }
+}

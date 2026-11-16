@@ -27,11 +27,37 @@ def test_same_origin_write_and_cross_site_rejection(client):
 
 
 def test_form_csrf_is_one_time(client):
-    client.get('/login')
+    response = client.get('/login')
+    assert response.status_code == 200
+    assert client.get_cookie('session').same_site == 'Lax'
     with client.session_transaction() as s: token=s['_csrf']
     assert client.post('/login', data={'username':'teacher_a','password':'teacher-test-password'}).status_code == 403
     assert client.post('/login', data={'username':'teacher_a','password':'teacher-test-password','csrf_token':token}).status_code == 302
     assert client.post('/logout', data={'csrf_token':token}).status_code == 403
+
+
+def test_sql_injection_search_stays_in_authenticated_class(client):
+    assert login(client, 'student_a1', 'student-a-test-password').status_code == 200
+    response = client.post('/api/search', json={
+        'q': "%' OR 1=1 UNION SELECT title FROM materials --",
+        'mode': 'keyword',
+    })
+    assert response.status_code == 200
+    assert response.json['total'] == 0
+    assert response.json['hits'] == []
+
+
+def test_material_title_is_escaped_in_server_rendered_page(app, client):
+    login(client)
+    hostile_title = '<script>alert(1)</script>'
+    with app.app_context():
+        with get_db():
+            get_db().execute('UPDATE materials SET title=? WHERE id=1', (hostile_title,))
+    response = client.get('/materials?id=1')
+    html = response.get_data(as_text=True)
+    assert response.status_code == 200
+    assert hostile_title not in html
+    assert '&lt;script&gt;alert(1)&lt;/script&gt;' in html
 
 
 def test_injected_question_does_not_call_model_or_save_messages(app, client):

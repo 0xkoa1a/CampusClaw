@@ -1,0 +1,71 @@
+<!doctype html><meta charset="utf-8"><title>CLab与CI运行记录摘录</title><style>body{font:16px system-ui;padding:30px;color:#182432;max-width:1180px;margin:auto}h1{font-size:26px}section{display:grid;grid-template-columns:1fr 1fr;gap:20px}article{border:1px solid #cbd5dc;padding:20px;border-radius:12px;min-width:0}pre{font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere}</style><h1>CLab 与 CI：实际运行记录摘录</h1><p>内容读取自仓库中保存的原始 JSON。告警演练在 CLab 容器内使用可控模型故障与真实 HTTP，持续条件为 300 秒。</p><section><article><h2>告警已触发并写入教师站内通知</h2><pre>{
+  "mode": "local-stub-controlled-failure-real-HTTP",
+  "elapsed_seconds": 300.5591755970381,
+  "failed_invocations": 149,
+  "policy": {
+    "threshold": 0.01,
+    "window_seconds": 300
+  },
+  "notification": {
+    "created_at": "2026-11-16T16:13:20.085093+00:00",
+    "end_at": "2026-11-16T16:18:20.608220+00:00",
+    "error_rate": 1,
+    "id": 1,
+    "skill": "数学解题引导",
+    "start_at": "2026-11-16T16:13:20.085093+00:00",
+    "status": "active",
+    "threshold": 0.01,
+    "updated_at": "2026-11-16T16:18:20.608220+00:00"
+  },
+  "delivery": "persisted in teacher in-app notification list"
+}</pre></article><article><h2>真实容器与发布门禁</h2><pre>{
+  "containers": {
+    "app": {
+      "image": "sha256:f52222528ddc19afd549aace935f7d47e945252ed13ec9c22a7ffd80f6f8c47f",
+      "status": "running",
+      "health": "healthy",
+      "revision": "bd68f97143951041a6960fc627b750deb2dfc809"
+    },
+    "worker": {
+      "image": "sha256:9511a373b5863ee6475014596b8fce1b50a21eaf9514ff791323e4db5d5e8ff3",
+      "status": "running",
+      "health": null,
+      "revision": "bd68f97143951041a6960fc627b750deb2dfc809"
+    },
+    "rabbitmq": {
+      "image": "sha256:21577d148f4f7563a87d761862fa353f59348a094833ca8b1b1a46a8102dffce",
+      "status": "running",
+      "health": "healthy",
+      "revision": ""
+    },
+    "qdrant": {
+      "image": "sha256:808d42530f48a2b88abe960165ffe81e9ec71f505d72e6404145444e0e085822",
+      "status": "running",
+      "health": null,
+      "revision": ""
+    },
+    "mcp-demo": {
+      "image": "sha256:b555ace5c8f82e6bfcf0654945476be56b6e3c029ec126032d91f1acd514605e",
+      "status": "running",
+      "health": "healthy",
+      "revision": ""
+    }
+  },
+  "runtime_probe": {
+    "uid": 10001,
+    "project_py_files": 0,
+    "private_env_present": false,
+    "pip_importable": false,
+    "ready": {
+      "status": "ready"
+    }
+  },
+  "ci": {
+    "url": "https://github.com/0xkoa1a/CampusClaw/actions/runs/43905787819",
+    "conclusion": "success"
+  },
+  "container": {
+    "url": "https://github.com/0xkoa1a/CampusClaw/actions/runs/43905786752",
+    "conclusion": "success"
+  }
+}</pre></article></section>

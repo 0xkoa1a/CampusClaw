@@ -1,0 +1,28 @@
+{
+  "query": {
+    "user_id": 2,
+    "limit": 200
+  },
+  "audit_events": [
+    {
+      "event": "http_request",
+      "fields": {
+        "class_id": 1,
+        "duration_ms": 1.059,
+        "object": "/api/tasks/<string:identifier>/grade",
+        "operation": "PUT",
+        "role": "student",
+        "route": "/api/tasks/<string:identifier>/grade",
+        "skill": null,
+        "status": 403,
+        "usage": null,
+        "username": "student_a1"
+      },
+      "id": 2167,
+      "level": "INFO",
+      "request_id": "4d255615-da6a-4be4-8558-e12c952db873",
+      "timestamp": "2026-11-16T16:31:03.214202+00:00",
+      "user_id": 2
+    }
+  ]
+}

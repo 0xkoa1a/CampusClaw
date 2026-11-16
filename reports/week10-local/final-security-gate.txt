@@ -1,0 +1,7 @@
+.venv/bin/python -m pytest -q tests/test_delivery.py tests/test_security_controls.py tests/test_observability.py tests/test_bearer.py tests/test_task_queue.py tests/test_async_grading.py
+..................................................................       [100%]
+66 passed in 16.91s
+.venv/bin/python scripts/check_security.py
+Secret baseline scan passed.
+.venv/bin/python -m pip_audit -r requirements-dev.txt
+No known vulnerabilities found

@@ -1,0 +1,21 @@
+{
+  "mode": "local-stub-controlled-failure-real-HTTP",
+  "elapsed_seconds": 300.5591755970381,
+  "failed_invocations": 149,
+  "policy": {
+    "threshold": 0.01,
+    "window_seconds": 300
+  },
+  "notification": {
+    "created_at": "2026-11-16T16:13:20.085093+00:00",
+    "end_at": "2026-11-16T16:18:20.608220+00:00",
+    "error_rate": 1.0,
+    "id": 1,
+    "skill": "数学解题引导",
+    "start_at": "2026-11-16T16:13:20.085093+00:00",
+    "status": "active",
+    "threshold": 0.01,
+    "updated_at": "2026-11-16T16:18:20.608220+00:00"
+  },
+  "delivery": "persisted in teacher in-app notification list"
+}

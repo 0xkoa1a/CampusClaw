@@ -1,5 +1,6 @@
 {
-  "mode": "local-synthetic",
+  "mode": "local-synthetic-lecture-title",
+  "input": "<script>alert(1)</script>",
   "escaped_dom_source": true,
   "injected_script_node": false,
   "unexpected_dialog": false

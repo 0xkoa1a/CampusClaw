@@ -1,0 +1,12 @@
+---
+description: CampusClaw classroom implementation and verification
+alwaysApply: true
+---
+
+Follow AGENTS.md and docs/engineering/README.md. Before implementation, write and review OpenSpec scenarios and validate strictly.
+
+Check seven areas: API identity/status matrix; business scenarios and teacher-grade priority; database migration/transactions/resource scope; shared-function boundaries; dependency failure and partial streams; injection/CSRF/secrets/dependencies; same-script same-parameter performance evidence.
+
+Use AI review for implementation boundaries and scripts for machine-checkable outcomes. Human review covers requirement intent, observed model teaching quality and genuine user feedback. Preserve the actual verification scope; never substitute fixtures for real users or claim an unexecuted test passed.
+
+Run make check and make check-security. Keep credentials outside Git and screenshots. Include genuine verification screenshots with deliverable commits, push automatically, and verify the remote commit. Classroom submission remains with the user.

@@ -1,0 +1,61 @@
+{
+  "mode": "real-CLab-mobile-viewport",
+  "viewport": "390x844",
+  "submission_http_status": 202,
+  "task_id": "4502d01c-7f8b-47b0-b083-769971c1fed5",
+  "observed_statuses": [
+    "pending",
+    "succeeded"
+  ],
+  "completed": true,
+  "cross_class_material": {
+    "status": 404,
+    "body": {
+      "error": "材料不存在"
+    }
+  },
+  "teacher_own_class_submission_audit": [
+    {
+      "event": "http_request",
+      "fields": {
+        "class_id": 1,
+        "duration_ms": 6.515,
+        "object": "/api/assignments/<int:identifier>/submissions",
+        "operation": "POST",
+        "role": "student",
+        "route": "/api/assignments/<int:identifier>/submissions",
+        "skill": null,
+        "status": 202,
+        "usage": null,
+        "username": "student_a1"
+      },
+      "id": 2334,
+      "level": "INFO",
+      "request_id": "b6d75e9c-94d1-4924-91ad-97df43de183f",
+      "timestamp": "2026-11-16T16:35:32.307993+00:00",
+      "user_id": 2
+    },
+    {
+      "event": "http_request",
+      "fields": {
+        "class_id": 1,
+        "duration_ms": 5.934,
+        "object": "/api/assignments/<int:identifier>/submissions",
+        "operation": "POST",
+        "role": "student",
+        "route": "/api/assignments/<int:identifier>/submissions",
+        "skill": null,
+        "status": 202,
+        "usage": null,
+        "username": "student_a1"
+      },
+      "id": 2250,
+      "level": "INFO",
+      "request_id": "22c50a57-1964-4f99-9153-627715b6a13f",
+      "timestamp": "2026-11-16T16:34:27.955200+00:00",
+      "user_id": 2
+    }
+  ],
+  "foreign_class_audit_visible": false,
+  "errors": []
+}

@@ -1,5 +1,7 @@
 # 首轮 Review
 
+本页保留第八课首轮审阅。第九、十课修复后的审阅见 [review-02.md](review-02.md)、[review-03.md](review-03.md)，当前日志与 MCP 观测结果见[安全修复记录](security-fix-log.md)。
+
 执行方式：AI 代码审阅与本地自动化，非同伴独立验收。
 
 - 接收事务覆盖提交、任务和 outbox；LLM 与消息发布不持有数据库事务。

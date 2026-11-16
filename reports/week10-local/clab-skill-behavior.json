@@ -1,0 +1,20 @@
+{
+  "mode": "CLab-real-gateway",
+  "cases": [
+    {
+      "skill": "数学解题引导",
+      "conversation_id": 8,
+      "question": "方程2x+3=11，下一步该怎么检查？只给一个提示，不给最后的解。",
+      "actual_answer": "你可以把你算出的x的值代入原方程的左边，计算这个式子的结果，再和方程右边的数进行比较，判断是否相等。"
+    },
+    {
+      "skill": "错题讲解",
+      "conversation_id": 9,
+      "question": "我把方程2x+3=11算成x=7，这道错题应先检查哪里？请指出错误原因，不给标准答案。",
+      "actual_answer": "可以先核查解方程时处理常数项的那一步运算，再核查将未知数系数化为1的那一步运算，这两个步骤是需要优先检查的，错误原因通常是在这两步的数值计算中出现了偏差。"
+    }
+  ],
+  "cross_class_keyword_hits": [],
+  "transport_status": "passed",
+  "behavior_review": "inspect saved actual_answer; transport success alone is insufficient"
+}

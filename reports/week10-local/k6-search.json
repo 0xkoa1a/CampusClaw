@@ -1,0 +1,157 @@
+{
+    "metrics": {
+        "benchmark_endpoint_duration": {
+            "p(95)": 145.97224999999997,
+            "avg": 41.613152302654775,
+            "min": 1.668,
+            "med": 15.518,
+            "max": 2099.905,
+            "p(90)": 92.57000000000001
+        },
+        "http_req_receiving": {
+            "p(90)": 0.036,
+            "p(95)": 0.044,
+            "avg": 0.026093280852694585,
+            "min": 0.012,
+            "med": 0.022,
+            "max": 5.091
+        },
+        "http_req_duration": {
+            "med": 15.518,
+            "max": 2099.905,
+            "p(90)": 92.56400000000001,
+            "p(95)": 145.96819999999997,
+            "avg": 41.61173025880414,
+            "min": 1.668
+        },
+        "http_req_sending": {
+            "p(95)": 0.025,
+            "avg": 0.014241596711832113,
+            "min": 0.006,
+            "med": 0.012,
+            "max": 1.109,
+            "p(90)": 0.02
+        },
+        "checks": {
+            "passes": 28708,
+            "fails": 0,
+            "thresholds": {
+                "rate>0.99": false
+            },
+            "value": 1
+        },
+        "http_req_connecting": {
+            "p(90)": 0.161,
+            "p(95)": 0.175,
+            "avg": 0.13370333344944124,
+            "min": 0.047,
+            "med": 0.128,
+            "max": 6.345
+        },
+        "data_sent": {
+            "count": 14153115,
+            "rate": 235174.1656340805
+        },
+        "vus_max": {
+            "value": 20,
+            "min": 20,
+            "max": 20
+        },
+        "data_received": {
+            "count": 29539922,
+            "rate": 490847.88113753183
+        },
+        "vus": {
+            "value": 20,
+            "min": 20,
+            "max": 20
+        },
+        "iterations": {
+            "count": 28706,
+            "rate": 476.9910792565393
+        },
+        "http_req_failed": {
+            "passes": 1,
+            "fails": 28708,
+            "thresholds": {
+                "rate<0.01": false
+            },
+            "value": 3.483228255947612e-05
+        },
+        "http_req_waiting": {
+            "max": 2099.869,
+            "p(90)": 92.51460000000002,
+            "p(95)": 145.9238,
+            "avg": 41.57139538123914,
+            "min": 1.639,
+            "med": 15.471
+        },
+        "http_req_duration{expected_response:true}": {
+            "p(90)": 92.56600000000002,
+            "p(95)": 145.96954999999997,
+            "avg": 41.61299996516678,
+            "min": 1.668,
+            "med": 15.518,
+            "max": 2099.905
+        },
+        "http_req_blocked": {
+            "avg": 0.15327952906753886,
+            "min": 0.062,
+            "med": 0.146,
+            "max": 6.369,
+            "p(90)": 0.185,
+            "p(95)": 0.202
+        },
+        "http_req_tls_handshaking": {
+            "min": 0,
+            "med": 0,
+            "max": 0,
+            "p(90)": 0,
+            "p(95)": 0,
+            "avg": 0
+        },
+        "iteration_duration": {
+            "min": 1.82075,
+            "med": 15.726375,
+            "max": 2100.0825,
+            "p(90)": 92.786709,
+            "p(95)": 146.16395875,
+            "avg": 41.81810676527547
+        },
+        "http_reqs": {
+            "count": 28709,
+            "rate": 477.04092852978425
+        }
+    },
+    "root_group": {
+        "groups": {
+            "teardown": {
+                "path": "::teardown",
+                "id": "a8a9942382e8ffe2e56ef29e664b8229",
+                "groups": {},
+                "checks": {
+                    "benchmark session revoked (200)": {
+                        "path": "::teardown::benchmark session revoked (200)",
+                        "id": "dd0e29de70f49d52752e07db49879d42",
+                        "passes": 1,
+                        "fails": 0,
+                        "name": "benchmark session revoked (200)"
+                    }
+                },
+                "name": "teardown"
+            }
+        },
+        "checks": {
+            "keyword search succeeded (200)": {
+                "fails": 0,
+                "name": "keyword search succeeded (200)",
+                "path": "::keyword search succeeded (200)",
+                "id": "66dbb7ee359b83d2994de9ef6e79bd5e",
+                "passes": 28706
+            }
+        },
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e"
+    }
+}
