@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>注入：成因与防护 · 第 9 课 · 安全检查与审计</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 9 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">本课流程</p>
+          <a href="../index.html">概览</a>
+          <a href="problems.html">三类安全缺口</a>
+          <a href="authz.html">越权：判定与修复</a>
+          <a href="inject.html" class="active">注入：成因与防护</a>
+          <a href="assets.html">密钥与依赖</a>
+          <a href="audit.html">操作日志</a>
+          <a href="aisec.html">AI 入口：提示词注入</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="lab-demo.html">靶场演示</a>
+          <a href="apply.html">实践步骤与验收</a>
+          <a href="think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">注入：成因与防护</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>注入：成因与防护</h1>
+          <p class="lead">上一课的自查没有直接测 SQL 注入、XSS、CSRF——因为此前没人试过，它们是盲区。这一页给三类注入各补一条反例用例，讲清它们的共同成因（数据被当成了代码），再把防护落到正确的位置。判据很简单：注入进去，系统不接，即为绿。</p>
+
+          <section class="unit" id="u0">
+            <h2 class="unit-h"><span class="unit-t">先说清几个词</span></h2>
+            <p class="unit-lead">这一页用到的词先在这里讲明白。</p>
+            <div class="terms">
+              <div><b>SQL 注入</b><i>SQL injection</i>：用户输入被拼进 SQL 语句的语法位置，改变了语句本意。例如输入 <code>' OR '1'='1</code>，让查询条件恒成立，返回本不该返回的行。</div>
+              <div><b>XSS 跨站脚本</b><i>cross-site scripting</i>：用户输入被原样放进页面 HTML，在别人的浏览器里执行。把脚本存进讲义标题，教师打开列表页时就中招——受害者是看页面的人，不是提交的人。</div>
+              <div><b>CSRF 跨站请求伪造</b><i>cross-site request forgery</i>：借用户浏览器里还有效的登录状态，从别的网站发起一次用户不知情的请求。改配置、改口令这类写接口是重点目标。</div>
+              <div><b>参数化查询</b><i>parameterized query</i>：SQL 的结构与数据分离——语句里只留占位符，输入作为值填进去，永远进不了语法位置。</div>
+              <div><b>输出转义</b><i>output encoding</i>：数据放进 HTML 之前按位置转换（<code>&lt;</code> 变成 <code>&amp;lt;</code>）。输入校验挡明显恶意，输出转义保证位置正确——后者才是防线。</div>
+              <div><b>一次性令牌</b><i>CSRF token</i>：服务端签发、写请求必须携带并校验的随机值。别的网站猜不到它，伪造的跨站请求就带不上。</div>
+            </div>
+          </section>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">三类漏洞，一个成因</span></h2>
+            <p class="unit-lead">三类的名字不同，成因是同一句话：数据与代码的边界被破坏。</p>
+            <article class="kp-card">
+              <h3>边界在拼接处消失</h3>
+              <p>SQL 里引号内是数据、引号外是代码；HTML 里标签是代码、文本是数据。只要发生字符串拼接，这条边界就由「语法」变成了「猜」——输入里带上正确的符号，就能从数据一侧跨进代码一侧。所以三类漏洞出现在同一个位置类型上：凡是把用户输入直接拼进 SQL、HTML 或提示词的地方，都是注入点。</p>
+              <p><span class="sub-h">怎么看到</span>：在讲义标题位置提交 <code>&lt;script&gt;alert(1)&lt;/script&gt;</code>，打开列表页后查看页面源码。这段内容原样出现在 HTML 标签之间，边界就没有守住——不管浏览器这次执行没执行，位置已经错了。</p>
+            </article>
+            <article class="kp-card">
+              <h3>攻击者是「合法用户」</h3>
+              <p>注入不需要绕过登录：攻击者用正常账号提交正常表单，只是字段里装的内容不正常。这就是它藏在盲区里的原因——功能用例全部走正常输入，永远不会踩中。反例用例必须反过来：字段里专装越界内容，期望系统把它当纯文本处理。</p>
+            </article>
+            <div class="note">判定的依据是位置，不是内容：不能靠「过滤掉 script 这个词」防 XSS——大小写变换、编码变形可以绕过任何针对具体内容的过滤。靠得住的只有位置规则：进 SQL 用占位符，进 HTML 做转义。</div>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">三类对照与反例用例</span></h2>
+            <p class="unit-lead">每类一条反例用例，写进 <code>apitest/cases/</code>，让它常驻回归——注入防护修好后退化的情况并不少见。</p>
+            <table>
+              <thead>
+                <tr><th>类型</th><th>数据被当成了什么</th><th>防护位置</th><th>反例用例与期望</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>SQL 注入</td><td>一段 SQL 语法</td><td>查询构造处参数化</td><td>提交 <code>' OR '1'='1</code> 作为检索词，期望正常返回空结果或报格式错误，而非返回全表数据</td></tr>
+                <tr><td>XSS</td><td>一段 HTML 与脚本</td><td>输出位置转义</td><td>讲义标题存入 <code>&lt;img onerror=...&gt;</code>，列表页打开后页面源码中该内容已转义、无脚本执行</td></tr>
+                <tr><td>CSRF</td><td>一次带着登录状态的请求</td><td>写接口校验一次性令牌</td><td>从另一个页面伪造表单提交配置修改，期望因缺少令牌被拒（403）</td></tr>
+              </tbody>
+            </table>
+          <div class="note"><b>自动化</b>：三条反例不是当场试一次：进 <code>apitest/cases/</code> 常驻，随 <code>make check</code> 跑；每新增一种输出位置就补一条反例。</div>
+            <div class="note">XSS 的反例要看两处：页面上「没弹窗」只是表象，源码里「已转义」才是判定。只看表象会漏掉过滤不彻底但恰好没触发的情况。</div>
+          </section>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">SQL 侧的修复写法</span></h2>
+            <p class="unit-lead">拼接与参数化的差别只在那一行构造语句的代码。</p>
+          <pre><code>// 拼接：用户输入直接进了 SQL 的语法位置
+q := fmt.Sprintf("SELECT name FROM users WHERE name = '%s'", name)
+// 输入 name = "x' OR '1'='1" 后条件恒成立，返回不该返回的行
+
+// 参数化：用户输入只作为占位符的值，永远成不了语法
+rows, err := db.Query("SELECT name FROM users WHERE name = ?", name)</code></pre>
+            <div class="note">参数化覆盖的是「值」的位置。排序字段这类没法占位符化的位置（例如 <code>ORDER BY</code> 后面的列名），用白名单枚举：只允许从固定几个列名里选，不在名单内的直接拒绝——这仍是「位置规则」，只是规则换成了枚举。</div>
+          </section>
+
+          <section class="unit" id="u4">
+            <h2 class="unit-h"><span class="unit-n">4</span><span class="unit-t">CSRF 与 Cookie 的两个开关</span></h2>
+            <p class="unit-lead">CSRF 的防护是一组配置加一个校验，两个开关各管一段。</p>
+            <article class="kp-card">
+              <h3>SameSite：浏览器侧的第一道</h3>
+              <p>把会话 Cookie 标记为 SameSite，浏览器在跨站请求里不再自动携带它——伪造的跨站请求连登录状态都带不上。它挡的是「自动带 Cookie」这一条路，属于浏览器约定，老客户端可能不遵守。</p>
+              <p><span class="sub-h">怎么看到</span>：检查响应头里 Cookie 的 SameSite 属性；在另一个站点页面上构造表单提交，请求确实发出但服务端识别为未登录。</p>
+            </article>
+            <article class="kp-card">
+              <h3>一次性令牌：服务端侧的第二道</h3>
+              <p>服务端为表单或会话签发随机令牌，写请求必须携带且逐次校验。跨站页面拿不到这个值（同源策略限制它读你的页面），伪造请求就过不了校验。两道配合即纵深防御：垮一道，另一道还在。</p>
+              <p><span class="sub-h">怎么看到</span>：不带令牌重放一次写请求（带上登录 Cookie），期望 403；带正确令牌重放，期望成功。</p>
+            </article>
+            <div class="recap">一句话记住：<b>注入的共同解法是数据与代码分离</b>——参数化查询、输出转义、一次性令牌，都是把数据挡在代码位置外面。</div>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="authz.html">← 越权：判定与修复</a>
+            <a class="btn btn-ghost" href="assets.html">密钥与依赖 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

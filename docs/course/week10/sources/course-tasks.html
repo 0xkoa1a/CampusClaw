@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第 10 课 · 任务清单 · 测试、交付与运行验证</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            line-height: 1.7;
+            color: #1c2530;
+            background: #f5f6f8;
+        }
+        a { color: #94070a; font-weight: 600; }
+        .wrap { max-width: 960px; margin: 0 auto; padding: 24px 32px 64px; }
+        .back { font-size: 14px; margin-bottom: 20px; }
+        .back a { color: rgba(28, 37, 48, 0.65); text-decoration: none; }
+        .back a:hover { color: #94070a; }
+        h1 {
+            font-size: 26px; font-weight: 800; color: #94070a; margin-bottom: 8px;
+        }
+        .subtitle { font-size: 15px; color: rgba(28, 37, 48, 0.65); margin-bottom: 28px; }
+        .block {
+            background: #fff; border: 1px solid #e6e8ec; border-radius: 12px;
+            padding: 18px 20px; margin-bottom: 16px;
+        }
+        .block h2 { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
+        .block p.note { font-size: 14.5px; color: rgba(28, 37, 48, 0.8); margin-bottom: 12px; }
+        .checklist { list-style: none; font-size: 15px; }
+        .checklist li {
+            position: relative; padding-left: 28px; margin-bottom: 10px;
+            color: rgba(28, 37, 48, 0.85);
+        }
+        .checklist li::before {
+            content: "□"; position: absolute; left: 0; color: #94070a; font-weight: 700;
+        }
+        table { width: 100%; border-collapse: collapse; font-size: 14.5px; margin-bottom: 6px; }
+        th, td { border: 1px solid #e6e8ec; padding: 9px 10px; text-align: left; vertical-align: top; }
+        th { background: #faf3f3; color: #94070a; font-weight: 700; font-size: 14px; }
+        td.id { white-space: nowrap; font-weight: 700; }
+        .callout {
+            background: #fdf6f6; border-left: 3px solid #94070a; border-radius: 0 8px 8px 0;
+            padding: 12px 14px; font-size: 14.5px; margin-bottom: 12px;
+        }
+        .hint {
+            font-size: 13px; color: rgba(28, 37, 48, 0.55); margin-top: 24px;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <p class="back"><a href="index.html#schedule">← 返回课程入口</a></p>
+        <h1>第 10 课任务清单 · 测试、交付与运行验证</h1>
+        <p class="subtitle">小组任务 · 把散在各课的判据收成一条流水线：一键测试挡住坏提交、容器一键启动、推送即构建、面板看得见三个技能、压测有前后对比、真实用户用过。<strong>证据统一归档到仓库根目录 <code>reports/</code>，与根目录 <code>report.md</code> 一起构成最终验收的可查材料——报告正文只写结论与指向</strong></p>
+
+        <div class="block">
+            <h2>一、开工前：资产盘点</h2>
+            <ul class="checklist">
+                <li>列出本组当前<strong>所有可重复执行的命令</strong>（<code>make check</code>、<code>make check-security</code>、异步三条判据的执行方式），注明每条上一次执行是什么时候。</li>
+                <li>对照规约场景做<strong>可追溯矩阵</strong>：每个场景至少一条用例。空着的场景就是没人守的门，优先补。</li>
+                <li>确认四个必做技能各有一条行为检查的<strong>落点</strong>：解题引导不给最终答案 / 教师改分优先 / 错题讲解不贴标准答案 / 知识库跨班为空。缺哪个先记下。</li>
+                <li>分工建议：一人测试收口、一人容器与流水线、一人观测与压测；每段交叉验收。</li>
+            </ul>
+        </div>
+
+        <div class="block">
+            <h2>二、测试收口与门禁</h2>
+            <ul class="checklist">
+                <li>把上表的检查写成用例落进 <code>apitest/cases/</code> 或单元测试目录；涉及模型等待的用例（如教师改分优先）用<strong>测试替身</strong>缩到秒级。</li>
+                <li>聚合进 <code>make check</code>：接口与单元用例全量执行，退出码 0 为绿；安全反例用例由 <code>make check-security</code> 单独执行、高危 0 条为绿——两条命令并列挂进持续集成（CI）。</li>
+                <li><strong>本课必做：先红后绿留全程证据</strong>——故意改坏一处（改错一个期望值或比较条件即可），跑出红的一屏；修复后复绿，连同修复提交一起归档为 <code>reports/gate-red-green.md</code>（改坏的位置、红屏与退出码、修复提交编号、绿屏与退出码 0 四件齐全，命令可当场复跑）。</li>
+                <li>主干分支（main）开启保护：准入流程为 AI 初稿 → AI 自审（Harness 读规则文件逐类过）→ 脚本门禁（<code>make check</code> / <code>make check-security</code>）→ 人工确认（只确认机器判不了的需求意图，并补一条用例或规则）→ 交叉评审（peer review）→ 合入主干分支（main）；未过门禁的提交进不去。</li>
+            </ul>
+        </div>
+
+        <div class="block">
+            <h2>三、容器化：一键启动</h2>
+            <ul class="checklist">
+                <li>写多阶段 Dockerfile：构建与运行分离，最终镜像不含源码与构建工具；<strong>密钥与环境相关的值一律不进镜像</strong>，运行时从环境变量注入。</li>
+                <li>写 Compose 文件：应用、MySQL、Qdrant 三服务，声明依赖与健康检查——应用等数据库就绪再启动，不靠脚本里的等待循环。</li>
+                <li>验收：换一个目录（最好换一台机器）按 <code>README.md</code> 一条命令启动，全部服务就绪，<strong>无需口头补充任何步骤</strong>。</li>
+                <li>镜像编号取自构建时的提交编号——先记下这条规矩，流水线一节要用它反查。</li>
+            </ul>
+        </div>
+
+        <div class="block">
+            <h2>四、流水线：推送即构建</h2>
+            <ul class="checklist">
+                <li>自动构建配置入库（如 GitHub Actions）：检出 → <code>make check</code> → <code>make check-security</code> → 构建镜像。<strong>跑的命令与本地完全同一条</strong>——本地与线上两套标准等于没有门禁。</li>
+                <li>推送一次提交，记录自动构建的编号与对应提交——验证<strong>镜像编号能反查提交</strong>，这是「线上跑的是哪个提交」的证据链。</li>
+                <li>数据库变更一律走<strong>三步走</strong>（扩 → 迁 → 缩）：本课如有索引改进涉及改表，只走到「扩」与「迁」，删旧列等确无回退需求之后；当前处于哪一步写进变更说明。</li>
+                <li>发布前检查就绪探针：新实例数据库连不上就不接流量。</li>
+            </ul>
+        </div>
+
+        <div class="block">
+            <h2>五、观测：面板与告警</h2>
+            <ul class="checklist">
+                <li>指标按技能命名（如 <code>skill_invocations_total</code> 带 skill 与 status 两个维度），复用上一课日志七列的字段口径；<strong>失败率在面板上算，不单独上报</strong>。</li>
+                <li>面板至少三张图：三个技能调用量分线曲线 / 每技能错误率 / 接口 P95 与任务队列深度并排（上一课异步判据的运行形态）。</li>
+                <li>告警至少一条写成判定：观察量 + 持续条件 + 动作（如某技能错误率 5 分钟连续高于 1% → 通知负责人 → 附面板链接）。</li>
+                <li><strong>告警必须真触发过一次</strong>：人为制造几分钟连续失败（上一课的越权重放即可），通知在设定时间内送达，触发记录归档。</li>
+            </ul>
+        </div>
+
+        <div class="block">
+            <h2>六、压测、改进与真实用户</h2>
+            <ul class="checklist">
+                <li>轻量端（H5）：复用同一套接口与认证，服务端配好跨域声明；手机浏览器能走通最终验收的四步——登录取令牌 → 提交作业返回 202 与任务标识 → 轮询看 pending → running → succeeded → 换另一班账号查别班讲义拿 404，且这次经历落进审计日志七列。</li>
+                <li>至少 <strong>3 名使用者</strong>实际使用，每人一条反馈记录写入 <code>reports/feedback.md</code>：会话标识、触发的接口、观察到的返回、期望与实际的差异。每条反馈要么进任务清单、要么写明为什么不做；使用者踩出的新坑写成用例进套件。</li>
+                <li>压测脚本入库（如 k6，参数走环境变量）：对提交、查询、检索三个接口分别加压，记下吞吐与 P95 随并发的变化，标出<strong>饱和点</strong>。口径：提交接口压「接收能力」，批改吞吐由消费者数量决定，分开量。</li>
+                <li><strong>至少一项改进</strong>（加索引或加缓存）并在同一脚本同一参数下复测；压测脚本与两轮结果写入 <code>reports/bench.md</code>：同一脚本、同一参数下的吞吐、P95、错误率三数，附瓶颈归因与改进提交编号——最终报告「复盘」一节用这里的前后数字。</li>
+            </ul>
+        </div>
+
+        <div class="block">
+            <h2>七、提交前核查清单（逐条打勾）</h2>
+            <ul class="checklist">
+                <li><strong>门禁</strong>：<code>make check</code> 与 <code>make check-security</code> 两条命令并列全量；故意改坏被拦的先红后绿证据齐（<code>reports/gate-red-green.md</code>：红屏、修复提交、绿屏）。</li>
+                <li><strong>可复现</strong>：干净目录 <code>docker compose up -d</code> 一键启动成功；Dockerfile 与 Compose 入库；镜像无密钥、无源码。</li>
+                <li><strong>流水线</strong>：推送后自动构建通过；镜像编号反查提交走得通；本地红推送必失败。</li>
+                <li><strong>观测</strong>：面板三张图都能看到三个技能；告警真触发过一次并留通知记录。</li>
+                <li><strong>验证</strong>：<code>reports/bench.md</code> 两轮数字同脚本同参数；至少一项改进生效且有归因；3 名使用者反馈写入 <code>reports/feedback.md</code> 且有去向。</li>
+                <li><strong>清单与规则</strong>：AI 生成代码的核查口径写进 Harness 会读取的规则文件（<code>AGENTS.md</code> 与 <code>.cursor/rules/</code>），覆盖七类——接口入口、业务逻辑、数据库、公共函数、错误处理、安全、性能，每类写明靠什么手段查（AI 自审 / 脚本 / 人工确认）。</li>
+                <li><strong>交付</strong>：全部证据归档仓库根目录 <code>reports/</code>——审核记录至少 3 份（<code>reports/review-01.md</code> 等，每份写全「用什么手段查 / 查了什么 / 判据 / 结果」，至少 2 份由 AI 自审或脚本门禁发现）、高风险三查（<code>reports/risk-concurrency.md</code> / <code>risk-transaction.md</code> / <code>risk-authz.md</code>）；<strong>交叉评审（peer review）</strong>——组内另一人从换目录启动开始，把最终验收的四步演示独立走一遍，返回码不符处记为展示前待修项。</li>
+            </ul>
+        </div>
+
+        <p class="hint">流水线是一条单行道：运行中发现问题就回到提交重走一遍，不在运行中的容器里手改文件——改的是代码，不是实例。密钥照旧只进各人本机的 <code>.env</code> 与部署平台的环境变量。</p>
+    </div>
+</body>
+</html>

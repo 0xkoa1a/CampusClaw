@@ -11,6 +11,8 @@ async function apiFetch(path, options = {}) {
   const headers = new Headers(options.headers || {});
   const token = sessionStorage.getItem(TOKEN_SLOT);
   if (token) headers.set('Authorization', `Bearer ${token}`);
+  const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+  if (csrf) headers.set('X-CSRF-Token', csrf);
   const response = await fetch(path, { ...options, headers });
   if (loggingOut && path !== '/api/logout') throw new DOMException('退出登录中', 'AbortError');
   if (response.status === 401) clearAccessToken();

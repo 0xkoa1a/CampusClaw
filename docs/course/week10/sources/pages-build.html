@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>可复现构建与制品 · 第 10 课 · 测试、交付与运行验证</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 10 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">本课流程</p>
+          <a href="../index.html">概览</a>
+          <a href="problems.html">可交付差在哪</a>
+          <a href="test.html">自动化测试与门禁</a>
+          <a href="build.html" class="active">可复现构建与制品</a>
+          <a href="deploy.html">部署与发布</a>
+          <a href="observe.html">运行观测</a>
+          <a href="verify.html">真实用户与性能验证</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="apply.html">实践步骤与验收</a>
+          <a href="think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">可复现构建与制品</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>可复现构建与制品</h1>
+          <p class="lead">这一页填第二道沟：环境长在个人机器上。容器把「能跑的完整条件」打进一个镜像里——依赖、运行时、启动方式全部固化；Compose 把应用与数据库、向量库的关系也写进文件。从这一页起，「能跑」的定义升级为：换任何一台机器，一条命令起来。</p>
+
+          <section class="unit" id="u0">
+            <h2 class="unit-h"><span class="unit-t">先说清几个词</span></h2>
+            <p class="unit-lead">这一页用到的词先在这里讲明白。</p>
+            <div class="terms">
+              <div><b>镜像</b><i>image</i>：一个只读的打包产物——代码、依赖、运行时（跑程序所需的基础软件环境）、启动命令全在里面。类似一份装好系统的安装盘，谁拿到都是同一份。</div>
+              <div><b>容器</b><i>container</i>：镜像跑起来的实例。同一镜像起的两个容器，内部环境完全一致——这就是「环境一致性」的落点。</div>
+              <div><b>Dockerfile</b>：镜像的构建说明书，一行一个步骤。说明书入库，构建可复现：同提交同产物。</div>
+              <div><b>多阶段构建</b><i>multi-stage build</i>：构建（要编译器、源码）与运行（只要产物）分成两个阶段，最终镜像只留运行所需——小，而且不含源码与构建工具。</div>
+              <div><b>Compose</b>：多容器的关系说明书——应用、数据库、向量库各一个容器，谁连谁、开什么端口、按什么顺序就绪，写在一个文件里。</div>
+              <div><b>制品库</b><i>artifact registry</i>：存镜像的地方。推送带编号的镜像进去，线上拉的、本机测的都是同一个——版本可追溯从这来。</div>
+              <div><b>配置外置</b>：镜像里不进任何密钥与环境相关的值，运行时从环境变量注入。这是上一课密钥规矩的延伸：镜像会被人拿到，里面的值等于公开。</div>
+            </div>
+          </section>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">构建说明书</span></h2>
+            <p class="unit-lead">一份多阶段 Dockerfile，构建与运行分离；密钥与配置一律不进镜像。</p>
+          <pre><code>FROM golang:1.22 AS build
+WORKDIR /src
+COPY . .
+RUN CGO_ENABLED=0 go build -o /out/app ./backend/cmd/server
+
+FROM debian:bookworm-slim
+COPY --from=build /out/app /usr/local/bin/app
+COPY --from=build /src/web/dist /var/www/html
+EXPOSE 8080
+ENTRYPOINT ["/usr/local/bin/app"]</code></pre>
+            <div class="note">两个阶段像两道车间：第一间把源码加工成二进制，第二间只把成品和静态页面装车。最终镜像里没有源码、没有编译器——被拷走也不泄漏构建细节。配置与密钥靠运行时环境变量注入，<code>.env.example</code> 留空的规矩原样适用。</div>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">一键启动与就绪</span></h2>
+            <p class="unit-lead">Compose 文件写清三个服务的关系；应用起来不等于能用——就绪探针说了算。</p>
+            <table>
+              <thead>
+                <tr><th>服务</th><th>在 Compose 里的角色</th><th>就绪判定</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>应用（本镜像）</td><td>对外提供接口，连接另外两个服务</td><td>就绪探针通过：数据库连接可用、依赖检查通过</td></tr>
+                <tr><td>MySQL</td><td>业务数据；先于应用就绪</td><td>容器内置的健康检查命令通过</td></tr>
+                <tr><td>Qdrant</td><td>向量检索；先于应用就绪</td><td>服务端口可访问</td></tr>
+              </tbody>
+            </table>
+            <div class="note">「应用先等数据库就绪再启动」由 Compose 的依赖与健康检查声明表达，不靠启动脚本里的等待循环。判定口径不变：换目录、换机器，执行同一条启动命令，服务全部就绪即为可复现——这正好是「按 README 从零启动」的容器化形态。</div>
+          </section>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">不可变制品</span></h2>
+            <p class="unit-lead">镜像打上编号进制品库，之后只增不改——要改就改代码重新构建。</p>
+            <article class="kp-card">
+              <h3>编号即身份</h3>
+              <p>镜像编号取自它构建时的提交编号。由此「线上跑的是哪个提交」从口头答案变成可查记录：线上镜像编号 → 反查提交 → 反查这次提交跑过哪些用例。三个问题一条链答完，第三道沟（部署靠手工搬运）的病根也在这里被拔掉。</p>
+              <p><span class="sub-h">怎么看到</span>：查线上容器的镜像编号，回到仓库找对应提交，再找这次提交的门禁记录——三步都能走通即为可追溯。</p>
+            </article>
+            <article class="kp-card">
+              <h3>不许在运行中的容器里手改</h3>
+              <p>线上出了问题直接进容器改一个文件，等于镜像是 A 跑的是 A'——下一次重启回到 A，改动无声消失，而且没有任何记录说明 A' 存在过。修复永远回到提交走流水线。这条规矩有个名字：不可变制品——改的是代码，不是运行中的实例。</p>
+              <p><span class="sub-h">怎么看到</span>：重启容器后再查那个文件——手改过的会复原；用提交走流水线的会随新镜像生效并留下记录。对比一次就记住了。</p>
+            </article>
+            <div class="recap">一句话记住：<b>同一提交构建出等价镜像，镜像编号反查提交</b>——环境一致性与版本可追溯，都是这条链的副产品。</div>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="test.html">← 自动化测试与门禁</a>
+            <a class="btn btn-ghost" href="deploy.html">部署与发布 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

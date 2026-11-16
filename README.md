@@ -23,6 +23,8 @@ docker compose exec -T app python -m scripts.reindex_all
 
 ## 提交与查阅
 
+第 9、10 课的当前实现和证据入口为 [report.md](report.md)。教师可访问 `/monitoring` 查看技能观测和站内告警，`/api/audit-events` 按本班用户与时间窗查询脱敏审计。`make check` 执行全量回归；`make check-security` 执行安全回归、密钥扫描和在线依赖审计。GitHub Actions 使用相同两条命令，门禁通过后构建提交号可追溯的镜像。
+
 - [课堂派提交材料](docs/classroom/提交材料/README.md)：按作业日期、平台顺序和完整作业名组织；文字、截图、PDF 都在对应日期目录。
 - [课程与课堂派要求](docs/classroom/requirements.md)：课程要求、作业原文、示例说明与截止时间。
 - [第 5 课参考材料](docs/course/week05/README.md)：在线文档快照、详细功能要求、实践与验收清单。
@@ -30,6 +32,7 @@ docker compose exec -T app python -m scripts.reindex_all
 - [第 6 课实现与验证](docs/week06-verification.md)：实现计划、真实网关证据、页面验证和 PDF 入口。
 - [第 7 课要求](docs/course/week07/README.md)、[第 8 课要求](docs/course/week08/README.md)：原文快照、工程规范、异步改造与安全自查要求。
 - [工程规范](docs/engineering/README.md)、[第 7、8 课实现与验证](docs/week08-verification.md)：开发约束、测试入口、作业截图与待验项目；第 9、10 课暂缓。
+- [第 9 课最新要求](docs/course/week09/requirements.md)、[第 10 课最新要求](docs/course/week10/requirements.md)：原文快照及本轮恢复实施范围；历史阶段记录中的暂缓状态保留。
 - [方案报告源文件与导出记录](docs/classroom/0930/README.md)：Markdown、HTML、PDF 和打印样式。
 - [截图采集记录](docs/classroom/evidence.md)：截图环境、认证值脱敏和验证记录。
 - [第三课验收](docs/week03-verification.md)、[第四课验收](docs/week04-verification.md)：各阶段的实际验证结果。

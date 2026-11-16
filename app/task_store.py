@@ -45,6 +45,7 @@ def migrate_tasks(db):
                 kind TEXT NOT NULL DEFAULT 'task', published INTEGER NOT NULL DEFAULT 0,
                 available_at REAL NOT NULL DEFAULT 0, published_at REAL)""",
             'CREATE INDEX IF NOT EXISTS idx_tasks_owner ON grading_tasks(class_id,user_id,created_at)',
+            'CREATE INDEX IF NOT EXISTS idx_tasks_class_created ON grading_tasks(class_id,created_at DESC,id DESC)',
             'CREATE INDEX IF NOT EXISTS idx_tasks_recovery ON grading_tasks(status,lease_until)',
         ]
         for statement in statements: db.execute(statement)
@@ -125,6 +126,28 @@ def finish_task(db, task, result):
         db.execute('''INSERT INTO grading_results(submission_id,task_id,score,feedback,source) VALUES (?,?,?,?,?)''',
                    (task['submission_id'], task['id'], result['score'], result['feedback'], result['source']))
         db.execute("UPDATE grading_tasks SET status='succeeded',finished_at=CURRENT_TIMESTAMP,lease_until=NULL,lease_token=NULL,error=NULL WHERE id=?", (task['id'],))
+    return True
+
+
+def override_grade(db, task_id, class_id, score, feedback):
+    """Atomically make a teacher's grade authoritative for a class task."""
+    with db:
+        db.execute('BEGIN IMMEDIATE')
+        row = db.execute('''SELECT t.id,t.submission_id FROM grading_tasks t
+            JOIN submissions s ON s.id=t.submission_id
+            JOIN assignments a ON a.id=s.assignment_id
+            WHERE t.id=? AND t.class_id=? AND s.class_id=? AND a.class_id=?''',
+            (task_id, class_id, class_id, class_id)).fetchone()
+        if row is None:
+            return False
+        db.execute('''INSERT INTO grading_results(submission_id,task_id,score,feedback,source)
+            VALUES (?,?,?,?, 'teacher-override')
+            ON CONFLICT(task_id) DO UPDATE SET score=excluded.score,
+                feedback=excluded.feedback,source='teacher-override' ''',
+            (row['submission_id'], task_id, score, feedback))
+        db.execute('''UPDATE grading_tasks SET status='succeeded',finished_at=CURRENT_TIMESTAMP,
+            lease_until=NULL,lease_token=NULL,error=NULL WHERE id=? AND class_id=?''',
+            (task_id, class_id))
     return True
 
 

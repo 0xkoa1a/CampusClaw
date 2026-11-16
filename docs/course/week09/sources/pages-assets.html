@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>密钥与依赖 · 第 9 课 · 安全检查与审计</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 9 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">本课流程</p>
+          <a href="../index.html">概览</a>
+          <a href="problems.html">三类安全缺口</a>
+          <a href="authz.html">越权：判定与修复</a>
+          <a href="inject.html">注入：成因与防护</a>
+          <a href="assets.html" class="active">密钥与依赖</a>
+          <a href="audit.html">操作日志</a>
+          <a href="aisec.html">AI 入口：提示词注入</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="lab-demo.html">靶场演示</a>
+          <a href="apply.html">实践步骤与验收</a>
+          <a href="think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">密钥与依赖</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>密钥与依赖</h1>
+          <p class="lead">SEC-05 与 SEC-06 查的是两件平时完全看不见的事：密钥有没有从任何一条渠道漏出去，依赖里有多少已知漏洞。它们不出功能问题，出事就是大事。这一页讲泄漏的渠道、存放的规矩、出事后的处置顺序，以及怎么把这两项检查接成一条常驻命令。</p>
+
+          <section class="unit" id="u0">
+            <h2 class="unit-h"><span class="unit-t">先说清几个词</span></h2>
+            <p class="unit-lead">这一页用到的词先在这里讲明白。</p>
+            <div class="terms">
+              <div><b>密钥</b><i>API key</i>：调用外部服务用的凭证——模型服务的 API Key、数据库口令。谁拿到它，谁就能以你的身份和额度调用服务。</div>
+              <div><b>轮换</b><i>rotate</i>：让旧密钥作废、换一把新的。泄漏后的第一步永远是轮换——旧值作废了，泄漏出去的副本才同时失效。</div>
+              <div><b>提交历史</b>：仓库全部提交留下的完整记录。误提交过密钥的文件，即使后来删掉了，历史里的那个版本仍然可以取回——清理历史之前，它一直有效。</div>
+              <div><b>前端产物</b>：浏览器能拿到的所有文件。打进前端包的任何值，对所有访问者可见，等同于公开。</div>
+              <div><b>依赖漏洞审计</b>：对照公开漏洞库扫描项目依赖的已知漏洞，例如 <code>npm audit</code> 与 <code>pip-audit</code>。高危意味着已知可被利用，不是理论风险。</div>
+              <div><b>版本锁定</b>：把依赖版本固定在明确选定的版本上。升级是一次主动决定，而不是装包时被动碰运气。</div>
+            </div>
+          </section>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">密钥的存放规矩</span></h2>
+            <p class="unit-lead">规矩只有一句：值放在环境变量里，仓库里只留一份留空的样例文件。</p>
+            <article class="kp-card">
+              <h3>四个「不进」</h3>
+              <p>密钥不进代码、不进提交历史、不进前端产物、不进运行日志。前三个好理解，第四个最常踩：把调用外部服务的完整请求打进调试日志，密钥就跟着日志落了盘。日志里记「调用了哪个服务、结果如何」，不记请求里的凭证字段。</p>
+              <p><span class="sub-h">怎么看到</span>：对全量提交历史与前端产物各跑一遍密钥扫描（上一课 SEC-05 的那条命令），命中数为 0 才算守住了这条规矩。</p>
+            </article>
+            <article class="kp-card">
+              <h3>误提交了怎么办：先轮换，再清历史</h3>
+              <p>顺序不能反。只清历史不轮换，已经存在于别人克隆里的旧值仍然有效；先轮换再清理，泄漏出去的副本立即失效，清历史只是把仓库里能翻到的副本拿掉。重写提交历史后要通知所有成员重新克隆，旧克隆与新历史不再兼容。</p>
+              <p><span class="sub-h">怎么看到</span>：轮换后用旧密钥调一次外部服务，期望被拒（401）；这证明旧值已作废，清不清历史都影响不了它了。</p>
+            </article>
+            <article class="kp-card">
+              <h3>必须落库的敏感字段</h3>
+              <p>有些配置本身是凭证——例如给助手配置绑定的模型服务 API Key，要存在数据库里随配置一起取用。这类字段加密后存储，解密口令外置于环境变量，两者不放同一处：拿到数据库拿不到口令，拿到口令拿不到数据库。这也是上一课 SEC-05 的判定要写「0 命中」的原因——数据库里那列存的是密文。</p>
+              <p><span class="sub-h">怎么看到</span>：直接查库看该列的值——出现可读的明文格式（例如 <code>sk-</code> 开头）即红；存的是不可读的密文即绿。</p>
+            </article>
+            <div class="note">「按 README 从零启动能跑通」本身就是配置外置的证据：仓库里没有密钥，换一台机器、按样例文件填好自己的值，系统照样起来。这条判据比任何检查单都直接。</div>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">依赖漏洞的处置</span></h2>
+            <p class="unit-lead">审计给的是清单，处置给的是去向——每条高危要么清零，要么登记。</p>
+            <table>
+              <thead>
+                <tr><th>步骤</th><th>命令或动作</th><th>产出</th><th>完成判定</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>基线</td><td><code>npm audit --audit-level=high</code>（只看高危及以上，退出码可直接当门禁用）</td><td>基线报告归档</td><td>记下高危与严重各几条，写明日期</td></tr>
+                <tr><td>处置</td><td>升级到修复版本；无补丁版本的登记处置方式</td><td>处置记录</td><td>每条高危有去向：升级 / 替代 / 书面登记理由</td></tr>
+                <tr><td>常驻</td><td>接进 <code>make check-security</code>（同时并入 <code>gitleaks detect --source .</code> 做密钥扫描）</td><td>一条命令</td><td>高危大于 0 时命令退出码非 0，可直接挡合并</td></tr>
+              </tbody>
+            </table>
+          <div class="note"><b>自动化</b>：扫描与审计都接进 <code>make check-security</code>，由命令跑，不靠人记得扫；轮换与清理是一次性动作，但要在 README 里写成可执行的步骤。</div>
+            <div class="note">「登记不修」是合法的处置，但要写成可检查的条目：哪个包、哪个漏洞编号、为什么暂不修、靠什么降低风险（例如该功能未启用）。只写「暂不处理」四个字，等于没登记。</div>
+          </section>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">样例文件与可复现</span></h2>
+            <p class="unit-lead">仓库里承载配置说明的只有一份留空的样例文件，新成员照它填自己的值。</p>
+          <pre><code># .env.example —— 提交进仓库的是这一份，值全部留空
+MODEL_API_KEY=
+MODEL_BASE_URL=
+DATABASE_URL=
+
+# .env —— 各人本机的真实值，已列在 .gitignore 里
+# 部署环境的值由部署平台的环境变量提供，不经过仓库</code></pre>
+            <div class="recap">一句话记住：<b>密钥的归宿是环境变量，不是仓库</b>——发现命中后的第一反应是轮换，不是删除。</div>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="inject.html">← 注入：成因与防护</a>
+            <a class="btn btn-ghost" href="audit.html">操作日志 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

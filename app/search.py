@@ -66,6 +66,9 @@ def api_ask():
     try:
         question = _question(payload)
         history = payload.get("history", [])
+        from .security import instruction_override
+        if instruction_override(question):
+            raise ValueError('问题包含越权或泄露指令')
         if not isinstance(history, list) or len(history) > 12:
             raise ValueError("history 必须是不超过 12 条的数组")
         hits = search(question, g.user["class_id"], "hybrid", 4)["hits"]
@@ -78,6 +81,12 @@ def api_ask():
                 (hit["chunk_id"], g.user["class_id"]),
             ).fetchone()["body"]
             contexts.append({**hit, "body": body})
+        contexts = [item for item in contexts if not instruction_override(item['body'])]
+        hits = [hit for hit in hits if any(item['chunk_id'] == hit['chunk_id'] for item in contexts)]
+        history = [item for item in history if isinstance(item, dict) and isinstance(item.get('content'), str)
+                   and not instruction_override(item['content'])]
+        if not contexts:
+            return jsonify(answer=NO_EVIDENCE, citations=[])
         answer = chat_completion(question, contexts, history)
         answer = REFERENCE_RE.sub(
             lambda match: match.group() if 1 <= int(match.group(1)) <= len(hits) else "",

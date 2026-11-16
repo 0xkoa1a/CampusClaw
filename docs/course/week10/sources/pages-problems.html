@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>可交付差在哪 · 第 10 课 · 测试、交付与运行验证</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 10 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">本课流程</p>
+          <a href="../index.html">概览</a>
+          <a href="problems.html" class="active">可交付差在哪</a>
+          <a href="test.html">自动化测试与门禁</a>
+          <a href="build.html">可复现构建与制品</a>
+          <a href="deploy.html">部署与发布</a>
+          <a href="observe.html">运行观测</a>
+          <a href="verify.html">真实用户与性能验证</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="apply.html">实践步骤与验收</a>
+          <a href="think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">可交付差在哪</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>可交付差在哪</h1>
+          <p class="lead">项目现在「能跑」，但「能跑」和「可交付」之间隔着四道沟。这一页把四道沟逐一看清——它们不是四个 bug，是四种「判断只存在于某个人某一次操作里」的结构性问题。后面的每一页填一道沟。</p>
+
+          <section class="unit" id="u0">
+            <h2 class="unit-h"><span class="unit-t">先说清几个词</span></h2>
+            <p class="unit-lead">这一页用到的词先在这里讲明白。</p>
+            <div class="terms">
+              <div><b>手工验收</b>：人来点、人来看、人来判断「行不行」。它的证据是一次性的：做完就没了，别人只能相信你。</div>
+              <div><b>套件</b><i>test suite</i>：一组可以反复执行、自动判定红绿的用例。证据从「人的一次动作」变成「仓库里的文件」。</div>
+              <div><b>环境不一致</b>：同一份代码在两台机器上行为不同——依赖版本不同、装过的东西不同、配置散落各处。症状是那句经典的话：我这里明明是好的。</div>
+              <div><b>交付</b>：把系统能跑的完整条件交给别人——代码、依赖、配置说明、启动方式，缺一样对方就启动不了。</div>
+              <div><b>上线</b><i>go-live</i>：系统开始服务真实用户的那一刻。上线之后你看不到用户屏幕，出问题只能靠系统自己报告。</div>
+              <div><b>迭代</b>：按真实用户的反馈改一版再发一版。前提是每一版都能走完同一条「测试 → 构建 → 部署」的路——否则每发一版都是一次冒险。</div>
+            </div>
+          </section>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">四道沟</span></h2>
+            <p class="unit-lead">四道沟一层套一层：验收不可重复让改动没人守门，环境不一致让部署靠手工，上线看不见让问题只能等用户报。</p>
+            <article class="kp-card">
+              <h3>沟一：验收只做过一次</h3>
+              <p>前几课的判据都执行过：异步三条判据、安全的反例用例、日志回查。但它们多数以「当堂跑过一次」的形态存在——改一行代码之后，谁重跑过？没重跑，那次的绿对现在这版代码就没有证明力。判断在人的记忆里，不在仓库里。</p>
+              <p><span class="sub-h">怎么看到</span>：挑最近一次代码提交，问三个问题：这次改动影响哪些旧功能？影响到的用例重跑了吗？跑的命令是什么？三个问题有一个答不上，这道沟就在。</p>
+            </article>
+            <article class="kp-card">
+              <h3>沟二：环境长在个人机器上</h3>
+              <p>系统能跑，靠的是本机装好的数据库、导过的环境变量、手工执行过的初始化。换台机器就要重走一遍「凭记忆装环境」——装的和原来不一样，行为就不一样。证据是：每次换人接手，都要先花半天「把环境弄起来」。</p>
+              <p><span class="sub-h">怎么看到</span>：把启动过程写在纸上，交给没碰过这个项目的同学照着走。走到哪一步他卡住、需要口头补一句「哦那个你还要先装一下」，环境就长在机器上而不是文件里。</p>
+            </article>
+            <article class="kp-card">
+              <h3>沟三：部署靠手工搬运</h3>
+              <p>发一版的动作是：本机构建、拷文件到服务器、重启、口头确认「好了」。每一步都可能漏，每一步都不可复查——没有人知道线上跑的到底是哪个提交构建出来的版本。</p>
+              <p><span class="sub-h">怎么看到</span>：问一句「线上现在跑的是哪个提交」——答不出提交编号，或答了却拿不出证据，部署就是手工的。</p>
+            </article>
+            <article class="kp-card">
+              <h3>沟四：上线之后是黑的</h3>
+              <p>系统上线后，出错的请求、变慢的接口、失败的技能调用——都发生在你看不到的地方。目前的日志七列能事后回查（查审计），但没有聚合视图：失败率是多少、趋势是升是降，要一条一条数出来。</p>
+              <p><span class="sub-h">怎么看到</span>：回答「过去一小时三个技能各被调用了多少次、失败几次」——靠翻日志一行行数就是黑的，看一眼面板就有数就是亮的。</p>
+            </article>
+            <div class="recap">一句话记住：<b>四道沟的共同病根是「判断只存在于某个人某一次操作里」</b>——收进仓库、变成可重复的命令，沟才算填上。</div>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">已有资产盘点</span></h2>
+            <p class="unit-lead">填沟不是从零开始——前几课攒下的判据，就是这一课流水线的原料。</p>
+            <table>
+              <thead>
+                <tr><th>资产</th><th>来源</th><th>这一课变成什么</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>功能用例（<code>apitest/cases/</code>）</td><td>讲验收与技能路由时落下的用例</td><td>一键测试的主体，随每次提交跑</td></tr>
+                <tr><td>异步三条判据</td><td>异步改造课的验收判据</td><td>回归用例：提交入队、停消费者不丢任务、重复只出一份结果</td></tr>
+                <tr><td>安全反例三件套与 SEC 复测</td><td>上一课的红改绿</td><td>安全门禁 <code>make check-security</code> 的用例来源</td></tr>
+                <tr><td>日志七列</td><td>上一课补齐的审计日志</td><td>观测指标的字段来源：技能标识、结果状态、耗时</td></tr>
+                <tr><td>README 从零启动</td><td>第 2 课起维护的启动说明</td><td>容器化的验收口径：一键启动即从零启动</td></tr>
+              </tbody>
+            </table>
+            <div class="note">盘点的判定：每项资产都要能回答「上一次执行是什么时候、命令是什么」。答不出的那一项，就是收口时优先要补的——套件里没有的判据等于没有判据。</div>
+          </section>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">判定口径</span></h2>
+            <table>
+              <thead>
+                <tr><th>观察量</th><th>取值来源</th><th>判定</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>用例可重复性</td><td>换一个人执行同一条命令</td><td>两次执行判定一致，即为可重复</td></tr>
+                <tr><td>环境完整性</td><td>按文档从零启动一遍</td><td>无需口头补充任何步骤即为完整</td></tr>
+                <tr><td>版本可追溯</td><td>线上服务与提交编号的对应</td><td>能查到线上跑的构建对应的提交即为可追溯</td></tr>
+                <tr><td>状态可见性</td><td>指定时间窗内的调用量与失败率</td><td>一分钟内报出数即为可见</td></tr>
+              </tbody>
+            </table>
+            <div class="note">这四个观察量分别是后面四页的验收雏形：测试页管第一行，构建页管第二、三行，观测页管第四行。本课结束时逐行回来复测。</div>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="../index.html">← 概览</a>
+            <a class="btn btn-ghost" href="test.html">自动化测试与门禁 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

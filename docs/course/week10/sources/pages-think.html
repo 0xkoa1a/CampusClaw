@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>思考与分析 · 第 10 课 · 测试、交付与运行验证</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 10 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">本课流程</p>
+          <a href="../index.html">概览</a>
+          <a href="problems.html">可交付差在哪</a>
+          <a href="test.html">自动化测试与门禁</a>
+          <a href="build.html">可复现构建与制品</a>
+          <a href="deploy.html">部署与发布</a>
+          <a href="observe.html">运行观测</a>
+          <a href="verify.html">真实用户与性能验证</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="apply.html">实践步骤与验收</a>
+          <a href="think.html" class="active">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">思考与分析</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>思考与分析</h1>
+          <p class="lead">十道研讨题，围绕套件的取舍、流水线的单行道、观测的成本与压测的口径。每题都要落到一条可复现的判定上作答——说清依据是什么、怎么验证。</p>
+
+          <section class="unit" id="u0">
+            <h2 class="unit-h"><span class="unit-t">先说清几个词</span></h2>
+            <p class="unit-lead">这一页用到的词先在这里讲明白。</p>
+            <div class="terms">
+              <div><b>变异测试</b><i>mutation testing</i>：故意往代码里注入小错误（改一个比较符、删一行），看套件能不能变红。杀不死的变异暴露的是用例的盲区——用例在跑，但没在测。</div>
+              <div><b>覆盖率</b><i>coverage</i>：被用例执行到的代码占比。它是必要条件不是充分条件：跑过不等于断言过——覆盖率 100% 的代码仍可能全线漏判。</div>
+              <div><b>抖动</b><i>flakiness</i>：用例时红时绿、结果不稳定。门禁里一条抖动用例的代价是所有人反复重跑——比没有这条用例更糟。</div>
+              <div><b>冷启动</b>：服务刚起来、缓存还全空的阶段。压测基线要避开冷启动窗口，否则量到的是预热过程而不是稳态。</div>
+              <div><b>索引的写代价</b>：索引让读变快，但每次写入要多维护一份目录。只读多的表加索引赚，写频繁的表要权衡。</div>
+              <div><b>熔断</b>：下游持续失败时，上游暂时不再调用它、直接走降级路径。观测负责「看见」，熔断负责「止损」——本课只要求想清楚，不要求实现。</div>
+            </div>
+          </section>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">十道研讨题</span></h2>
+            <table>
+              <thead>
+                <tr><th>题</th><th>考察点</th><th>判据（作答要落到这上面）</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>1</td><td>覆盖率的边界</td><td>能构造一段「覆盖率 100% 但变异全存活」的代码，说明为什么跑过不等于测过</td></tr>
+                <tr><td>2</td><td>套件分层</td><td>对「归属条件判定」给出单元与接口两个层次的用例写法，并说明哪层红得更快、定位更准</td></tr>
+                <tr><td>3</td><td>测试替身的代价</td><td>能说清替身让用例变快的同时失去了什么（真实模型的行为分布），并给出哪些用例坚决不用替身</td></tr>
+                <tr><td>4</td><td>抖动用例</td><td>能给出一条会时红时绿的用例（例如依赖执行顺序或时间），并给出消除抖动的改法</td></tr>
+                <tr><td>5</td><td>不可变制品</td><td>能论证「进容器手改一个文件」在重启后发生什么，以及为什么这条捷径会让版本可追溯失效</td></tr>
+                <tr><td>6</td><td>三步走的适用边界</td><td>能指出哪种变更不能靠三步走挽回（例如改列语义而不只是加列），并说明为什么</td></tr>
+                <tr><td>7</td><td>观测的克制</td><td>能论证按用户聚合指标为什么不可行（基数），并给出维度选取的原则</td></tr>
+                <tr><td>8</td><td>告警的设计</td><td>能对告警「错误率 5 分钟超 1%」给出漏报与误报各一个具体场景，并调整持续条件</td></tr>
+                <tr><td>9</td><td>压测口径</td><td>能说清为什么提交接口压的是「接收能力」而批改吞吐由消费者数量决定，两者怎么分开量</td></tr>
+                <tr><td>10</td><td>缓存的正确性</td><td>能指出缓存与数据库不一致的一个具体场景（改分后读到旧缓存），并给出失效条件写法</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">两个常见误读</span></h2>
+            <p class="unit-lead">两句常见的话，各自错在把必要条件当成了充分条件。</p>
+            <article class="kp-card">
+              <h3>「加了 CI 就有质量了」</h3>
+              <p>自动构建只是把套件放到了必经之路上——套件本身空着，流水线绿得毫无意义。判定：数一数 <code>make check</code> 里来自各课判据的用例数；每个必做技能至少一条，四个技能四条齐了，门禁才开始有意义。先红后绿那一次（故意改坏被拦）是门禁存在的唯一证明。</p>
+              <p><span class="sub-h">怎么看到</span>：把套件里用例数与规约场景数对着可追溯矩阵比——每条场景至少一条用例，空着的就是没人守的门。</p>
+            </article>
+            <article class="kp-card">
+              <h3>「有监控就高可用了」</h3>
+              <p>观测只解决「看见」，不解决「扛住」：面板上看着错误率飙升，系统照样在失败。从看见到扛住还隔着动作——告警触发后的处理、探针驱动的重启、恢复目标（RPO / RTO）的预案。观测是必要条件，不是可用性本身。</p>
+              <p><span class="sub-h">怎么看到</span>：对着面板问三个问题：这条曲线红了谁会收到通知？收到的人做什么？多久能恢复？第三个答不出数，监控与可用之间就还空着一段。</p>
+            </article>
+            <div class="recap">一句话记住：<b>每道题的答案都要能落成一条可复现的判定</b>——流水线、面板、报告，全部以「别人照着能重跑」为准。</div>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="apply.html">← 实践步骤与验收</a>
+            <a class="btn btn-ghost" href="../index.html">回到概览 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

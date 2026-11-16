@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>越权：判定与修复 · 第 9 课 · 安全检查与审计</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 9 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">本课流程</p>
+          <a href="../index.html">概览</a>
+          <a href="problems.html">三类安全缺口</a>
+          <a href="authz.html" class="active">越权：判定与修复</a>
+          <a href="inject.html">注入：成因与防护</a>
+          <a href="assets.html">密钥与依赖</a>
+          <a href="audit.html">操作日志</a>
+          <a href="aisec.html">AI 入口：提示词注入</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="lab-demo.html">靶场演示</a>
+          <a href="apply.html">实践步骤与验收</a>
+          <a href="think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">越权：判定与修复</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>越权：判定与修复</h1>
+          <p class="lead">SEC-01 ～ SEC-04 的红集中在同一件事上：系统只确认了「你是谁」，没有逐次确认「这件事是不是你的」。这一页讲水平与垂直两种越权、技能工具的鉴权，以及判定应该放在哪一层——修在页面上叫藏，修在数据访问处才叫拒绝。</p>
+
+          <section class="unit" id="u0">
+            <h2 class="unit-h"><span class="unit-t">先说清几个词</span></h2>
+            <p class="unit-lead">这一页用到的词先在这里讲明白。</p>
+            <div class="terms">
+              <div><b>水平越权</b>：同级身份拿到别人的数据。学生 A1 打开学生 B1 的讲义——身份同级、数据不同。业界也称 IDOR（不安全的直接对象引用）：靠猜 id 就能引用到别人的数据行。</div>
+              <div><b>垂直越权</b>：低权限身份执行高权限功能。学生调用只有教师该用的配置接口。业界也称权限提升。</div>
+              <div><b>授权判定</b>：「谁能不能对哪条数据做哪个操作」的判定。与认证（确认你是谁）是两件事：认证过、授权不过，照样拒绝。</div>
+              <div><b>fetch-then-check</b>：先按 id 把行取出来，再判断归属，不属于就按「不存在」处理。本项目的口径是跨班一律 404——不区分「不存在」与「不是你的」，避免用返回码差异泄露这条数据存在。</div>
+              <div><b>单侧过滤</b>：把归属直接写进查询条件（<code>WHERE class_id = ?</code>），查不到就返回空。判定发生在数据库这一层，绕过应用层路由也绕不过它。</div>
+              <div><b>技能工具鉴权</b>：技能路由对工具调用做身份与归属判定，并且底层接口不因为「这请求来自某个技能」就免检——工具与普通请求走同一套判定。</div>
+            </div>
+          </section>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">两种越权与各自成因</span></h2>
+            <p class="unit-lead">方向不同，成因相同：判定没有跟着数据走。</p>
+            <article class="kp-card">
+              <h3>水平越权：换一个 id 就能拿别人的</h3>
+              <p>成因是接口只按 id 取行，没有归属条件：URL 或参数里的 id 换成别人的，查询照样命中。后果是可遍历——写个脚本从 1 数到 N，整库的数据都能被拖走，一次请求一条。SEC-02 的红（学生 A1 取到班级 B 的讲义、用班级 B 身份检索到班级 A 知识库）就是这一类。</p>
+              <p><span class="sub-h">怎么看到</span>：登录学生 A1，把讲义接口 URL 里的 id 换成班级 B 某条讲义的 id。返回 200 且带内容即红；修复后应得到 404。</p>
+            </article>
+            <article class="kp-card">
+              <h3>垂直越权：菜单挡不住直接调接口</h3>
+              <p>成因是功能只靠页面隔离——教师功能放在教师菜单里，学生界面上看不到，但接口本身没有角色判定。前端的一切隐藏都不是防护：拿到学生令牌，用命令行直接调用配置接口，菜单根本不在链路上。SEC-03 的红（学生改掉技能与提示词配置）属于这一类。</p>
+              <p><span class="sub-h">怎么看到</span>：从浏览器开发者工具复制学生令牌，用 <code>curl</code> 直接调用技能配置接口发一次写请求。写成功即红；修复后应得到 403 且数据无变化。</p>
+            </article>
+            <div class="note">两种越权的共同点：登录检查（认证）都通过了，缺的是授权判定。所以修复位置不在登录逻辑上——登录没错，错在查询与写入的条件里没有归属与角色。</div>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">判定放在哪一层</span></h2>
+            <p class="unit-lead">同一次请求会穿过好几层，判定的可靠性随层次递增：越靠外的层越容易被绕过。</p>
+            <figure class="fig">
+              <svg viewBox="0 0 760 226" role="img" aria-label="同一次请求可从页面、路由、应用、数据四层进入，页面隐藏与路由判定都能被直接调接口绕过，只有数据访问层的归属条件拦得住所有路径">
+                <defs><marker id="azA" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#94070a"/></marker></defs>
+                <rect x="16" y="28" width="168" height="44" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="100" y="46" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1c1917">页面层：菜单隐藏</text>
+                <text x="100" y="64" text-anchor="middle" font-size="10" fill="#7d736c">不是防护，能被 curl 绕过</text>
+                <rect x="204" y="28" width="168" height="44" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="288" y="46" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1c1917">路由层：技能路由判定</text>
+                <text x="288" y="64" text-anchor="middle" font-size="10" fill="#7d736c">绕开路由直调即失效</text>
+                <rect x="392" y="28" width="168" height="44" rx="8" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="476" y="46" text-anchor="middle" font-size="11.5" font-weight="600" fill="#94070a">应用层：角色判定</text>
+                <text x="476" y="64" text-anchor="middle" font-size="10" fill="#94070a">写接口逐次校验角色</text>
+                <rect x="580" y="28" width="164" height="44" rx="8" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="662" y="46" text-anchor="middle" font-size="11.5" font-weight="600" fill="#94070a">数据层：归属条件</text>
+                <text x="662" y="64" text-anchor="middle" font-size="10" fill="#94070a">查询与写入并入判定</text>
+                <line x1="184" y1="50" x2="200" y2="50" stroke="#94070a" stroke-width="1.5" marker-end="url(#azA)"/>
+                <line x1="372" y1="50" x2="388" y2="50" stroke="#94070a" stroke-width="1.5" marker-end="url(#azA)"/>
+                <line x1="560" y1="50" x2="576" y2="50" stroke="#94070a" stroke-width="1.5" marker-end="url(#azA)"/>
+                <rect x="16" y="104" width="728" height="30" rx="6" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="380" y="124" text-anchor="middle" font-size="11" fill="#1c2530">绕过成本从左到右递增：页面挡不住命令行，路由挡不住直调，数据层的条件无处可绕</text>
+                <rect x="16" y="150" width="728" height="30" rx="6" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="380" y="170" text-anchor="middle" font-size="11" fill="#94070a">修复动作：应用层补角色判定（403），数据层补归属条件（404 或空）——两层都要，缺一留缺口</text>
+                <rect x="16" y="192" width="728" height="26" rx="6" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="380" y="209" text-anchor="middle" font-size="10.5" fill="#7d736c">技能调用的工具请求与普通 HTTP 请求走同一套判定，这是完全中介的落点</text>
+              </svg>
+              <figcaption>四层里只有数据层的判定对所有进入路径都有效。应用层与数据层是防护，页面层与路由层只是引导——修复时不要修在后两层。</figcaption>
+            </figure>
+          </section>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">四条红的修复对照</span></h2>
+            <table>
+              <thead>
+                <tr><th>编号</th><th>红的现象</th><th>修复动作</th><th>复测方式（写成用例，随 make check 跑）</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>SEC-01</td><td>不带令牌拿到受保护接口数据</td><td>入口中间件统一做登录检查，未通过返回 401</td><td>不带令牌逐个重放受保护接口清单</td></tr>
+                <tr><td>SEC-02</td><td>跨班取到讲义、检索到他班知识库</td><td>检索并入班级过滤（单侧过滤）；讲义取数用 fetch-then-check，跨班一律 404</td><td>学生 A1 换 id 访问班级 B 讲义；用班级 B 身份检索班级 A 知识库</td></tr>
+                <tr><td>SEC-03</td><td>学生改掉技能与提示词配置</td><td>写入类接口逐次校验角色，非教师返回 403</td><td>学生令牌重放配置写接口，查数据无变化</td></tr>
+                <tr><td>SEC-04</td><td>绕过技能路由直调批改写入成功</td><td>底层批改写入接口同样校验身份与归属，技能调用不免检</td><td>不走技能路由直接调用批改写入接口</td></tr>
+              </tbody>
+            </table>
+          <div class="note"><b>自动化</b>：复测不是手工点一次：这四条都要写成用例进 <code>apitest/cases/</code>，随 <code>make check</code> 在每次提交时自动跑；人只看红绿与失败原因。</div>
+            <div class="note">复测必须沿用上一课的同一条三段式记录（前置条件 / 操作 / 可观测结果），只把「当前实际」换成修复后的值。改了判定后「看起来好了」不算数，重放得到绿才算数。</div>
+          </section>
+
+          <section class="unit" id="u4">
+            <h2 class="unit-h"><span class="unit-n">4</span><span class="unit-t">修复的写法</span></h2>
+            <p class="unit-lead">把归属并进查询条件，是水平越权修复的核心一行；角色判定同理，写在接口入口而非页面。</p>
+          <pre><code>// 修复前：只按 id 取讲义，谁登录都能拿到别的班的这一行
+row := db.QueryRow(
+    "SELECT id, title, class_id FROM materials WHERE id = ?", id)
+
+// 修复后：归属条件并入查询，数据库层面就拒绝了越权行
+row := db.QueryRow(
+    "SELECT id, title, class_id FROM materials WHERE id = ? AND class_id = ?",
+    id, currentUser.ClassID)</code></pre>
+            <div class="note">并入条件之后，还要删掉「先查全表再在内存里过滤」的旧路径——两条路一条安全一条不安全时，总有一天会有人调用不安全的那条。同理，检索侧的班级过滤要在向量库查询与 SQL 查询两侧同时生效，只改一侧等于留了另一条路。</div>
+            <div class="recap">一句话记住：<b>授权判定要跟着数据走</b>——判定写在查询条件里，绕过任何一层路由都绕不过它。</div>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="problems.html">← 三类安全缺口</a>
+            <a class="btn btn-ghost" href="inject.html">注入：成因与防护 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

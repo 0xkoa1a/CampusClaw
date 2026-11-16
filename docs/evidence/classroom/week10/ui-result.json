@@ -1,0 +1,13 @@
+{
+  "mode": "local-stub-model-real-HTTP",
+  "browser_plugin": "Browser plugin not available",
+  "desktop": "1280x960",
+  "mobile": "390x844",
+  "checks": {
+    "three_skill_series": true,
+    "mobile_no_overflow": true,
+    "xss_source_escaped": true,
+    "audit_query": true
+  },
+  "errors": []
+}

@@ -95,6 +95,9 @@ def grade_submission(context: dict) -> dict:
     """Grade one submission and return only the public score and feedback."""
     if not isinstance(context, dict):
         raise PermanentGradingError(_INVALID_INPUT)
+    from .security import instruction_override
+    if any(instruction_override(context.get(key) or '') for key in ('content', 'skill_description')):
+        raise PermanentGradingError('批改输入包含越权指令')
     max_score = context.get("max_score")
     if not _is_finite_number(max_score) or max_score < 0:
         raise PermanentGradingError(_INVALID_INPUT)

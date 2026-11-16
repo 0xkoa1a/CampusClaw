@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>三类安全缺口 · 第 9 课 · 安全检查与审计</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 9 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">本课流程</p>
+          <a href="../index.html">概览</a>
+          <a href="problems.html" class="active">三类安全缺口</a>
+          <a href="authz.html">越权：判定与修复</a>
+          <a href="inject.html">注入：成因与防护</a>
+          <a href="assets.html">密钥与依赖</a>
+          <a href="audit.html">操作日志</a>
+          <a href="aisec.html">AI 入口：提示词注入</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="lab-demo.html">靶场演示</a>
+          <a href="apply.html">实践步骤与验收</a>
+          <a href="think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">三类安全缺口</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>三类安全缺口</h1>
+          <p class="lead">上一课的自查已经把七项检查跑完，红绿都记在 <code>reports/security-precheck.md</code> 里。这一页把那些红摆到一起看：同样的红，成因可能完全不同，修复的位置也不同。分完类，后面的每一页各管一类。</p>
+
+          <section class="unit" id="u0">
+            <h2 class="unit-h"><span class="unit-t">先说清几个词</span></h2>
+            <p class="unit-lead">这一页用到的词先在这里讲明白。</p>
+            <div class="terms">
+              <div><b>功能用例</b>：验证「该做的做了」的用例。用合法身份走正常路径，期望成功。项目里 <code>apitest/cases/</code> 存的多数是这一类。</div>
+              <div><b>反例用例</b>：验证「不该做的做不了」的用例。用合法身份专走不该走的路径，期望被拒绝。上次自查的 SEC-01 ～ SEC-07 本质上就是七条反例用例；SEC-08 是另一回事——它没有「期望拒绝」的固定答案，要当堂做实验看现象。</div>
+              <div><b>攻击者视角</b>：假设自己拿到一个合法账号但想拿更多——换一个 id、换一个班级参数、绕过页面直接调底层接口。安全检查就是站在这个视角写用例。</div>
+              <div><b>失效安全</b><i>fail-safe</i>：出错时往「拒绝」的方向倒。判定逻辑本身出故障、依赖服务挂掉，都返回拒绝而不是放行。</div>
+              <div><b>完全中介</b><i>complete mediation</i>：每一次访问都过判定，不能「入口查过一次，里面就免检」。绕过路由直调接口仍然要被拦，就是完全中介。</div>
+              <div><b>盲区</b>：从来没被任何用例碰过的位置。它既不红也不绿——没人试过。注入类漏洞最常藏在盲区里。</div>
+            </div>
+          </section>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">为什么功能测试全绿不等于安全</span></h2>
+            <p class="unit-lead">功能用例站在正常用户一侧，反例用例一条都没有时，很多问题既不是红也不是绿，只是没人试过。</p>
+            <article class="kp-card">
+              <h3>两类用例验证两件事</h3>
+              <p>功能用例问「学生提交作业后能查到分数吗」，反例用例问「学生 B1 能改学生 A1 的分数吗」。前者的绿对后者毫无证明力：授权判定缺失时，正常路径一切正常，越权路径也一切正常。上一课 SEC-01 ～ SEC-04 跑出红，恰好说明这些位置此前是盲区——功能用例从未从这些角度碰过它们。</p>
+              <p><span class="sub-h">怎么看到</span>：翻上一课的自查文件，逐条问一句：这条绿是「试过且防住了」，还是「本来就没试过」？把答案写在条目旁边，本课结束时再问一遍。</p>
+            </article>
+            <article class="kp-card">
+              <h3>绿也可能只是「还没试」</h3>
+              <p>SEC-05（密钥扫描）在上一课之前从未跑过，SEC-06（依赖审计）同样。它们第一轮就出结果，恰恰说明此前连基线都没有。红是明确的缺口，盲区是未知的缺口——后者比前者危险，因为连「有没有问题」都回答不了。</p>
+              <p><span class="sub-h">怎么看到</span>：数一数项目里的写入类接口，有多少个从未被反例用例碰过（没试过未登录、没试过学生身份）。没试过的数量就是盲区的下限。</p>
+            </article>
+            <div class="note">判定的依据不是「跑了多少用例」，而是「反例用例覆盖了多少个能被外部触达的入口」。前者是工作量，后者才是安全边界。</div>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">三类缺口</span></h2>
+            <p class="unit-lead">上一课的红归进前两类，第三类由 SEC-05 ～ SEC-07 直接给出证据。注入类没有红条目，因为它是盲区——本课要补上反例。</p>
+            <article class="kp-card">
+              <h3>缺口一：授权判定缺口（SEC-01 ～ SEC-04 的红）</h3>
+              <p>代码只在入口查了「登录没有」，没有逐次查「这条数据是不是他的」；技能路由那一层有判定，绕开路由直接调底层接口就没有。表现为：不带令牌拿到数据（SEC-01）、跨班取到讲义（SEC-02）、学生改掉配置（SEC-03）、绕过技能路由执行了批改写入（SEC-04）。成因是判定放错了层——放在页面或路由上，能被直接调接口绕过。</p>
+              <p><span class="sub-h">怎么看到</span>：挑一个 SEC-02 或 SEC-03 的红条目，读对应接口的代码，找到那句查询或更新——看条件里有没有归属或角色。多数情况下只有 <code>WHERE id = ?</code>，没有 <code>AND class_id = ?</code>。</p>
+            </article>
+            <article class="kp-card">
+              <h3>缺口二：注入防护缺口（盲区）</h3>
+              <p>SQL 语句靠拼接、输出原样进 HTML、写接口不校验一次性令牌——这三处不一定有红条目，因为自查清单没有对应的反例用例。它们要靠本课补：各写一条反例，亲手注入一次，看系统接不接。接了，缺口成立；防住了，从盲区变成绿。</p>
+              <p><span class="sub-h">怎么看到</span>：在讲义标题的位置提交 <code>&lt;script&gt;alert(1)&lt;/script&gt;</code>，打开列表页再查看页面源码——内容原样出现在 HTML 里，就是输出转义缺失。</p>
+            </article>
+            <article class="kp-card">
+              <h3>缺口三：资产与日志缺口（SEC-05 ～ SEC-07）</h3>
+              <p>密钥可能躺在全量提交历史或前端产物里，谁也没扫过；依赖里有多少已知高危，没有基线；操作日志字段不全，事后回答不了「谁做的」。这三项的共同点：不出功能问题，出事就是大事，而且出事前没有任何症状。</p>
+              <p><span class="sub-h">怎么看到</span>：把 SEC-07 的字段缺口那一行翻出来——列出日志当前实际有哪些字段，缺哪几个。缺的字段就是这一课要补的列。</p>
+            </article>
+            <div class="recap">一句话记住：<b>红是明确的缺口，盲区是未知的缺口</b>——注入类漏洞最常藏在没人写过反例用例的位置。</div>
+          </section>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">从红到绿的判定口径</span></h2>
+            <table>
+              <thead>
+                <tr><th>观察量</th><th>取值来源</th><th>判定</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>反例用例结果</td><td>脚本重放 SEC-01 ～ SEC-07 的七条用例（一条命令跑完）</td><td>期望为拒绝（401 / 403 / 404 / 空结果）；实际放行即红</td></tr>
+                <tr><td>注入反例结果</td><td>本课新增的 SQL、XSS、CSRF 三条反例</td><td>分别得到空结果、无脚本执行、请求被拒，即为绿</td></tr>
+                <tr><td>密钥命中数</td><td>全量提交历史与前端产物的扫描</td><td>非 0 即红，且命中后先轮换再清历史</td></tr>
+                <tr><td>日志字段缺口</td><td>一次技能调用后的回查</td><td>七列缺一即记缺口，本课补齐</td></tr>
+              </tbody>
+            </table>
+            <div class="note">修复顺序先红后盲区：红是已经验证防不住的位置，盲区是还没验证的位置。先修有证据的，再补没证据的——但两者都不能跳过，跳过盲区等于把「不知道」当成「没有」。</div>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="../index.html">← 概览</a>
+            <a class="btn btn-ghost" href="authz.html">越权：判定与修复 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

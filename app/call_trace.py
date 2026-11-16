@@ -9,6 +9,8 @@ active_trace = ContextVar("active_trace", default=None)
 
 
 def record(kind, payload):
+    if kind == "llm_sse_data":
+        _record_stream_usage(payload)
     trace = active_trace.get()
     if trace is None:
         return
@@ -19,6 +21,19 @@ def record(kind, payload):
     trace["bytes"] += size
     # Copy now: callers append tool results to messages after sending requests.
     trace["events"].append(json.loads(json.dumps(event, ensure_ascii=False)))
+
+
+def _record_stream_usage(payload):
+    """Extract usage from SSE frames and persist/log only the numeric whitelist."""
+    try:
+        data = json.loads(payload)
+    except (TypeError, ValueError):
+        return
+    if not isinstance(data, dict) or "usage" not in data:
+        return
+    from .observability import log_model_usage
+    usage = log_model_usage(data.get("usage"), event="llm_stream_usage")
+    record("llm_usage", usage)
 
 
 def migrate_platform(connection):

@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>部署与发布 · 第 10 课 · 测试、交付与运行验证</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 10 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">本课流程</p>
+          <a href="../index.html">概览</a>
+          <a href="problems.html">可交付差在哪</a>
+          <a href="test.html">自动化测试与门禁</a>
+          <a href="build.html">可复现构建与制品</a>
+          <a href="deploy.html" class="active">部署与发布</a>
+          <a href="observe.html">运行观测</a>
+          <a href="verify.html">真实用户与性能验证</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="apply.html">实践步骤与验收</a>
+          <a href="think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">部署与发布</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>部署与发布</h1>
+          <p class="lead">这一页填第三道沟：部署靠手工搬运。推送即构建——提交一进主干，测试、构建、发布由流程自动走完；数据库变更不一步到位，分三步走完再收尾；新版本接流量之前，先过就绪探针。发布从「一个人的手工动作」变成「一条有记录的流程」。</p>
+
+          <section class="unit" id="u0">
+            <h2 class="unit-h"><span class="unit-t">先说清几个词</span></h2>
+            <p class="unit-lead">这一页用到的词先在这里讲明白。</p>
+            <div class="terms">
+              <div><b>持续集成</b><i>CI（continuous integration）</i>：提交触发的一段固定流程：检出代码 → 跑测试 → 构建镜像 → 推进制品库。配置写在仓库的文件里，不在任何人的脑子里。俗称自动构建。</div>
+              <div><b>持续部署</b><i>CD（continuous deployment）</i>：构建通过后，把新镜像发布到运行环境并替换旧版本。与持续集成合称 CI/CD。</div>
+              <div><b>expand–migrate–contract</b>：数据库变更的三步走——先扩（新旧并存：加新列新表）、再迁（把旧数据搬过去，双写）、最后缩（确认无回退需求后删旧）。任何一步出问题都能停在中间态而不丢数据。</div>
+              <div><b>滚动发布</b>：新旧版本逐个实例替换，全程总有一个版本在服务。与「停机换版本」相对。</div>
+              <div><b>就绪探针</b><i>readiness probe</i>：新实例接流量前的体检——数据库连不上就先不接。上一页 Compose 里管启动顺序，这一页管发布。</div>
+              <div><b>存活探针</b><i>liveness probe</i>：运行中的巡检——进程卡死就重启。它不负责「接不接流量」，只负责「活没活」。</div>
+              <div><b>RPO / RTO</b>：两个恢复目标。RPO（recovery point objective，恢复点目标）＝最多丢多少数据（备份间隔决定）；RTO（recovery time objective，恢复时间目标）＝最多停多久（恢复流程的时长决定）。定这两个数，比「要高可用」这句话有用得多。</div>
+            </div>
+          </section>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">推送即构建</span></h2>
+            <p class="unit-lead">流程配置入库；本地那条门禁命令，在自动构建里原样再跑一遍。</p>
+          <pre><code># .github/workflows/ci.yml —— 提交即触发
+name: ci
+on: [push]
+jobs:
+  check-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: make check            # 与本地同一条门禁
+      - run: make check-security
+      - run: make image            # 构建镜像并推入制品库</code></pre>
+            <div class="note">自动构建里跑的必须是本地那条命令——本地一套、线上另一套，等于门禁有两套标准，形同虚设。判定：本地跑绿的提交，推送后自动构建也绿；本地红的，推送后失败并挡住发布。</div>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">数据库变更：三步走</span></h2>
+            <p class="unit-lead">代码可以回滚，数据不能——所以表结构的修改永远不与代码同一步生效。</p>
+            <figure class="fig">
+              <svg viewBox="0 0 760 210" role="img" aria-label="expand–migrate–contract 三阶段：扩阶段新旧列并存且只写旧列，迁移阶段双写并回填，缩阶段代码切到新列，观察无回退需求后删除旧列">
+                <defs><marker id="dpA" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#94070a"/></marker></defs>
+                <rect x="16" y="28" width="216" height="64" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="124" y="48" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1c1917">① 扩：新旧并存</text>
+                <text x="124" y="66" text-anchor="middle" font-size="10" fill="#7d736c">加新列，代码仍只写旧列</text>
+                <text x="124" y="82" text-anchor="middle" font-size="10" fill="#7d736c">此时回滚代码零损失</text>
+                <rect x="272" y="28" width="216" height="64" rx="8" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="380" y="48" text-anchor="middle" font-size="11.5" font-weight="600" fill="#94070a">② 迁：双写与回填</text>
+                <text x="380" y="66" text-anchor="middle" font-size="10" fill="#94070a">新旧列都写，旧行回填新列</text>
+                <text x="380" y="82" text-anchor="middle" font-size="10" fill="#94070a">任何一步可停，数据不丢</text>
+                <rect x="528" y="28" width="216" height="64" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="636" y="48" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1c1917">③ 缩：删旧列</text>
+                <text x="636" y="66" text-anchor="middle" font-size="10" fill="#7d736c">代码切到新列，观察一段</text>
+                <text x="636" y="82" text-anchor="middle" font-size="10" fill="#7d736c">确认无回退需求后删除</text>
+                <line x1="232" y1="60" x2="268" y2="60" stroke="#94070a" stroke-width="1.5" marker-end="url(#dpA)"/>
+                <line x1="488" y1="60" x2="524" y2="60" stroke="#94070a" stroke-width="1.5" marker-end="url(#dpA)"/>
+                <rect x="16" y="118" width="728" height="30" rx="6" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="380" y="138" text-anchor="middle" font-size="11" fill="#1c2530">三步各是一次独立发布：任何一步出问题，停在这一步，线上仍是可用状态</text>
+                <rect x="16" y="160" width="728" height="30" rx="6" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="380" y="180" text-anchor="middle" font-size="10.5" fill="#7d736c">反向操作（先加代码读旧写新、再删列）同理：删列是最后一步，不是第一步</text>
+              </svg>
+              <figcaption>三步走把「改表结构」从一次大冒险拆成三次可停止的小改动——代价是中间态存在一段时间，这正是不丢数据的成本。</figcaption>
+            </figure>
+            <div class="note">规约里若有字段变更，任务清单先落三步走的中间两步（扩与迁），缩放到确无回退需求之后——这也是变更归档时写清「当前处于哪一步」的原因。</div>
+          </section>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">发布的体检与底线</span></h2>
+            <p class="unit-lead">新版本接流量靠就绪探针；万一整个流程失败，靠的是事先定好的两个恢复目标。</p>
+            <table>
+              <thead>
+                <tr><th>检查</th><th>时机</th><th>回答什么</th><th>不过会怎样</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>就绪探针</td><td>新实例接流量之前</td><td>依赖都连上了吗</td><td>不接流量，发布停在旧版本</td></tr>
+                <tr><td>存活探针</td><td>运行中，周期执行</td><td>进程卡死了吗</td><td>重启实例，事件进日志</td></tr>
+                <tr><td>备份与恢复</td><td>上线前定 RPO / RTO</td><td>最多丢多少、最多停多久</td><td>没有这两个数，故障时长没有上限承诺</td></tr>
+              </tbody>
+            </table>
+            <div class="recap">一句话记住：<b>代码可以回滚，数据不能</b>——数据库变更分三步走，新版本接流量先过就绪探针。</div>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="build.html">← 可复现构建与制品</a>
+            <a class="btn btn-ghost" href="observe.html">运行观测 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

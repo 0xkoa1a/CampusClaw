@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>运行观测 · 第 10 课 · 测试、交付与运行验证</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 10 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">本课流程</p>
+          <a href="../index.html">概览</a>
+          <a href="problems.html">可交付差在哪</a>
+          <a href="test.html">自动化测试与门禁</a>
+          <a href="build.html">可复现构建与制品</a>
+          <a href="deploy.html">部署与发布</a>
+          <a href="observe.html" class="active">运行观测</a>
+          <a href="verify.html">真实用户与性能验证</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="apply.html">实践步骤与验收</a>
+          <a href="think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">运行观测</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>运行观测</h1>
+          <p class="lead">这一页填第四道沟：上线之后是黑的。可观测性靠三根支柱——指标、日志、追踪——把系统内部状态翻译成三张可见的表。好消息是原料早就有了：上一课补齐的日志七列就是日志支柱与指标字段的直接来源，这一页要做的只是把它们聚合起来、画出来、配上告警。</p>
+
+          <section class="unit" id="u0">
+            <h2 class="unit-h"><span class="unit-t">先说清几个词</span></h2>
+            <p class="unit-lead">这一页用到的词先在这里讲明白。</p>
+            <div class="terms">
+              <div><b>指标</b><i>metric</i>：聚合的数——一段时间内的计数、比例、分布。回答「多少、多快、多少失败」。看趋势用它，不重现具体某一次。</div>
+              <div><b>日志</b><i>log</i>：单次的事件——一行一个 JSON。回答「那一次发生了什么」。上一课的审计日志七列就是这一层。</div>
+              <div><b>追踪</b><i>trace</i>：一次请求的全程——网关、应用、模型调用各一段，用同一个请求标识串起来。回答「时间花在了哪一段」。</div>
+              <div><b>QPS</b>（queries per second，每秒请求数）：容量问题的第一信号——QPS 涨而错误率不涨是好事，QPS 涨且延迟跟着涨就是到顶的前兆。</div>
+              <div><b>错误率</b>：失败请求占全部请求的比例。本课面板上按技能分别看——三个技能的错误率不互相平均，平均了就看不出哪一个在出问题。</div>
+              <div><b>告警规则</b>：一条写成判定的观察——「错误率连续 5 分钟超过 1% 就通知」。没有判定的「盯着点」不算告警。</div>
+              <div><b>基数</b>：一个指标维度上不同取值的个数。按技能聚合基数是 3，健康；按用户聚合成数千，指标表会被撑爆——维度选取要克制。</div>
+            </div>
+          </section>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">三支柱各回答一个问题</span></h2>
+            <p class="unit-lead">三张表不是三选一——少了任何一张，某一类问题就只能猜。</p>
+            <table>
+              <thead>
+                <tr><th>支柱</th><th>回答</th><th>本项目的形态</th><th>缺了会怎样</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>指标</td><td>多少、多快、多少失败</td><td>每技能调用量与失败率、接口 P95、任务队列深度</td><td>看不到趋势，出问题时不知道是普遍还是个例</td></tr>
+                <tr><td>日志</td><td>那一次发生了什么</td><td>日志七列（上一课补齐），含技能标识与结果状态</td><td>知道坏了不知道为什么坏</td></tr>
+                <tr><td>追踪</td><td>时间花在哪一段</td><td>请求标识贯穿网关 → 应用 → 模型调用</td><td>知道慢不知道慢在哪一段</td></tr>
+              </tbody>
+            </table>
+            <div class="note">三支柱共用一套字段口径：技能标识、请求标识、结果状态、耗时。上一课为审计补的七列，这一课直接复用——观测的原料不是新造的，是审计的副产品聚合起来的。</div>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">指标怎么命名</span></h2>
+            <p class="unit-lead">名字里带上聚合维度，面板就按它分组；维度克制，只用技能与结果状态。</p>
+          <pre><code># 计数器：只增不减，面板上按时间差分出速率
+skill_invocations_total{skill="grade-essay",status="ok"}
+skill_invocations_total{skill="grade-essay",status="error"}
+# 分布：直方图存耗时分桶，面板上取分位数
+skill_invocation_seconds_bucket{skill="grade-essay",le="30"}
+# 失败率不是新指标：error 计数除以总计数，在面板上算</code></pre>
+            <div class="note">失败率在面板上算而不是单独上报——单独维护两处数字迟早对不上。这就是「同一事实只有一个来源」：计数器是事实，比率是它的导出视图。</div>
+          </section>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">面板与告警</span></h2>
+            <p class="unit-lead">面板回答「现在怎么样」，告警回答「什么时候该叫人」——后者必须写成判定。</p>
+            <article class="kp-card">
+              <h3>面板最少三张图</h3>
+              <p>第一张：三个技能的调用量曲线（分线，不合计）——哪个技能被冷落一眼可见，这也是各组自写技能的使用证据。第二张：每技能错误率。第三张：接口 P95 与队列深度并排——异步课的三条判据，运行形态的对照就在这张图上。三张图各配一个时间轴缩放，能从「今天」缩到「这一小时」。</p>
+              <p><span class="sub-h">怎么看到</span>：触发几次技能调用（含一次故意的失败，用上一课的越权重放），刷新面板——调用量加了几笔、错误率那根线动了，面板就是通的。</p>
+            </article>
+            <article class="kp-card">
+              <h3>告警是一条判定，不是一句叮嘱</h3>
+              <p>写成三段式：「某技能错误率 5 分钟连续高于 1% → 通知负责人 → 附上面板链接」。三个要素：观察量、持续条件、动作。反例是「大家平时多看看面板」——没有人会在深夜两点主动看面板。</p>
+              <p><span class="sub-h">怎么看到</span>：人为制造几分钟连续失败，告警在设定时间内触发并送达——一次真触发胜过十条规则。</p>
+            </article>
+            <div class="recap">一句话记住：<b>指标看趋势、日志看单次、追踪看全程；告警必须写成判定</b>——观察量、持续条件、动作三件缺一不可。</div>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="deploy.html">← 部署与发布</a>
+            <a class="btn btn-ghost" href="verify.html">真实用户与性能验证 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

@@ -52,7 +52,7 @@ def test_migration_is_idempotent_and_declares_expected_columns(registry_app):
         assert servers["connected"]["dflt_value"] == "0"
         assert servers["tools_json"]["dflt_value"] == "'[]'"
         assert servers["last_error"]["dflt_value"] == "''"
-        assert set(audit) == {"id", "server_id", "class_id", "user_id", "conversation_id", "round", "tool_ref", "status", "summary", "created_at"}
+        assert set(audit) == {"id", "server_id", "class_id", "user_id", "conversation_id", "round", "tool_ref", "status", "summary", "created_at", 'request_id', 'duration_ms'}
     finally:
         connection.close()
 

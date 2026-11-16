@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>思考与分析 · 第 9 课 · 安全检查与审计</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 9 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">本课流程</p>
+          <a href="../index.html">概览</a>
+          <a href="problems.html">三类安全缺口</a>
+          <a href="authz.html">越权：判定与修复</a>
+          <a href="inject.html">注入：成因与防护</a>
+          <a href="assets.html">密钥与依赖</a>
+          <a href="audit.html">操作日志</a>
+          <a href="aisec.html">AI 入口：提示词注入</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="lab-demo.html">靶场演示</a>
+          <a href="apply.html">实践步骤与验收</a>
+          <a href="think.html" class="active">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">思考与分析</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>思考与分析</h1>
+          <p class="lead">十道研讨题，围绕本课的判定位置、防护边界与处置顺序。每题都要落到一条可复现的判定上作答——安全结论没有「大概」，说清依据是什么、怎么验证。</p>
+
+          <section class="unit" id="u0">
+            <h2 class="unit-h"><span class="unit-t">先说清几个词</span></h2>
+            <p class="unit-lead">这一页用到的词先在这里讲明白。</p>
+            <div class="terms">
+              <div><b>白名单</b><i>allowlist</i>：只允许清单上列出的值，其余一律拒绝。与黑名单（挡已知的坏值）相对——黑名单永远列不全，白名单天然完整。</div>
+              <div><b>信息最小化</b>：返回内容只给完成任务必需的信息。403 与 404 的取舍、日志记 id 不记原文，都是它的应用。</div>
+              <div><b>可复现判定</b>：别人照着写下的三段式执行一遍，能得到同样的红或绿。研讨题的答案都要求这个形态。</div>
+              <div><b>误报与漏报</b>：误报是把正常的拦了（功能回归）；漏报是把该拦的放行了（安全缺口）。两类代价都真实存在，权衡要写明理由。</div>
+              <div><b>降险</b>：漏洞无法根除时降低它被利用的条件。例如「该依赖路径未被调用」不能消掉漏洞，但去掉了利用入口。</div>
+              <div><b>同源策略</b><i>same-origin policy</i>：浏览器限制一个源的页面读取另一个源内容的规则。CSRF 的一次性令牌正是建立在它之上。</div>
+            </div>
+          </section>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">十道研讨题</span></h2>
+            <table>
+              <thead>
+                <tr><th>题</th><th>考察点</th><th>判据（作答要落到这上面）</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>1</td><td>返回码取舍与信息最小化</td><td>能说清 403 会向未授权者确认「这条数据存在」，而 404 不泄露存在性；并给出一个用返回码差异探测数据存在性的具体步骤</td></tr>
+                <tr><td>2</td><td>完全中介</td><td>能设计一个绕过路由直调底层接口的复测，据此判断 SEC-04 的拦截发生在哪一层</td></tr>
+                <tr><td>3</td><td>参数化的边界</td><td>能指出 ORDER BY 列名无法占位符化，并给出白名单枚举的写法与拒绝路径</td></tr>
+                <tr><td>4</td><td>转义按位置</td><td>能举出绕过「过滤 script 一词」的变体（大小写、编码），并说明为什么输出位置转义挡得住这些变体</td></tr>
+                <tr><td>5</td><td>CSRF 两道开关的分工</td><td>能说清 SameSite 挡的是「自动带 Cookie」、令牌挡的是「伪造请求通过校验」，并论证只留一道时各自剩什么风险</td></tr>
+                <tr><td>6</td><td>轮换与清历史的顺序</td><td>能论证「只清不换」时旧值在别人克隆里仍有效；以及「先换后清」为什么把两个风险都关掉</td></tr>
+                <tr><td>7</td><td>依赖高危的处置</td><td>对一条无补丁版本的高危，能写出「为什么暂不修 + 靠什么降险」的可检查条目，而不是「暂不处理」</td></tr>
+                <tr><td>8</td><td>审计的完整性</td><td>能论证被拒请求也该记（攻击证据），同时指出日志内容需转义截断（防日志注入）——两个要求不矛盾</td></tr>
+                <tr><td>9</td><td>授权判定的位置</td><td>对「模型自称管理员后尝试调用写工具」，能指出放行与否只能由代码层的授权判定决定，并给出实验里哪一步验证了它</td></tr>
+                <tr><td>10</td><td>修复与回归</td><td>对「修完跨班检索后功能用例变红」，能界定是归属条件写错（回归）还是用例本身依赖了越权行为（用例要改），判据是读条件核对取值</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">两个常见误读</span></h2>
+            <p class="unit-lead">辨析两句话——它们各自错在判定位置上。</p>
+            <article class="kp-card">
+              <h3>「安全检查是安全团队的事」</h3>
+              <p>误读在于把检查当成了某种专业设备。本课的八条 SEC、三条注入反例，用的都是登录、改参数、发请求这些日常动作——没有任何一步需要专门的工具或授权。真正的门槛不是设备，是视角：愿不愿意站在「拿到合法账号但想越权」的一侧给自己的系统写用例。</p>
+              <p><span class="sub-h">怎么看到</span>：把 SEC-02 的三段式记录递给同组另一位成员，让对方照着跑一遍——判定一致，说明这套检查谁都能执行。</p>
+            </article>
+            <article class="kp-card">
+              <h3>「字段加密了就安全了」</h3>
+              <p>加密只是资产层的一环：它降低「拿到数据库就拿到明文」的风险，不解决密钥进前端（加密前就得有明文来源）、不防越权（拿到密文行的路径照旧）、不补日志。纵深防御的意思正是如此——每一层各自回答一个问题，没有哪一层单独等于安全。</p>
+              <p><span class="sub-h">怎么看到</span>：逐层各挑一条已完成的判定（归属条件、输出转义、密钥外置、日志回查），看它们分别回答的是哪个不同的问题。</p>
+            </article>
+            <div class="recap">一句话记住：<b>每道题的答案都要能落成一条可复现的判定</b>——安全结论没有「大概」。</div>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="apply.html">← 实践步骤与验收</a>
+            <a class="btn btn-ghost" href="../index.html">回到概览 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

@@ -16,7 +16,7 @@ def main():
     root = Path(__file__).resolve().parents[1]
     if (root / '.env').exists() or root == args.gateway_env.resolve().parent:
         raise RuntimeError('Use a fresh source copy; never overwrite an existing private configuration')
-    if not 1024 <= args.port <= 65535 or not args.project.startswith('campusclaw-week08-'):
+    if not 1024 <= args.port <= 65535 or not args.project.startswith(('campusclaw-week08-', 'campusclaw-week10-')):
         raise ValueError('Invalid isolated project or port')
     if any(c.isspace() for c in args.rabbitmq_image): raise ValueError('Invalid image reference')
     settings = {}

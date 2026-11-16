@@ -121,6 +121,8 @@ def _login(username, password):
         )
     session.clear()
     session["sid"] = new_sid
+    g.user = user
+    g.auth_sid = new_sid
     return user
 
 

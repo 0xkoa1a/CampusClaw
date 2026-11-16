@@ -42,6 +42,8 @@ AUDIT_SCHEMA = {"type": "object", "properties": {"tool_calls": {"type": "array",
         "conversation_id": {"type": "integer", "nullable": True}, "round": {"type": "integer"},
         "tool_ref": {"type": "string"}, "status": {"type": "string"},
         "summary": {"type": "string"}, "created_at": {"type": "string"},
+        "request_id": {"type": "string", "nullable": True},
+        "duration_ms": {"type": "number", "nullable": True},
     },
 }}}}
 OK_SCHEMA = {"type": "object", "properties": {"ok": {"type": "boolean"}}}
@@ -74,6 +76,11 @@ def migrate_mcp(connection):
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )""")
         connection.execute("CREATE INDEX IF NOT EXISTS idx_mcp_audit_class_created ON mcp_audit(class_id,created_at DESC,id DESC)")
+        columns = {row["name"] for row in connection.execute("PRAGMA table_info(mcp_audit)")}
+        if "request_id" not in columns:
+            connection.execute("ALTER TABLE mcp_audit ADD COLUMN request_id TEXT")
+        if "duration_ms" not in columns:
+            connection.execute("ALTER TABLE mcp_audit ADD COLUMN duration_ms REAL")
 
 
 @bp.errorhandler(ApiProblem)
@@ -360,7 +367,7 @@ def tool_calls():
     if denied:
         return denied
     rows = get_db().execute(
-        "SELECT id,server_id,class_id,user_id,conversation_id,round,tool_ref,status,summary,created_at "
+        "SELECT id,server_id,class_id,user_id,conversation_id,round,tool_ref,status,summary,created_at,request_id,duration_ms "
         "FROM mcp_audit WHERE class_id=? ORDER BY created_at DESC,id DESC LIMIT 200",
         (g.user["class_id"],),
     ).fetchall()
@@ -368,14 +375,18 @@ def tool_calls():
 
 
 def record_tool_call(*, server_id, class_id, user_id, conversation_id, round_number,
-                     tool_ref, status, summary):
+                     tool_ref, status, summary, request_id=None, duration_ms=None):
     """Persist one call outcome; callers pass only a bounded, credential-free summary."""
     if not isinstance(tool_ref, str) or not isinstance(status, str) or not isinstance(summary, str):
         raise ValueError("invalid MCP audit fields")
+    if request_id is None:
+        from .observability import current_request_id
+        request_id = current_request_id()
     connection = get_db()
     with connection:
         connection.execute(
-            "INSERT INTO mcp_audit(server_id,class_id,user_id,conversation_id,round,tool_ref,status,summary) "
-            "VALUES (?,?,?,?,?,?,?,?)",
-            (server_id, class_id, user_id, conversation_id, round_number, tool_ref, status, summary[:1000]),
+            "INSERT INTO mcp_audit(server_id,class_id,user_id,conversation_id,round,tool_ref,status,summary,request_id,duration_ms) "
+            "VALUES (?,?,?,?,?,?,?,?,?,?)",
+            (server_id, class_id, user_id, conversation_id, round_number, tool_ref, status,
+             summary[:1000], request_id, duration_ms),
         )

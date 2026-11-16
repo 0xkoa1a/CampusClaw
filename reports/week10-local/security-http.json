@@ -1,0 +1,13 @@
+{
+  "mode": "local-stub-model-real-HTTP-and-SQLite",
+  "submission_202": true,
+  "teacher_override": true,
+  "student_write_403": true,
+  "cross_class_404": true,
+  "sql_injection_empty": true,
+  "three_explicit_injections_400": true,
+  "foreign_origin_403": true,
+  "missing_form_csrf_403": true,
+  "cookie_samesite_lax": true,
+  "xss_source_browser_check": "pending"
+}

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>自动化测试与门禁 · 第 10 课 · 测试、交付与运行验证</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 10 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">本课流程</p>
+          <a href="../index.html">概览</a>
+          <a href="problems.html">可交付差在哪</a>
+          <a href="test.html" class="active">自动化测试与门禁</a>
+          <a href="build.html">可复现构建与制品</a>
+          <a href="deploy.html">部署与发布</a>
+          <a href="observe.html">运行观测</a>
+          <a href="verify.html">真实用户与性能验证</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="apply.html">实践步骤与验收</a>
+          <a href="think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">自动化测试与门禁</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>自动化测试与门禁</h1>
+          <p class="lead">这一页填第一道沟：把散在各课的验收判据收成一条命令 <code>make check</code>，任何人任何机器执行它得到同样的红绿，并把它接到合并流程上当门禁。质量不是这一课才开始——从写规约、点失败路径起就在积累，这一课只是收口。</p>
+
+          <section class="unit" id="u0">
+            <h2 class="unit-h"><span class="unit-t">先说清几个词</span></h2>
+            <p class="unit-lead">这一页用到的词先在这里讲明白。</p>
+            <div class="terms">
+              <div><b>测试金字塔</b><i>test pyramid</i>：用例按层次分底座——单元测试多而快（一个函数、一个判定），接口测试居中（一个请求的契约），端到端少而慢（整条链路）。底座越厚，红了之后定位越快。</div>
+              <div><b>单元测试</b>：只测一个最小单元（一个函数、一段判定逻辑），不碰数据库与网络。快，所以可以很多。</div>
+              <div><b>接口测试</b>：对一个 HTTP 接口发请求、断言返回。项目里 <code>apitest/cases/&lt;URL&gt;/&lt;方法&gt;</code> 存的就是这一层。</div>
+              <div><b>测试替身</b><i>test double</i>：替被测单元顶班的假依赖——模型调用、外部服务。不用真等一次几十秒的批改，用替身立即返回固定值。</div>
+              <div><b>可追溯矩阵</b>：需求 / 规约条目与用例的对照表。每个规约里的场景至少对应一条用例——没有用例对应的场景，就是没人守的门。</div>
+              <div><b>先红后绿</b>：新用例先跑出红（证明它真的在测东西），修完再跑出绿。一上来就绿的用例，无法证明它测的是这条路径。</div>
+              <div><b>等价类与边界值</b>：把输入分成「同一类行为的组」，每组挑代表值；再专挑边界（0、空串、刚好越界）。两个词合起来回答「用例要写几条才够」。</div>
+            </div>
+          </section>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">从手工验收到套件</span></h2>
+            <p class="unit-lead">收口动作只有三步：把当堂跑过的判定写成用例、挂进一条命令、接到合并。</p>
+            <figure class="fig">
+              <svg viewBox="0 0 760 224" role="img" aria-label="测试金字塔：底层是数量多、速度快的单元测试，中层是接口用例，顶层是少量端到端用例；左轴表示用例数量与执行速度，右侧标注红了之后的定位速度随层次升高而变慢">
+                <polygon points="380,24 560,160 200,160" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="380" y="52" text-anchor="middle" font-size="11" font-weight="600" fill="#94070a">端到端：整条链路，少而慢</text>
+                <text x="380" y="68" text-anchor="middle" font-size="10" fill="#94070a">异步三条判据住在这层</text>
+                <rect x="264" y="86" width="232" height="34" fill="#ffffff" stroke="#e6e1dd" opacity="0.92"/>
+                <text x="380" y="107" text-anchor="middle" font-size="11" font-weight="600" fill="#1c2530">接口测试：一个请求的契约</text>
+                <rect x="200" y="160" width="360" height="40" fill="#f8f6f4" stroke="#e6e1dd"/>
+                <text x="380" y="178" text-anchor="middle" font-size="11" font-weight="600" fill="#1c2530">单元测试：一个函数、一个判定，多而快</text>
+                <text x="380" y="194" text-anchor="middle" font-size="10" fill="#7d736c">归属条件、状态机流转这类纯逻辑优先住在这层</text>
+                <text x="88" y="112" text-anchor="middle" font-size="10" fill="#7d736c">越往下：</text>
+                <text x="88" y="128" text-anchor="middle" font-size="10" fill="#7d736c">越多、越快、</text>
+                <text x="88" y="144" text-anchor="middle" font-size="10" fill="#7d736c">定位越准</text>
+                <text x="668" y="112" text-anchor="middle" font-size="10" fill="#7d736c">越往上：</text>
+                <text x="668" y="128" text-anchor="middle" font-size="10" fill="#7d736c">越接近真实，</text>
+                <text x="668" y="144" text-anchor="middle" font-size="10" fill="#7d736c">红了越难定位</text>
+              </svg>
+              <figcaption>层次决定用例的成本与定位速度：纯逻辑放底层，一次请求的契约放中层，只有必须跨全链路的行为才放顶层——顶层堆满金字塔就头重脚轻。</figcaption>
+            </figure>
+            <table>
+              <thead>
+                <tr><th>收口步骤</th><th>动作</th><th>完成判定</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>① 写成用例</td><td>把当堂跑过的判定落进 <code>apitest/cases/</code> 或单元测试目录，三段式照搬</td><td>用例随仓库提交，别人能执行</td></tr>
+                <tr><td>② 挂进命令</td><td>接口与单元用例聚合进 <code>make check</code>；安全反例由 <code>make check-security</code> 单独跑，两条命令并列</td><td>一条命令全量执行，红则退出码非 0</td></tr>
+                <tr><td>③ 接到合并</td><td>主干分支（main）开启保护：脚本挂进持续集成（CI），<code>make check</code> / <code>make check-security</code> 非 0 的提交进不了 main</td><td>故意改坏一处，合并被挡</td></tr>
+              </tbody>
+            </table>
+            <div class="note">收口不是补写「质量意识」——质量从写规约、给每条场景配验收时就开始积累了。这一课只是把已有积累变成可反复执行的证据。</div>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">按技能写检查</span></h2>
+            <p class="unit-lead">每个必做技能至少一条检查；技能的行为约束是现成的，缺的只是把它写成用例。</p>
+            <table>
+              <thead>
+                <tr><th>技能</th><th>行为约束（一直就有）</th><th>检查写法（三段式）</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>解题引导</td><td>直接要答案时，不给出最终答案</td><td>学生提问「直接告诉我最终答案」→ 期望回答不含答案行，只含引导步骤</td></tr>
+                <tr><td>作业批改</td><td>教师改分后，以教师分数为准</td><td>教师改分 → 再触发一次自动批改 → 期望分数不回退</td></tr>
+                <tr><td>错题讲解</td><td>不整段贴出标准答案</td><td>要讲解 → 期望回答里不出现与标准答案整段相同的内容</td></tr>
+                <tr><td>知识库</td><td>跨班检索不到他班内容</td><td>换另一班账号查他班讲义 → 断言返回 404（跨班一律 404，单侧过滤 + fetch-then-check）</td></tr>
+              </tbody>
+            </table>
+            <div class="note">这四条全是接口层用例：发一次请求、断言返回，不需要替身。需要替身的是涉及模型调用的等待——替身让「批改后以教师为准」这条用例从几十秒缩到秒级，用例才能进每次提交都跑的门禁。</div>
+          </section>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">门禁跑起来长什么样</span></h2>
+            <p class="unit-lead">一条命令、退出码说话——这是后续自动构建要消费的信号。</p>
+          <pre><code>$ make check
+ok   apitest/cases/POST /api/materials/upload        12 passed
+ok   apitest/cases/GET  /api/knowledge/search        31 passed
+FAIL apitest/cases/POST /api/skills/grade/ask        1 failed
+     解题引导：直接要答案时不应给出最终答案
+make: *** [check] Error 1        # 退出码非 0，合并被挡住</code></pre>
+            <div class="note">故意改坏一处、跑出上面这样的红，是本课必做的一步——门禁要先用一次「真的拦住了」来证明自己存在。之后修复、复测变绿（<code>make check</code> 退出码 0），把红屏、修复提交编号、绿屏写入 <code>reports/gate-red-green.md</code>，最终验收时当场复跑。</div>
+            <div class="recap">一句话记住：<b>自动化测试的主要用途是守住旧功能</b>——每个必做技能至少一条检查，红则退出码非 0，挡在合并之前。</div>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="problems.html">← 可交付差在哪</a>
+            <a class="btn btn-ghost" href="build.html">可复现构建与制品 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

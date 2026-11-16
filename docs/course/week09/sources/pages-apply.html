@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>实践步骤与验收 · 第 9 课 · 安全检查与审计</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 9 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">本课流程</p>
+          <a href="../index.html">概览</a>
+          <a href="problems.html">三类安全缺口</a>
+          <a href="authz.html">越权：判定与修复</a>
+          <a href="inject.html">注入：成因与防护</a>
+          <a href="assets.html">密钥与依赖</a>
+          <a href="audit.html">操作日志</a>
+          <a href="aisec.html">AI 入口：提示词注入</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="lab-demo.html">靶场演示</a>
+          <a href="apply.html" class="active">实践步骤与验收</a>
+          <a href="think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">实践步骤与验收</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>实践步骤与验收</h1>
+          <p class="lead">这一页把前面的修复串成一条当天能走完的流程：选红、修、用同一条三段式复测、归档前后证据。走完时 SEC-01 ～ SEC-07 七项都有绿判定（或书面处置），注入三件套有反例用例，SEC-08 的实验记录在案且第四步工具层为绿，上一课的异步链路没有回归。</p>
+
+          <section class="unit" id="u0">
+            <h2 class="unit-h"><span class="unit-t">先说清几个词</span></h2>
+            <p class="unit-lead">这一页用到的词先在这里讲明白。</p>
+            <div class="terms">
+              <div><b>复测</b>：用与发现问题时完全相同的三段式记录（前置条件 / 操作 / 可观测结果）重放一遍。修复的完成标志是复测变绿，不是「看起来好了」。</div>
+              <div><b>回归</b>：修复没有破坏原有功能。判定材料是 <code>make check</code> 与上一课的三条异步判据——授权收紧最容易误伤的就是任务提交与查询。</div>
+              <div><b>门禁</b>：一条命令，红了就挡住合并。<code>make check-security</code> 覆盖的条目里有高危或命中，退出码非 0。接通后留一次真实挡住的证据：先红（必红提交，退出码非 0）后绿（修复后再跑退出码 0），两次输出连同提交号归档 <code>reports/gate-red-green.md</code>——先红后绿才能证明门禁真的在挡。</div>
+              <div><b>证据</b>：修复前与修复后的两个实际值。只写结论（「已修复」）不写值的记录，别人无法复核。</div>
+              <div><b>基线</b>：某一时刻各项检查的数值快照（命中数、高危条数）。之后的每次变化都对着基线说——升高了还是降低了。</div>
+            </div>
+          </section>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">五步流程</span></h2>
+            <figure class="fig">
+              <svg viewBox="0 0 760 200" role="img" aria-label="红改绿循环：选红并归类，修复判定归位，用同一条三段式复测，绿则归档证据并接入门禁，仍红则回到修复">
+                <defs><marker id="apA" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#94070a"/></marker></defs>
+                <rect x="16" y="40" width="136" height="44" rx="8" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="84" y="58" text-anchor="middle" font-size="11.5" font-weight="600" fill="#94070a">① 选红并归类</text>
+                <text x="84" y="74" text-anchor="middle" font-size="10" fill="#7d736c">对照三类缺口</text>
+                <rect x="180" y="40" width="136" height="44" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="248" y="58" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1c2530">② 修复：判定归位</text>
+                <text x="248" y="74" text-anchor="middle" font-size="10" fill="#7d736c">应用层 + 数据层</text>
+                <rect x="344" y="40" width="136" height="44" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="412" y="58" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1c2530">③ 同一条三段式复测</text>
+                <text x="412" y="74" text-anchor="middle" font-size="10" fill="#7d736c">前置 / 操作 / 结果</text>
+                <rect x="508" y="40" width="120" height="44" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="568" y="58" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1c2530">④ 归档前后证据</text>
+                <text x="568" y="74" text-anchor="middle" font-size="10" fill="#7d736c">两个实际值</text>
+                <rect x="648" y="40" width="96" height="44" rx="8" fill="#fdf3f3" stroke="#94070a"/>
+                <text x="696" y="58" text-anchor="middle" font-size="11.5" font-weight="600" fill="#94070a">⑤ 接入门禁</text>
+                <text x="696" y="74" text-anchor="middle" font-size="10" fill="#7d736c">常驻命令</text>
+                <line x1="152" y1="62" x2="176" y2="62" stroke="#94070a" stroke-width="1.5" marker-end="url(#apA)"/>
+                <line x1="316" y1="62" x2="340" y2="62" stroke="#94070a" stroke-width="1.5" marker-end="url(#apA)"/>
+                <line x1="480" y1="62" x2="504" y2="62" stroke="#94070a" stroke-width="1.5" marker-end="url(#apA)"/>
+                <line x1="628" y1="62" x2="644" y2="62" stroke="#94070a" stroke-width="1.5" marker-end="url(#apA)"/>
+                <path d="M 412 84 C 412 128, 248 128, 248 88" fill="none" stroke="#7d736c" stroke-width="1.2" stroke-dasharray="4 3" marker-end="url(#apA)"/>
+                <text x="330" y="140" text-anchor="middle" font-size="10" fill="#7d736c">复测仍红：回到修复，改判定位置而不是改用例期望</text>
+                <rect x="16" y="162" width="728" height="26" rx="6" fill="#ffffff" stroke="#e6e1dd"/>
+                <text x="380" y="179" text-anchor="middle" font-size="10.5" fill="#7d736c">归档位置 reports/（仓库根目录）：修复前后对照表、反例用例三段式记录、实验记录、基线报告</text>
+              </svg>
+              <figcaption>循环里最容易偷懒的一步是③——复测若换了用例或换了期望，绿就失去了与红的可比性。</figcaption>
+            </figure>
+            <table>
+              <thead>
+                <tr><th>步骤</th><th>产出</th><th>完成判定</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>① 选红定序</td><td>每条红标注缺口类别（授权 / 注入 / 资产 / 日志）</td><td>每条红都归了类，修复顺序定下</td></tr>
+                <tr><td>② 修授权（SEC-01 ～ 04）</td><td>应用层角色判定 + 数据层归属条件</td><td>四条复测全部为绿</td></tr>
+                <tr><td>③ 补注入反例（SQL / XSS / CSRF）</td><td>三条反例用例，落进 <code>apitest/cases/</code></td><td>三件套各自为绿且常驻回归</td></tr>
+                <tr><td>④ 处置资产（SEC-05 / 06）</td><td>轮换记录、清理后的历史、依赖处置记录</td><td>扫描 0 命中；高危清零或书面登记</td></tr>
+                <tr><td>⑤ 补日志与做实验（SEC-07 / 08）</td><td>七列日志与回查记录、实验四步记录</td><td>回查七列齐全；第四步工具层为绿</td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">证据与归档</span></h2>
+            <p class="unit-lead">全部落进仓库根目录的 <code>reports/</code>，编号沿用 SEC。文件名从本课起固定：修复前后对照表 <code>reports/security-fix-log.md</code>、实验记录 <code>reports/sec08-experiment.md</code>、基线报告 <code>reports/security-baseline.md</code>——最终项目报告直接引用这些路径当场打开，打不开即无法复核。</p>
+            <table>
+              <thead>
+                <tr><th>文件</th><th>内容</th><th>判定</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>修复前后对照表</td><td>每条 SEC 的编号 / 修复前实际 / 修复后实际 / 判定</td><td>每行两个值都在，缺一即未完成</td></tr>
+                <tr><td>权限高风险记录</td><td>SEC-02 跨班一条按四件事写全：用什么手段查 / 查了什么 / 判据 / 结果</td><td>存 <code>reports/risk-authz.md</code>，复测命令可当场复跑——是最终报告「高风险三查 · 权限」的来源</td></tr>
+                <tr><td>反例用例三件套</td><td>SQL、XSS、CSRF 各一条，三段式记录</td><td>用例本体按 <code>apitest/cases/&lt;接口路径&gt;/&lt;方法&gt;</code> 结构常驻，随 <code>make check</code> 跑；三段式记录归档 <code>reports/</code></td></tr>
+                <tr><td>实验记录</td><td>SEC-08 四步的现象与判定</td><td>四步各有实际现象，不只写结论</td></tr>
+                <tr><td>基线报告</td><td>密钥扫描与依赖审计的当日快照</td><td>注明日期与数值，作为后续对比的基线</td></tr>
+              </tbody>
+            </table>
+            <div class="note">修复涉及代码的每一步单独开一条变更提交，提交信息写清依据哪一条 SEC 编号——这样安全修复本身也留了可追溯的记录，与审计日志同一条思路。</div>
+          </section>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">回归：修复不许带来新红</span></h2>
+            <p class="unit-lead">安全修复改的是判定，判定变严后第一个受影响的就是正常功能——所以回归不是选做。</p>
+            <article class="kp-card">
+              <h3>要重跑的三组</h3>
+              <p>第一组：<code>make check</code> 全量功能用例——授权收紧后，合法用户的正常路径必须仍然走得通。第二组：上一课的三条异步判据——任务提交与结果查询都过登录与归属判定，最容易在收紧时被误伤。第三组：本课新增的反例三件套——它们进了回归，注入防护从此不会悄悄退化。</p>
+              <p><span class="sub-h">怎么看到</span>：依次跑三组，全部为绿。任何一组出红，先修回归再继续——带着回归的修复不算修复完成。</p>
+            </article>
+            <div class="note">「功能红了说明判定写严了」不成立——多数情况是归属条件写错了位置或值（例如把班级写成了用户）。回归红的时候先怀疑修复的写法，不要先怀疑用例。</div>
+            <div class="recap">一句话记住：<b>修复的完成标志是同一条三段式复测变绿，且前后两个值都归档在案</b>。</div>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="aisec.html">← AI 入口：提示词注入</a>
+            <a class="btn btn-ghost" href="think.html">思考与分析 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

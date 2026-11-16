@@ -1,0 +1,225 @@
+{
+  "started_at_utc": "2026-11-16T11:29:23.131658+00:00",
+  "parameters": {
+    "target": "http://127.0.0.1:18090/api/search",
+    "method": "POST",
+    "body_sha256": "1de551bbbb5b1462ae1bcf84a7d65fc2b07d677f810bd57b8671b7ea3fde1d59",
+    "concurrency": 4,
+    "requests": 40,
+    "timeout_seconds": 2.0
+  },
+  "summary": {
+    "target": "http://127.0.0.1:18090/api/search",
+    "method": "POST",
+    "body_sha256": "1de551bbbb5b1462ae1bcf84a7d65fc2b07d677f810bd57b8671b7ea3fde1d59",
+    "concurrency": 4,
+    "requests": 40,
+    "timeout_seconds": 2.0,
+    "elapsed_seconds": 0.1437939590541646,
+    "p95_seconds": 0.0350098330527544,
+    "throughput_requests_per_second": 278.17580281611635,
+    "failures": 0
+  },
+  "samples": [
+    {
+      "request": 1,
+      "elapsed_seconds": 0.024920540978200734,
+      "status": "200"
+    },
+    {
+      "request": 2,
+      "elapsed_seconds": 0.0350098330527544,
+      "status": "200"
+    },
+    {
+      "request": 3,
+      "elapsed_seconds": 0.08572433399967849,
+      "status": "200"
+    },
+    {
+      "request": 4,
+      "elapsed_seconds": 0.028721207985654473,
+      "status": "200"
+    },
+    {
+      "request": 5,
+      "elapsed_seconds": 0.007227584021165967,
+      "status": "200"
+    },
+    {
+      "request": 6,
+      "elapsed_seconds": 0.01030462491326034,
+      "status": "200"
+    },
+    {
+      "request": 7,
+      "elapsed_seconds": 0.006353457923978567,
+      "status": "200"
+    },
+    {
+      "request": 8,
+      "elapsed_seconds": 0.007176417042501271,
+      "status": "200"
+    },
+    {
+      "request": 9,
+      "elapsed_seconds": 0.028975415974855423,
+      "status": "200"
+    },
+    {
+      "request": 10,
+      "elapsed_seconds": 0.009189416072331369,
+      "status": "200"
+    },
+    {
+      "request": 11,
+      "elapsed_seconds": 0.012840208015404642,
+      "status": "200"
+    },
+    {
+      "request": 12,
+      "elapsed_seconds": 0.008373041055165231,
+      "status": "200"
+    },
+    {
+      "request": 13,
+      "elapsed_seconds": 0.006036916980519891,
+      "status": "200"
+    },
+    {
+      "request": 14,
+      "elapsed_seconds": 0.00819116597995162,
+      "status": "200"
+    },
+    {
+      "request": 15,
+      "elapsed_seconds": 0.00881537504028529,
+      "status": "200"
+    },
+    {
+      "request": 16,
+      "elapsed_seconds": 0.007122665992937982,
+      "status": "200"
+    },
+    {
+      "request": 17,
+      "elapsed_seconds": 0.011282416991889477,
+      "status": "200"
+    },
+    {
+      "request": 18,
+      "elapsed_seconds": 0.05331633402965963,
+      "status": "200"
+    },
+    {
+      "request": 19,
+      "elapsed_seconds": 0.008707416942343116,
+      "status": "200"
+    },
+    {
+      "request": 20,
+      "elapsed_seconds": 0.010638291947543621,
+      "status": "200"
+    },
+    {
+      "request": 21,
+      "elapsed_seconds": 0.008967250003479421,
+      "status": "200"
+    },
+    {
+      "request": 22,
+      "elapsed_seconds": 0.0059161249082535505,
+      "status": "200"
+    },
+    {
+      "request": 23,
+      "elapsed_seconds": 0.007700207992456853,
+      "status": "200"
+    },
+    {
+      "request": 24,
+      "elapsed_seconds": 0.007493249955587089,
+      "status": "200"
+    },
+    {
+      "request": 25,
+      "elapsed_seconds": 0.007756082923151553,
+      "status": "200"
+    },
+    {
+      "request": 26,
+      "elapsed_seconds": 0.006889416021294892,
+      "status": "200"
+    },
+    {
+      "request": 27,
+      "elapsed_seconds": 0.008313457947224379,
+      "status": "200"
+    },
+    {
+      "request": 28,
+      "elapsed_seconds": 0.013372290995903313,
+      "status": "200"
+    },
+    {
+      "request": 29,
+      "elapsed_seconds": 0.004608541028574109,
+      "status": "200"
+    },
+    {
+      "request": 30,
+      "elapsed_seconds": 0.005372084095142782,
+      "status": "200"
+    },
+    {
+      "request": 31,
+      "elapsed_seconds": 0.007429292076267302,
+      "status": "200"
+    },
+    {
+      "request": 32,
+      "elapsed_seconds": 0.007045542006380856,
+      "status": "200"
+    },
+    {
+      "request": 33,
+      "elapsed_seconds": 0.01666420791298151,
+      "status": "200"
+    },
+    {
+      "request": 34,
+      "elapsed_seconds": 0.0060490419855341315,
+      "status": "200"
+    },
+    {
+      "request": 35,
+      "elapsed_seconds": 0.007194584002718329,
+      "status": "200"
+    },
+    {
+      "request": 36,
+      "elapsed_seconds": 0.011391416075639427,
+      "status": "200"
+    },
+    {
+      "request": 37,
+      "elapsed_seconds": 0.019656334072351456,
+      "status": "200"
+    },
+    {
+      "request": 38,
+      "elapsed_seconds": 0.013812499935738742,
+      "status": "200"
+    },
+    {
+      "request": 39,
+      "elapsed_seconds": 0.004513417021371424,
+      "status": "200"
+    },
+    {
+      "request": 40,
+      "elapsed_seconds": 0.004123041988350451,
+      "status": "200"
+    }
+  ]
+}

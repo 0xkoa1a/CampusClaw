@@ -122,6 +122,9 @@ def test_no_token_for_bad_password_or_mode(client):
 
 
 def test_form_login_works_without_javascript(client):
-    response = client.post("/login", data={"username": "teacher_a", "password": "teacher-test-password"})
+    client.get('/login')
+    with client.session_transaction() as session:
+        csrf = session['_csrf']
+    response = client.post("/login", data={"username": "teacher_a", "password": "teacher-test-password", 'csrf_token':csrf})
     assert response.status_code == 302
     assert client.get("/materials").status_code == 200

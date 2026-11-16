@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='assignments.css') }}">
 <header class="site-header">
   <div class="header-left"><div class="brand">Campus<span>Claw</span></div><span class="header-divider"></span><span class="class-name">{{ g.user.class_name }}</span></div>
-  <div class="header-right"><span>{{ g.user.display_name }} · {{ "教师" if g.user.role == "teacher" else "学生" }}</span><form id="logout-form" method="post" action="{{ url_for('auth.logout') }}"><button class="text-button" type="submit">退出登录</button></form></div>
+  <div class="header-right"><span>{{ g.user.display_name }} · {{ "教师" if g.user.role == "teacher" else "学生" }}</span><form id="logout-form" method="post" action="{{ url_for('auth.logout') }}"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="text-button" type="submit">退出登录</button></form></div>
 </header>
 <main class="workspace assignments-workspace" data-role="{{ g.user.role }}">
   <p id="auth-status" class="form-error" role="alert"></p>

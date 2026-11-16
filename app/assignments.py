@@ -1,4 +1,5 @@
 """Class assignments and immediate, idempotent asynchronous acceptance."""
+import math
 import re
 
 from flask import Blueprint, current_app, g, jsonify, render_template, request
@@ -7,7 +8,7 @@ from .agent_store import ApiProblem, missing
 from .auth import require_user
 from .db import get_db
 from .openapi import api_doc
-from .task_store import TASK_QUERY, accept_submission, task_json
+from .task_store import TASK_QUERY, accept_submission, override_grade, task_json
 
 bp = Blueprint('assignments', __name__)
 
@@ -115,4 +116,54 @@ def task(identifier):
     if denied: return denied
     row = get_db().execute(TASK_QUERY + ' WHERE t.id=? AND t.class_id=?', (identifier, g.user['class_id'])).fetchone()
     if row is None or (g.user['role'] != 'teacher' and row['user_id'] != g.user['id']): raise missing()
+    return jsonify(task=task_json(row))
+
+
+@bp.put('/api/tasks/<string:identifier>/grade')
+@api_doc({'put': {
+    'summary': '教师覆盖本班批改结果',
+    'description': '需要有效登录会话。仅教师可用；学生返回403。任务、提交和作业都必须属于教师会话中的班级，跨班或不存在的任务返回404。score须为有限数字且在0到作业满分之间（含边界）；feedback须为非空字符串且最多2000字。成功后结果来源为teacher-override，任务为succeeded，租约被清除。',
+    'requestBody': {'required': True, 'content': {'application/json': {'schema': {
+        'type': 'object', 'required': ['score', 'feedback'], 'additionalProperties': False,
+        'properties': {
+            'score': {'type': 'number', 'minimum': 0, 'description': '必须是有限数值，且不得超过该作业的max_score'},
+            'feedback': {'type': 'string', 'minLength': 1, 'maxLength': 2000},
+        }}}}},
+    'x-error-statuses': ['400', '403', '404'], 'x-success-status': 200,
+    'x-response-schema': {'type': 'object', 'required': ['task'], 'properties': {
+        'task': {'type': 'object', 'required': ['id', 'status', 'result'], 'properties': {
+            'id': {'type': 'string'}, 'status': {'type': 'string', 'enum': ['succeeded']},
+            'result': {'type': 'object', 'required': ['score', 'feedback', 'source'], 'properties': {
+                'score': {'type': 'number'}, 'feedback': {'type': 'string'},
+                'source': {'type': 'string', 'enum': ['teacher-override']},
+            }},
+        }},
+    }},
+}})
+def grade_task(identifier):
+    denied = require_user()
+    if denied: return denied
+    if g.user['role'] != 'teacher': raise ApiProblem('需要教师权限', 403)
+    db = get_db()
+    task = db.execute('''SELECT t.id,a.max_score FROM grading_tasks t
+        JOIN submissions s ON s.id=t.submission_id
+        JOIN assignments a ON a.id=s.assignment_id
+        WHERE t.id=? AND t.class_id=? AND s.class_id=? AND a.class_id=?''',
+        (identifier, g.user['class_id'], g.user['class_id'], g.user['class_id'])).fetchone()
+    if task is None: raise missing()
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict): raise ApiProblem('需要JSON对象')
+    score, feedback = data.get('score'), data.get('feedback')
+    if isinstance(score, bool) or not isinstance(score, (int, float)):
+        raise ApiProblem('score须为有限数字且在0到作业满分之间')
+    try:
+        finite = math.isfinite(score)
+    except OverflowError:
+        finite = False
+    if not finite or not 0 <= score <= task['max_score']:
+        raise ApiProblem('score须为有限数字且在0到作业满分之间')
+    if not isinstance(feedback, str) or not feedback.strip() or len(feedback) > 2000:
+        raise ApiProblem('feedback须为非空字符串且最多2000字')
+    if not override_grade(db, identifier, g.user['class_id'], score, feedback): raise missing()
+    row = db.execute(TASK_QUERY + ' WHERE t.id=? AND t.class_id=?', (identifier, g.user['class_id'])).fetchone()
     return jsonify(task=task_json(row))

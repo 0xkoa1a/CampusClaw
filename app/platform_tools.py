@@ -65,25 +65,29 @@ def tool_definitions(refs, class_id):
     return result, mapping, unavailable
 
 
-def append_audit(ref, class_id, user_id, conversation_id, round_number, status, result, expected_id=None):
+def append_audit(ref, class_id, user_id, conversation_id, round_number, status, result,
+                 expected_id=None, duration_ms=None):
     """Re-resolve identity at write time; a deleted/renamed server has no audit owner."""
     from .db import get_db
     if '@' not in ref:
         return
     tool, server_name = ref.split('@', 1)
     db = get_db()
+    from .observability import current_request_id
     with db:
-        db.execute("""INSERT INTO mcp_audit(server_id,class_id,user_id,conversation_id,round,tool_ref,status,summary)
-            SELECT id,?,?,?,?,?,?,? FROM mcp_servers
+        db.execute("""INSERT INTO mcp_audit(server_id,class_id,user_id,conversation_id,round,tool_ref,status,summary,request_id,duration_ms)
+            SELECT id,?,?,?,?,?,?,?,?,? FROM mcp_servers
             WHERE name=? AND class_id=? AND (? IS NULL OR id=?)""",
             (class_id, user_id, conversation_id, round_number, ref, status,
-             json.dumps(result, ensure_ascii=False)[:500], server_name, class_id, expected_id, expected_id))
+             json.dumps(result, ensure_ascii=False)[:500], current_request_id(), duration_ms,
+             server_name, class_id, expected_id, expected_id))
 
 
 def bounded_result(result):
     """Check the whole response before keeping a model-visible text prefix."""
     text = json.dumps(result, ensure_ascii=False)
-    if re.search(r"忽略.{0,12}(指令|规则)|ignore.{0,20}instructions|system\s*prompt|泄露|执行命令", text, re.I):
+    from .security import instruction_override
+    if instruction_override(text) or re.search(r"忽略.{0,12}(指令|规则)|ignore.{0,20}instructions|system\s*prompt|泄露|执行命令", text, re.I):
         return {"error": "工具结果包含指令式内容，已丢弃"}, 'filtered'
     limit = current_app.config['MCP_TOOL_TEXT_MAX_CHARS']
     if isinstance(result.get('content'), list):
@@ -152,6 +156,7 @@ def prepare_tool_messages(messages, refs, class_id, user_id, conversation_id):
             for call in calls:
                 name, server_id, ref = call["function"]["name"], None, "未知工具"
                 status = "error"
+                call_started = time.monotonic()
                 try:
                     if call.get("type") != "function" or name not in mapping:
                         status = "denied"
@@ -180,7 +185,8 @@ def prepare_tool_messages(messages, refs, class_id, user_id, conversation_id):
                     result = {"error": "工具不可用、参数无效或超过配额；请依据已有信息回答"}
                 statuses.append({"tool": ref, "status": status})
                 record("tool_result", {"name": ref, "status": status, "result": result})
-                append_audit(ref, class_id, user_id, conversation_id, round_number, status, result, expected_id=server_id)
+                append_audit(ref, class_id, user_id, conversation_id, round_number, status, result,
+                             expected_id=server_id, duration_ms=(time.monotonic() - call_started) * 1000)
                 messages.append({"role": "tool", "tool_call_id": call["id"], "content": json.dumps(result, ensure_ascii=False)})
         except (KeyError, TypeError, ValueError, IndexError) as exc:
             record("tool_planning_error", {"error": "模型工具请求格式不正确"})

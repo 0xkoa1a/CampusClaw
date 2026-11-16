@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>实践步骤与验收 · 第 10 课 · 测试、交付与运行验证</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 10 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">本课流程</p>
+          <a href="../index.html">概览</a>
+          <a href="problems.html">可交付差在哪</a>
+          <a href="test.html">自动化测试与门禁</a>
+          <a href="build.html">可复现构建与制品</a>
+          <a href="deploy.html">部署与发布</a>
+          <a href="observe.html">运行观测</a>
+          <a href="verify.html">真实用户与性能验证</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="apply.html" class="active">实践步骤与验收</a>
+          <a href="think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">实践步骤与验收</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>实践步骤与验收</h1>
+          <p class="lead">这一页把四道沟的填法排成六步，按顺序走完即达到本课验收：一条命令挡得住坏提交、任何机器一键起、推送即构建、面板看得见三个技能、压测报告有前后对比、真实用户用过并留下反馈。所有支撑证据归档进仓库根目录 <code>reports/</code>，最终项目报告写在根目录 <code>report.md</code>、只写结论与指向——这些证据当场可被打开复核。</p>
+
+          <section class="unit" id="u0">
+            <h2 class="unit-h"><span class="unit-t">先说清几个词</span></h2>
+            <p class="unit-lead">这一页用到的词先在这里讲明白。</p>
+            <div class="terms">
+              <div><b>收口</b>：把散在各处（文档、记忆、当堂操作）的判据集中成仓库内可执行的文件。本课的主动词。</div>
+              <div><b>验收材料</b>：展示时能当场执行的东西——命令、面板、报告，而不是「我们做了」的叙述。最后一课的展示以这一课的归档为底。</div>
+              <div><b>演示环境</b>：与真实部署同构的一份环境。从同一镜像起，配置用演示值——展示时出的问题应在演示环境先出过。</div>
+              <div><b>前后对比</b>：同一脚本同一参数跑出的两轮数字。换了脚本或档位，对比即失效。</div>
+              <div><b>分工建议</b>：一条流水线三段——测试收口、容器与流水线、观测与压测——正好对应三人的兼任分工，交叉验收对方的段落。</div>
+            </div>
+          </section>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">六步实施</span></h2>
+            <table>
+              <thead>
+                <tr><th>步骤</th><th>动作</th><th>产出</th><th>完成判定</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>① 测试收口</td><td>盘点各课判据；每个必做技能至少一条检查落进 <code>apitest/cases/</code> 或单元测试；聚合进 <code>make check</code></td><td>套件与门禁命令</td><td>故意改坏一处，命令退出码非 0；修回复绿（先红后绿留证）</td></tr>
+                <tr><td>② 容器化</td><td>写 Dockerfile（多阶段）与 Compose；密钥不进镜像</td><td>构建说明书与编排文件</td><td>换目录按 <code>README.md</code> 一键启动，健康检查全过</td></tr>
+                <tr><td>③ 流水线</td><td>自动构建配置入库：检出 → <code>make check</code> → <code>make check-security</code> → 构建镜像</td><td>流水线配置与运行记录</td><td>推送后自动构建通过；本地红则推送也失败</td></tr>
+                <tr><td>④ 观测</td><td>指标按技能命名；面板三张图；告警一条写成判定</td><td>面板链接与告警规则</td><td>三个技能调用量与失败率各有曲线；人为失败一次告警触发</td></tr>
+                <tr><td>⑤ 压测与改进</td><td>基线压测 → 定位 → 至少一项改进 → 复测</td><td>压测报告（含前后对比）</td><td>同一脚本两轮数字，改进项有归因</td></tr>
+                <tr><td>⑥ 真实用户</td><td>轻量端（手机浏览器打开的网页版）复用接口；至少 3 名同学使用并记录反馈</td><td>轻量端与反馈记录</td><td>每条反馈对应一个任务条目或写明不做；新踩的坑进用例</td></tr>
+              </tbody>
+            </table>
+            <div class="note">顺序有讲究：先①后②③——门禁没立起来，流水线挡不住任何东西；先④后⑤——没有观测，压测中发生的错误都看不见；⑥放最后，真实用户要用的是已观测、已量过容量的系统。</div>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">证据归档</span></h2>
+            <p class="unit-lead">全部落进仓库根目录 <code>reports/</code>，一条流水线每一段都留一份可复查的记录，报告 <code>report.md</code> 里写全路径引用。</p>
+            <table>
+              <thead>
+                <tr><th>文件</th><th>内容</th><th>判定</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>reports/gate-red-green.md</code></td><td>先红后绿：改坏的那处、红的一屏、修复提交、绿的一屏</td><td>四样齐，缺一即未完成</td></tr>
+                <tr><td><code>reports/boot-reproduce.md</code></td><td>换目录（或换机器）启动的命令与结果</td><td>无需口头补充任何步骤</td></tr>
+                <tr><td><code>reports/pipeline.md</code></td><td>一次成功构建的编号与对应提交</td><td>镜像编号能反查提交</td></tr>
+                <tr><td><code>reports/observe-alert.md</code></td><td>面板路径、告警规则文本、一次真触发的通知</td><td>三技能曲线可见</td></tr>
+                <tr><td><code>reports/bench.md</code></td><td>压测基线与复测两轮数字、归因、改进提交</td><td>同脚本同参数同档位</td></tr>
+                <tr><td><code>reports/feedback.md</code></td><td>至少 3 人的记录与去向</td><td>每条有对应条目或不做的理由</td></tr>
+              </tbody>
+            </table>
+            <div class="note">数据库变更若在本课发生（例如为索引改进改表），走三步走并记录当前处于哪一步——发布页的口径在归档里同样适用。</div>
+            <div class="note">这些证据对应最终项目报告的六节：<code>bench.md</code> 与一次返工记录 → 复盘；<code>gate-red-green.md</code> 与部署地址、演示四步 → 门禁与演示；<code>reports/review-0X.md</code> → 审核记录；<code>reports/risk-*.md</code>（并发 / 事务 / 权限）→ 高风险三查；规则文件里的七类核查清单与 Harness 用法 → AI 用了在哪。报告本身只写结论，细节全部指向 <code>reports/</code>。</div>
+          </section>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">面向展示的预演</span></h2>
+            <p class="unit-lead">最终验收要求的路径与命令这一课已经全部备齐——预演只是把它们按一条故事线串起来，并跑通当堂要演示的四步。</p>
+            <article class="kp-card">
+              <h3>展示预演：五个动作 + 验收四步</h3>
+              <p>五个动作：一，故意改坏并跑 <code>make check</code>——门禁拦住；二，一键启动演示环境；三，打开面板指出三个技能的调用量；四，走完异步链路；五，翻压测报告的前后对比。五个动作全部当场可执行，没有一处依赖「相信我说的是真的」。</p>
+              <p>其中第四步按最终验收的走查四步走全：<code>POST /api/login</code> 取令牌 → <code>POST /api/tasks</code> 返回 202 与任务标识 → <code>GET /api/tasks/{id}</code> 看 pending → running → succeeded 状态流转 → 换另一班账号 <code>GET /api/knowledge/search</code> 查别班讲义、断言返回 404（跨班一律 404，单侧过滤 + fetch-then-check）。</p>
+              <p><span class="sub-h">怎么看到</span>：在部署环境（地址写作 <code>https://&lt;部署域名&gt;/claw/</code>，域名用占位符脱敏，汇报时给可访问的实际地址）逐条执行并记录每步返回码；任一步返回码不符即该步未通过，把对应断言补进 <code>make check</code> 常驻。</p>
+            </article>
+            <div class="recap">一句话记住：<b>最终验收的可查材料，就是这一课攒下的证据</b>——报告 <code>report.md</code> 写结论，证据全部指向仓库根目录 <code>reports/</code>。</div>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="verify.html">← 真实用户与性能验证</a>
+            <a class="btn btn-ghost" href="think.html">思考与分析 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

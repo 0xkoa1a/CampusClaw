@@ -75,6 +75,8 @@ def create_app(test_config=None):
     app.config["UPLOAD_DIR"] = str(Path(app.config["UPLOAD_DIR"]).resolve())
 
     db.init_app(app)
+    from .observability import init_observability
+    init_observability(app)
 
     @app.errorhandler(RequestEntityTooLarge)
     def too_large(_error):
@@ -96,6 +98,14 @@ def create_app(test_config=None):
     @app.get("/health")
     def health():
         return jsonify(status="ok")
+
+    @app.get('/ready')
+    def ready():
+        try:
+            db.get_db().execute('SELECT 1 FROM users LIMIT 1').fetchone()
+        except sqlite3.Error:
+            return jsonify(status='unavailable'), 503
+        return jsonify(status='ready')
 
     @app.get("/favicon.ico")
     def favicon():
@@ -130,5 +140,11 @@ def create_app(test_config=None):
         if g.user["role"] != "teacher":
             return "需要教师权限", 403
         return render_template("mcp.html")
+    from .security import init_security
+    init_security(app)
+    from .monitoring import bp as monitoring_bp
+    app.register_blueprint(monitoring_bp)
+    from .observability import bp as audit_bp
+    app.register_blueprint(audit_bp)
     install_openapi(app)
     return app

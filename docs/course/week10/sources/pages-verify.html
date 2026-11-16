@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>真实用户与性能验证 · 第 10 课 · 测试、交付与运行验证</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 10 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">本课流程</p>
+          <a href="../index.html">概览</a>
+          <a href="problems.html">可交付差在哪</a>
+          <a href="test.html">自动化测试与门禁</a>
+          <a href="build.html">可复现构建与制品</a>
+          <a href="deploy.html">部署与发布</a>
+          <a href="observe.html">运行观测</a>
+          <a href="verify.html" class="active">真实用户与性能验证</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="apply.html">实践步骤与验收</a>
+          <a href="think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">真实用户与性能验证</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>真实用户与性能验证</h1>
+          <p class="lead">前面的一切——测试、镜像、观测——都是为了让系统能站到真实用户面前。这一页走最后两步：先做一个轻量端把系统交到同学手里，收集真实反馈；再用压测量出容量上限，做至少一项缓存或索引改进，交出优化前后的对比报告。测试用例代表「我们以为用户会怎么用」，真实用户负责纠正这个以为。</p>
+
+          <section class="unit" id="u0">
+            <h2 class="unit-h"><span class="unit-t">先说清几个词</span></h2>
+            <p class="unit-lead">这一页用到的词先在这里讲明白。</p>
+            <div class="terms">
+              <div><b>轻量端</b>：手机浏览器直接打开的网页版（业界常称 H5，就是普通网页，不是另做一个手机应用）。复用同一套接口，不另起后端——多一个端，不等于多一套系统。</div>
+              <div><b>跨域</b><i>CORS（cross-origin resource sharing，跨源资源共享）</i>：浏览器允许一个地址的页面请求另一个地址接口的机制。轻量端与接口不同源时，服务端要明确声明允许，默认是拒绝。</div>
+              <div><b>压测</b><i>load testing</i>：用工具模拟一批并发用户持续请求，量出系统的容量上限。与功能测试的差别：功能测试问「对不对」，压测问「扛不扛得住」。</div>
+              <div><b>吞吐</b>：单位时间完成的请求数（QPS 的完成口径）。延迟与吞吐一起看：吞吐没到顶、延迟先飙升，说明有资源在排队。</div>
+              <div><b>饱和点</b>：吞吐不再随并发增加、延迟开始非线性上升的位置。压测的目标就是找到它，而不是证明「压不死」。</div>
+              <div><b>缓存</b>：把算过一次的结果存起来，同样的请求直接返回存的那份。注意口径：缓存减少的是重复计算，不是单次计算本身的耗时。</div>
+              <div><b>慢查询</b>：数据库执行计划显示要走全表扫描的查询。索引让这类查询从「翻整本书」变成「查目录」。</div>
+              <div><b>k6</b>：一款用脚本描述压测过程的开源工具。脚本入库、参数外置，别人照着能跑出同样的数字——压测因此可复现。脚本里的 vus（virtual users）是它模拟的并发用户数。</div>
+            </div>
+          </section>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">轻量端：交到用户手里</span></h2>
+            <p class="unit-lead">轻量端的原则是复用：接口、认证、规约全部沿用，只新增「页面」这一层。</p>
+            <article class="kp-card">
+              <h3>复用同一套接口</h3>
+              <p>轻量端调用的接口与桌面端完全相同——登录拿令牌、提交作业拿任务标识、轮询结果，全部走既有契约。由此前几课的判据对轻量端自动生效：异步的 202 + 任务标识、跨班 404、日志七列，一行不用重做。新的工程量只有两处：页面本身，以及跨域声明（接口服务端声明允许轻量端的地址访问）。</p>
+              <p><span class="sub-h">怎么看到</span>：手机浏览器打开轻量端，走一遍最终验收的四步——登录取令牌 → 提交作业返回 202 与任务标识 → 轮询看 pending → running → succeeded → 换另一班账号查别班讲义拿 404；随后查审计日志——这次经历带着真实身份落进了七列，与桌面端无差别。</p>
+            </article>
+            <article class="kp-card">
+              <h3>真实用户的反馈怎么收</h3>
+              <p>至少 3 名使用者实际使用，每人一条记录：哪一步卡住、哪句话看不懂、期待什么，写入 <code>reports/feedback.md</code>。反馈不是评分，是线索——每条要么变成一个任务清单条目，要么写明为什么不做。反馈收进来改一版再发，这就是迭代的完整一圈。</p>
+              <p><span class="sub-h">怎么看到</span>：反馈记录、对应的任务条目、改完后的新版本，三者能对上号——用户说的话变成了仓库里的提交，这趟迭代才算落地。</p>
+            </article>
+            <div class="note">真实用户会立刻用出测试用例没覆盖的路径：奇怪的输入、极慢的网络、中途关页面。这不是事故，是免费的用例来源——把用户踩到的坑写成新的反例用例，进套件。</div>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">压测：找到饱和点</span></h2>
+            <p class="unit-lead">脚本入库、参数外置，压测本身也可复现——报告里的数字别人能重新跑出来。</p>
+          <pre><code>import http from 'k6/http';
+import { check } from 'k6';
+
+export const options = { vus: 20, duration: '60s' };
+
+export default function () {
+  const r = http.post(`${__ENV.BASE}/api/tasks`,
+    JSON.stringify({ submission: __ENV.SUBMISSION }),
+    { headers: { 'Content-Type': 'application/json',
+                 Authorization: __ENV.TOKEN } });
+  check(r, { '提交返回 202': (res) => res.status === 202 });
+}</code></pre>
+            <table>
+              <thead>
+                <tr><th>步骤</th><th>动作</th><th>产出</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>① 基线</td><td>对提交、查询、检索三个接口分别加压（上面代码块示范的是提交接口，查询与检索照同法各写一段），记录吞吐与 P95 随并发的变化</td><td>基线曲线与饱和点位置</td></tr>
+                <tr><td>② 定位</td><td>在饱和点用追踪看时间花在哪段，慢查询用执行计划验证</td><td>瓶颈归因：排队 / 全表扫描 / 模型调用</td></tr>
+                <tr><td>③ 改进</td><td>至少落一项：加索引、加缓存、或调并发配置</td><td>改进的提交记录</td></tr>
+                <tr><td>④ 复测</td><td>同一脚本同一参数重跑</td><td>前后对比表、脚本与两轮原始数据写入 <code>reports/bench.md</code></td></tr>
+              </tbody>
+            </table>
+            <div class="note">压测口径与异步课一脉相承：提交接口的 P95 应远小于批改执行时间（任务已入队即返回）；压的是「接收提交的能力」，不是「批改的速度」——批改吞吐由消费者数量决定，要分开量。</div>
+          </section>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">改进的写法与对比报告</span></h2>
+            <p class="unit-lead">改进不是「加了缓存」一句话——前后两个数字、同一套量法，才是证据。</p>
+            <table>
+              <thead>
+                <tr><th>字段</th><th>写什么</th><th>判定</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>场景</td><td>哪个接口、什么并发档位</td><td>复测用同一档位</td></tr>
+                <tr><td>改进前</td><td>吞吐、P95、错误率三个数</td><td>来自基线轮</td></tr>
+                <tr><td>改进后</td><td>同三个数</td><td>来自复测轮，脚本与参数未变</td></tr>
+                <tr><td>归因</td><td>瓶颈是什么、改动为什么有效</td><td>能对着执行计划或追踪讲通</td></tr>
+              </tbody>
+            </table>
+            <div class="recap">一句话记住：<b>压测的目标是找到饱和点，改进的证据是前后对比</b>——同一脚本、同一参数、同一档位，两个数字才可比。</div>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="observe.html">← 运行观测</a>
+            <a class="btn btn-ghost" href="apply.html">实践步骤与验收 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

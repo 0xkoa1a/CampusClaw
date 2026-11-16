@@ -1,6 +1,7 @@
 """Small OpenAI-compatible client for the course gateway."""
 
 import json
+import time
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -23,10 +24,19 @@ def _post(path, payload, timeout=None):
         method="POST",
     )
     from .call_trace import record
+    from .observability import log_model_usage
     record("llm_request" if path == "/chat/completions" else "embedding_request", {"path": path, "body": payload})
+    started = time.monotonic()
     try:
         with urlopen(request, timeout=min(current_app.config["AI_TIMEOUT_SECONDS"], timeout) if timeout is not None else current_app.config["AI_TIMEOUT_SECONDS"]) as response:
             result = json.load(response)
+            usage_event = "llm_usage" if path == "/chat/completions" else "embedding_usage"
+            usage = log_model_usage(
+                result.get("usage") if isinstance(result, dict) else None,
+                event=usage_event,
+                duration_ms=(time.monotonic() - started) * 1000,
+            )
+            record(usage_event, usage)
             record("llm_response" if path == "/chat/completions" else "embedding_response", result)
             return result
     except (HTTPError, URLError, TimeoutError, ValueError) as exc:

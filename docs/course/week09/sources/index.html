@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>概览 · 第 9 课 · 安全检查与审计</title>
+    <link rel="stylesheet" href="css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="index.html">CampusClaw<span>第 9 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">本课流程</p>
+          <a href="index.html" class="active">概览</a>
+          <a href="pages/problems.html">三类安全缺口</a>
+          <a href="pages/authz.html">越权：判定与修复</a>
+          <a href="pages/inject.html">注入：成因与防护</a>
+          <a href="pages/assets.html">密钥与依赖</a>
+          <a href="pages/audit.html">操作日志</a>
+          <a href="pages/aisec.html">AI 入口：提示词注入</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="pages/lab-demo.html">靶场演示</a>
+          <a href="pages/apply.html">实践步骤与验收</a>
+          <a href="pages/think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">概览</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>安全检查与审计</h1>
+          <p class="lead">上一课按七项清单做了安全自查，规则是只记录现象、不修复——密钥命中是唯一例外。这一课接着那份清单往下走：先讲清每一处红说明设计缺了什么，再把防护补进正确的位置，从红改到绿，并把复测的证据归档。安全不是在页面外面加一层补丁，而是把「不该做的做不了」写进代码里做判定的那几行。</p>
+
+          <section class="unit" id="u0">
+            <h2 class="unit-h"><span class="unit-t">先说清几个词</span></h2>
+            <p class="unit-lead">这一课用到的词先在这里讲明白，后面各页不再解释。</p>
+            <div class="terms">
+              <div><b>攻击面</b><i>attack surface</i>：系统所有能被外部触达的入口总和——每个接口、每个页面、每份能被上传的文件。入口越多，要逐一设防的位置越多。</div>
+              <div><b>信任边界</b><i>trust boundary</i>：请求或数据从「不可信」跨进「可信」的那条线。每跨一次线，都要重新验证，不能因为上一关过了就免检。</div>
+              <div><b>越权</b>：通过了登录检查，但拿到了不该拿的数据或执行了不该执行的操作。登录成功只回答「你是谁」，不等于什么都能做。</div>
+              <div><b>注入</b><i>injection</i>：用户提交的数据被系统当成代码执行。SQL 语句、页面 HTML、发给模型的提示词，都可能是被注入的位置。</div>
+              <div><b>审计日志</b><i>audit log</i>：记录「谁在何时对什么做了什么、结果如何」的日志。防不住的事情，事后必须查得到。</div>
+              <div><b>默认拒绝</b><i>deny by default</i>：没有明确写「允许」的一律拒绝。与之相对的思路是「默认放行，发现问题再堵」，后者的代价是每次都晚一步。</div>
+              <div><b>最小权限</b><i>least privilege</i>：每个身份只拿到完成自己任务所需的最小权限。教师不需要的接口，对教师也不开放。</div>
+              <div><b>纵深防御</b><i>defense in depth</i>：不指望任何单层独自防住，多层各管一段——路由层、应用层、数据层各有一道判定，垮一层不至于全垮。</div>
+            </div>
+          </section>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">本课回答两个问题</span></h2>
+            <p class="unit-lead">两个问题一对「查」一对「改」，混在一起会导致「跑了扫描工具就算做了安全」这类误解。</p>
+            <article class="kp-card">
+              <h3>怎么知道系统不安全</h3>
+              <p>功能用例验证<strong>「该做的做了」</strong>：合法身份走正常路径，期望成功。安全检查验证<strong>「不该做的做不了」</strong>：拿到合法身份，专走不该走的路径，期望被拒绝。后者要求换一个视角——把自己当成一个已登录但想越权的用户。</p>
+            </article>
+            <article class="kp-card">
+              <h3>查出来的缺口怎么补</h3>
+              <p>上一课自查的每一处红，都指向一个做判定的位置：授权判定、注入防护、资产保管、日志留痕。修复不是把入口藏起来，而是把判定放回它该在的那一层——页面隐藏挡不住直接调接口，只有写进数据访问的判定才绕不过去。</p>
+            </article>
+            <div class="note">两条问题是先后关系：先用反例用例把红问出来，再对着红修。跳过第一步直接「加固」，等于对着猜测施工——加固的位置和真实缺口的位置常常不是同一处。</div>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">五段路径与对应页面</span></h2>
+            <table>
+              <thead>
+                <tr><th>段落</th><th>要解决的问题</th><th>结论</th><th>页面</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>现状</td><td>自查的红分别指向什么缺口</td><td>三类缺口：授权判定、注入防护、资产与日志</td><td><a href="pages/problems.html">三类安全缺口</a></td></tr>
+                <tr><td>越权</td><td>SEC-01 ～ SEC-04 怎么改到绿</td><td>授权判定并入数据访问，默认拒绝</td><td><a href="pages/authz.html">越权：判定与修复</a></td></tr>
+                <tr><td>注入</td><td>SQL、XSS、CSRF 的共同成因与防护</td><td>数据在进入执行位置之前保持是数据</td><td><a href="pages/inject.html">注入：成因与防护</a></td></tr>
+                <tr><td>资产与日志</td><td>SEC-05 ～ SEC-07 的处置</td><td>密钥进环境变量、依赖高危清零、操作日志七列</td><td><a href="pages/assets.html">密钥与依赖</a> / <a href="pages/audit.html">操作日志</a></td></tr>
+                <tr><td>落地</td><td>红改绿的流程与证据</td><td>修复 → 同一条三段式复测 → 前后证据归档</td><td><a href="pages/aisec.html">AI 入口</a> / <a href="pages/apply.html">实践步骤与验收</a></td></tr>
+              </tbody>
+            </table>
+          </section>
+
+          <figure class="fig">
+            <svg viewBox="0 0 760 250" role="img" aria-label="一次请求从客户端跨过信任边界进入应用，途中经过登录检查、角色判定、归属条件三道关卡，每一跳都留下日志；上一课的红集中在角色判定与归属条件两处">
+              <defs><marker id="ovA" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#94070a"/></marker></defs>
+              <rect x="16" y="30" width="96" height="40" rx="8" fill="#f8f6f4" stroke="#e6e1dd"/>
+              <text x="64" y="55" text-anchor="middle" font-size="11.5" font-weight="600" fill="#1c1917">客户端</text>
+              <text x="64" y="62" text-anchor="middle" font-size="10" fill="#7d736c">不可信一侧</text>
+              <line x1="112" y1="50" x2="180" y2="50" stroke="#94070a" stroke-width="1.5" marker-end="url(#ovA)"/>
+              <text x="146" y="42" text-anchor="middle" font-size="10" fill="#94070a">跨过信任边界</text>
+              <line x1="146" y1="30" x2="146" y2="70" stroke="#7d736c" stroke-dasharray="4 3"/>
+              <rect x="184" y="30" width="560" height="40" rx="8" fill="#ffffff" stroke="#e6e1dd"/>
+              <text x="464" y="55" text-anchor="middle" font-size="11" font-weight="600" fill="#1c1917">应用服务（可信一侧）</text>
+              <rect x="200" y="96" width="120" height="26" rx="5" fill="#f8f6f4" stroke="#e6e1dd"/>
+              <text x="260" y="113" text-anchor="middle" font-size="10" fill="#1c1917">登录检查（401）</text>
+              <rect x="336" y="96" width="120" height="26" rx="5" fill="#fdf3f3" stroke="#94070a"/>
+              <text x="396" y="113" text-anchor="middle" font-size="10" fill="#94070a">角色判定（403）</text>
+              <rect x="472" y="96" width="120" height="26" rx="5" fill="#fdf3f3" stroke="#94070a"/>
+              <text x="532" y="113" text-anchor="middle" font-size="10" fill="#94070a">归属条件（404/空）</text>
+              <rect x="608" y="96" width="120" height="26" rx="5" fill="#f8f6f4" stroke="#e6e1dd"/>
+              <text x="668" y="113" text-anchor="middle" font-size="10" fill="#1c1917">数据层（租户列）</text>
+              <line x1="260" y1="122" x2="332" y2="122" stroke="#94070a" stroke-width="1.5" marker-end="url(#ovA)"/>
+              <line x1="396" y1="122" x2="468" y2="122" stroke="#94070a" stroke-width="1.5" marker-end="url(#ovA)"/>
+              <line x1="532" y1="122" x2="604" y2="122" stroke="#94070a" stroke-width="1.5" marker-end="url(#ovA)"/>
+              <rect x="16" y="160" width="728" height="30" rx="6" fill="#fdf3f3" stroke="#94070a"/>
+              <text x="380" y="180" text-anchor="middle" font-size="11" fill="#94070a">上一课的红集中在两处：角色判定缺失（SEC-03/04）、归属条件缺失（SEC-02）</text>
+              <rect x="16" y="204" width="728" height="30" rx="6" fill="#ffffff" stroke="#e6e1dd"/>
+              <text x="380" y="224" text-anchor="middle" font-size="11" fill="#1c2530">每一跳的判定都要留下日志：被拒绝的请求同样记一条，事后才有得查</text>
+            </svg>
+            <figcaption>一次请求要过四道关卡才碰到数据。越靠外的关卡越容易被绕过（直接调接口），越靠内的关卡越可靠——修复就是把判定往里层补。</figcaption>
+          </figure>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">本课验收判据</span></h2>
+            <p class="unit-lead">每条判据都用上一课的编号复测，操作与期望可当场复现；它们同时也是后续课次回归套件的用例来源。</p>
+            <table>
+              <thead>
+                <tr><th>判据</th><th>操作</th><th>期望</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>学生改不了技能与提示词</td><td>用学生令牌重放技能、提示词、助手配置类写接口</td><td>403，且数据无变化（SEC-03 复测）</td></tr>
+                <tr><td>学生取不到他班数据</td><td>学生 A1 访问班级 B 的讲义、检索班级 A 之外的知识库</td><td>404 或空结果（SEC-02 复测）</td></tr>
+                <tr><td>技能调用可回查</td><td>任做一次技能调用，按技能标识加时间窗查日志</td><td>操作人、操作时间、操作类型、操作对象、结果状态、技能标识、用量与耗时七列齐全（SEC-07 复测）</td></tr>
+                <tr><td>资产类两项清零</td><td>跑密钥扫描与依赖审计各一遍</td><td>扫描 0 命中；高危清零或书面登记处置（SEC-05/06 复测）</td></tr>
+                <tr><td>注入三件套有反例且为绿</td><td>执行 SQL、XSS、CSRF 三条反例用例</td><td>分别得到空结果 / 无脚本执行 / 请求被拒</td></tr>
+              </tbody>
+            </table>
+            <div class="recap">一句话记住：<b>功能用例验证「该做的做了」，安全检查验证「不该做的做不了」</b>——后者要用合法身份专走不该走的路，并且期望被拒绝。</div>
+          </section>
+
+          <div class="grid">
+            <a class="tile" href="pages/problems.html"><strong>三类安全缺口</strong><span>从自查的红读出缺口类别，区分试出来的红与没试过的盲区</span></a>
+            <a class="tile" href="pages/authz.html"><strong>越权：判定与修复</strong><span>水平与垂直越权、技能工具鉴权、判定放到数据访问处</span></a>
+            <a class="tile" href="pages/inject.html"><strong>注入：成因与防护</strong><span>SQL 注入、XSS、CSRF 的共同成因与三个防护位置</span></a>
+            <a class="tile" href="pages/assets.html"><strong>密钥与依赖</strong><span>泄漏渠道、存放规矩、轮换、依赖漏洞审计与常驻命令</span></a>
+            <a class="tile" href="pages/audit.html"><strong>操作日志</strong><span>七列字段、失败尝试也要记、日志即证据</span></a>
+            <a class="tile" href="pages/aisec.html"><strong>AI 入口：提示词注入</strong><span>恶意文档与三条诱导提问当堂试，防护落在代码层</span></a>
+            <a class="tile" href="pages/lab.html" style="border-color:#94070a;background:#fdf3f3"><strong>🎯 靶场演示</strong><span>包含全部漏洞的教学靶场，亲手复现、观察危害、学习修复</span></a>
+            <a class="tile" href="pages/apply.html"><strong>实践步骤与验收</strong><span>五步红改绿、复测与证据归档、回归与门禁</span></a>
+            <a class="tile" href="pages/think.html"><strong>思考与分析</strong><span>十道研讨题，每题给出判据与考察点</span></a>
+          </div>
+
+          <div class="pager">
+            <span></span>
+            <a class="btn btn-ghost" href="pages/problems.html">三类安全缺口 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="js/app.js"></script>
+  </body>
+</html>

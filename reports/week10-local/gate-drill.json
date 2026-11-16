@@ -1,0 +1,27 @@
+{
+  "mode": "disposable-copy-of-current-worktree",
+  "changed_file": "tests/test_gate_deliberate_regression.py",
+  "change": "expected unauthenticated status 200 -> 401",
+  "runs": [
+    {
+      "phase": "red",
+      "command": [
+        "make",
+        "check",
+        "PYTHON=/Users/yangyixin03/Workspace/\u4e92\u8054\u7f51\u8f6f\u4ef6\u5f00\u53d1\u6280\u672f\u4e0e\u5b9e\u8df5/campusclaw-yyx/.venv/bin/python"
+      ],
+      "exit_code": 2,
+      "expected_status": 200
+    },
+    {
+      "phase": "green",
+      "command": [
+        "make",
+        "check",
+        "PYTHON=/Users/yangyixin03/Workspace/\u4e92\u8054\u7f51\u8f6f\u4ef6\u5f00\u53d1\u6280\u672f\u4e0e\u5b9e\u8df5/campusclaw-yyx/.venv/bin/python"
+      ],
+      "exit_code": 0,
+      "expected_status": 401
+    }
+  ]
+}

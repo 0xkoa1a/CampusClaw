@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>操作日志 · 第 9 课 · 安全检查与审计</title>
+    <link rel="stylesheet" href="../css/app.css" />
+  </head>
+  <body>
+    <div class="app">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="../index.html">CampusClaw<span>第 9 课 · 实现教程</span></a>
+        <nav aria-label="主导航">
+          <p class="nav-label">本课流程</p>
+          <a href="../index.html">概览</a>
+          <a href="problems.html">三类安全缺口</a>
+          <a href="authz.html">越权：判定与修复</a>
+          <a href="inject.html">注入：成因与防护</a>
+          <a href="assets.html">密钥与依赖</a>
+          <a href="audit.html" class="active">操作日志</a>
+          <a href="aisec.html">AI 入口：提示词注入</a>
+          <p class="nav-label">实践与研讨</p>
+          <a href="lab-demo.html">靶场演示</a>
+          <a href="apply.html">实践步骤与验收</a>
+          <a href="think.html">思考与分析</a>
+        </nav>
+      </aside>
+      <div class="main">
+        <header class="topbar">
+          <button class="menu-btn" type="button" id="menuBtn">菜单</button>
+          <div class="crumb">操作日志</div>
+          <div class="badge">公开教程 · 无需登录</div>
+        </header>
+        <main class="content">
+
+          <h1>操作日志</h1>
+          <p class="lead">前面几页防的是「不该做的做不了」，这一页管另一半：真发生了不该做的事，事后能不能回答「谁、何时、对什么、做了什么、结果如何」。SEC-07 查出的字段缺口就在这一页补齐，并让每一次技能调用都能按标识回查。</p>
+
+          <section class="unit" id="u0">
+            <h2 class="unit-h"><span class="unit-t">先说清几个词</span></h2>
+            <p class="unit-lead">这一页用到的词先在这里讲明白。</p>
+            <div class="terms">
+              <div><b>审计日志</b><i>audit log</i>：记操作（谁做的）的日志。与系统运行日志（程序自己打的调试信息）用途不同：后者排障，前者回答责任问题。</div>
+              <div><b>操作人</b><i>actor</i>：发起这次操作的身份。技能调用要记技能背后是哪个用户——只记「系统」等于没记。</div>
+              <div><b>技能标识</b><i>skill id</i>：这次调用走了哪个技能。有了它，才能回答「这次批改用的是哪个技能」——这也是本课验收判据之一。</div>
+              <div><b>结构化日志</b>：一行一条、字段固定的日志格式（单行 JSON）。字段固定才能按字段查询与统计，不用人眼翻文本。</div>
+              <div><b>请求标识</b><i>request ID</i>：贯穿一次请求的编号。用它把网关、应用、模型调用三段日志串成一次完整经历的三个片段。</div>
+              <div><b>用量与耗时</b>：模型返回的 tokens（模型计费与限流的用量单位，大致对应这次调用处理的文本片段数）与调用埋点的毫秒数。既是成本口径（每次批改花多少），也是异常口径（耗时突增常是失败前兆）。</div>
+            </div>
+          </section>
+
+          <section class="unit" id="u1">
+            <h2 class="unit-h"><span class="unit-n">1</span><span class="unit-t">字段清单：每列回答一个问题</span></h2>
+            <p class="unit-lead">SEC-07 的判定是「任选一次技能调用，事后回查」。回查能不能成，取决于表里这几列齐不齐。</p>
+            <table>
+              <thead>
+                <tr><th>字段</th><th>取值来源</th><th>用来回答什么</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>操作人</td><td>请求携带的登录身份</td><td>谁</td></tr>
+                <tr><td>操作时间</td><td>服务端时钟</td><td>何时</td></tr>
+                <tr><td>操作类型</td><td>动作名（如 <code>grade.write</code>、<code>skill.invoke</code>）</td><td>做了什么</td></tr>
+                <tr><td>操作对象</td><td>数据行的 id（讲义 id、提交 id）</td><td>对哪一条</td></tr>
+                <tr><td>结果状态</td><td>成功或错误码</td><td>成没成</td></tr>
+                <tr><td>技能标识</td><td>技能路由</td><td>用了哪个技能</td></tr>
+                <tr><td>用量与耗时</td><td>模型返回与调用埋点</td><td>花了多少</td></tr>
+              </tbody>
+            </table>
+          <div class="note"><b>自动化</b>：回查不做人工翻日志：写成命令或查询脚本，一条命令出结果；七列字段的完整性用断言检查，少一列即失败。</div>
+            <div class="note">前五个字段（操作人、操作时间、操作类型、操作对象、结果状态）是通用底线，技能标识与用量耗时是本项目特有的两列——没有技能标识，评价「各组自写的技能用得怎么样」就没有数据来源。这两列在落库时就要带上，事后补不回来。</div>
+          </section>
+
+          <section class="unit" id="u2">
+            <h2 class="unit-h"><span class="unit-n">2</span><span class="unit-t">一条日志长什么样</span></h2>
+            <p class="unit-lead">一行一条、字段固定，这就是结构化日志的形态；按字段查，就是回查。</p>
+          <pre><code>{"ts":"2026-11-11T10:23:41+08:00","actor":"stu-a1","action":"skill.invoke",
+ "skill":"grade-essay","object":"sub-1042","status":"ok",
+ "ms":18412,"tokens":3120,"req":"req-8f21c0"}</code></pre>
+            <div class="note">这条日志能独立回答全部七问：谁（stu-a1）、何时（10:23:41）、做了什么（调用了技能）、对哪一条（sub-1042）、结果（ok）、用了哪个技能（grade-essay）、花了多少（18.4 秒、3120 tokens）。缺任何一列，对应的问题就回答不了——这就是 SEC-07 缺口清单的判定逻辑。</div>
+          </section>
+
+          <section class="unit" id="u3">
+            <h2 class="unit-h"><span class="unit-n">3</span><span class="unit-t">失败的尝试也要记</span></h2>
+            <p class="unit-lead">审计记的是「发生了什么操作」，不是「发生了什么成功的操作」。</p>
+            <article class="kp-card">
+              <h3>被拒绝的请求是最有价值的记录</h3>
+              <p>SEC-01 ～ SEC-04 的复测本身会产生一批 401 / 403 / 404——这些被拒绝的尝试正是攻击证据：谁在试未登录访问、谁在试越权。如果日志只记成功，这批尝试一条都不留，等真出事时无从追查起点。判定逻辑里加上一行：拒绝发生时同样落一条，状态列为对应错误码。</p>
+              <p><span class="sub-h">怎么看到</span>：重放一次 SEC-03 的学生越权请求，随后按该学生加时间窗查日志——能查到一条 <code>status:"403"</code> 的记录即为绿。</p>
+            </article>
+            <article class="kp-card">
+              <h3>日志内容自己也是数据</h3>
+              <p>写进日志的每个字段都经过转义与截断——用户提交的内容若原样进日志，攻击者可以往日志里注入换行与伪造字段（日志注入），让追查的人读到假记录。字段长度截断、内容只记 id 不记原文，是两条低成本的限制。</p>
+              <p><span class="sub-h">怎么看到</span>：提交一个带换行符与引号的字段值，查日志——一行仍然是一条完整 JSON，没有被拆成两行或改坏结构，即为绿。</p>
+            </article>
+            <div class="note">日志查询接口本身也是接口：教师可按学生、技能、时间窗查询；学生不可见——审计数据记录的是全体用户的行为，对被记录者同样敏感。给这个接口做授权判定，与本课第一页是同一条规矩。</div>
+          </section>
+
+          <section class="unit" id="u4">
+            <h2 class="unit-h"><span class="unit-n">4</span><span class="unit-t">回查的操作与判定</span></h2>
+            <table>
+              <thead>
+                <tr><th>步骤</th><th>动作</th><th>期望</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>触发</td><td>做一次技能调用（如提交一次批改）</td><td>调用完成，拿到请求标识</td></tr>
+                <tr><td>回查</td><td>按技能标识加时间窗查日志表（写成一条查询命令或脚本并入 <code>make check</code>，输出原文存 <code>reports/audit-recheck.md</code>）</td><td>至少一条记录命中，字段与七列对齐</td></tr>
+                <tr><td>核对</td><td>对照操作人、对象、结果状态</td><td>与自己刚才的操作一致</td></tr>
+              </tbody>
+            </table>
+            <div class="recap">一句话记住：<b>审计日志一条记录要能独立回答七问——谁、何时、做了什么、对哪一条、结果如何、用了哪个技能、花了多少；失败的尝试同样要记</b>。</div>
+          </section>
+
+          <div class="pager">
+            <a class="btn btn-ghost" href="assets.html">← 密钥与依赖</a>
+            <a class="btn btn-ghost" href="aisec.html">AI 入口：提示词注入 →</a>
+          </div>
+        </main>
+      </div>
+    </div>
+    <script src="../js/app.js"></script>
+  </body>
+</html>

@@ -11,6 +11,7 @@
     <h2>账号登录</h2>
     {% if error %}<p class="form-error" role="alert">{{ error }}</p>{% endif %}
     <form id="login-form" method="post" action="{{ url_for('auth.login_page') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <label for="username">用户名</label>
       <input id="username" name="username" autocomplete="username" required>
       <label for="password">密码</label>
