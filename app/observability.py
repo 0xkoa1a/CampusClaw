@@ -6,6 +6,7 @@ import math
 import sys
 import time
 import uuid
+from contextvars import ContextVar
 from datetime import datetime, timezone
 
 from flask import Blueprint, g, has_app_context, has_request_context, jsonify, request
@@ -13,6 +14,7 @@ from flask import Blueprint, g, has_app_context, has_request_context, jsonify, r
 from .openapi import api_doc
 
 bp = Blueprint("audit_events", __name__)
+execution_context = ContextVar('audit_execution_context', default={})
 
 
 class _CurrentStderr:
@@ -265,6 +267,7 @@ def log_model_usage(usage, *, event="llm_usage", duration_ms=None):
         value = usage.get(field)
         values[field] = value if type(value) is int and value >= 0 else None
     user = getattr(g, "user", None) if has_request_context() else None
+    worker = execution_context.get()
     fields = {
         "request_id": current_request_id(),
         "user_id": user["id"] if user is not None else None,
@@ -272,6 +275,7 @@ def log_model_usage(usage, *, event="llm_usage", duration_ms=None):
         "role": user["role"] if user is not None else None,
         "class_id": user["class_id"] if user is not None else None,
         "skill": getattr(g, "skill_name", None) if has_request_context() else None,
+        **worker,
         **values,
         "usage": values,
     }

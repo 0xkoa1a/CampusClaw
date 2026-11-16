@@ -133,7 +133,7 @@ def _dashboard(duration):
                     "rate": errors[skill] / calls[skill] if calls[skill] else None} for skill in skills]
 
     http_rows = get_db().execute("""SELECT fields_json FROM audit_events
-        WHERE json_extract(fields_json,'$.class_id')=? AND event='http_request' AND timestamp>=?""", (class_id, start.isoformat())).fetchall()
+        WHERE json_extract(fields_json,'$.class_id')=? AND event='http_request' AND timestamp>=? AND timestamp<=?""", (class_id, start.isoformat(), now.isoformat())).fetchall()
     durations = []
     for row in http_rows:
         try:

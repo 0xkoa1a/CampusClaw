@@ -1,0 +1,33 @@
+<!doctype html><meta charset="utf-8"><title>门禁真实执行记录</title><style>body{font-family:system-ui;padding:24px;color:#172331}section{display:grid;grid-template-columns:1fr 1fr;gap:20px}article{border:1px solid #ccd5dd;padding:20px;border-radius:10px;min-width:0}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:14px}h1{font-size:26px}</style><h1>隔离副本：make check 真实执行输出</h1><p>将未登录请求的预期状态从错误的 200 修正为 401。以下内容来自保存的命令日志。</p><section><article><h2>故意改坏：非零退出</h2><pre>...................................................F.................... [ 48%]
+........................................................................ [ 72%]
+........................................................................ [ 97%]
+........                                                                 [100%]
+=================================== FAILURES ===================================
+_________________________ test_unauthenticated_request _________________________
+
+client = &lt;FlaskClient &lt;Flask 'app'&gt;&gt;
+
+    def test_unauthenticated_request(client):
+&gt;       assert client.get("/api/me").status_code == 200
+E       AssertionError: assert 401 == 200
+E        +  where 401 = &lt;WrapperTestResponse streamed [401 UNAUTHORIZED]&gt;.status_code
+E        +    where &lt;WrapperTestResponse streamed [401 UNAUTHORIZED]&gt; = get('/api/me')
+E        +      where get = &lt;FlaskClient &lt;Flask 'app'&gt;&gt;.get
+
+tests/test_gate_deliberate_regression.py:2: AssertionError
+----------------------------- Captured stderr call -----------------------------
+{"timestamp":"2026-11-16T20:07:15+0800","level":"INFO","logger":"campusclaw.observability","event":"http_request","request_id":"29848696-ac28-4f2e-b9b3-29b64f99920e","user_id":null,"username":null,"role":null,"class_id":null,"duration_ms":0.061,"status":401,"route":"/api/me","skill":null,"operation":"GET","object":"/api/me"}
+------------------------------ Captured log call -------------------------------
+{"timestamp":"2026-11-16T20:07:15+0800","level":"INFO","logger":"campusclaw.observability","event":"http_request","request_id":"29848696-ac28-4f2e-b9b3-29b64f99920e","user_id":null,"username":null,"role":null,"class_id":null,"duration_ms":0.061,"status":401,"route":"/api/me","skill":null,"operation":"GET","object":"/api/me"}
+=========================== short test summary info ============================
+FAILED tests/test_gate_deliberate_regression.py::test_unauthenticated_request
+1 failed, 295 passed in 57.40s
+make: *** [check] Error 1
+</pre></article><article><h2>修复后：退出码 0</h2><pre>/Users/yangyixin03/Workspace/互联网软件开发技术与实践/campusclaw-yyx/.venv/bin/python -m pytest -q
+........................................................................ [ 24%]
+........................................................................ [ 48%]
+........................................................................ [ 72%]
+........................................................................ [ 97%]
+........                                                                 [100%]
+296 passed in 56.55s
+</pre></article></section>

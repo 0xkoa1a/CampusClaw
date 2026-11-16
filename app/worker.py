@@ -35,9 +35,16 @@ def process_task(app, task_id):
         db = get_db()
         task = claim_task(db, task_id, app.config['TASK_LEASE_SECONDS'])
         if task is None: return 'duplicate-or-not-due'
+        from .observability import _emit, execution_context
+        audit_scope = {'request_id':f'task:{task_id}', 'user_id':task['user_id'],
+            'class_id':task['class_id'], 'skill':'assignment_grading'}
+        token = execution_context.set(audit_scope)
         started = time.monotonic()
         try:
-            result = grade_submission(submission_context(db, task))
+            try:
+                result = grade_submission(submission_context(db, task))
+            finally:
+                execution_context.reset(token)
         except (PermanentGradingError, TransientGradingError) as exc:
             temporary = isinstance(exc, TransientGradingError)
             base = app.config['TASK_RETRY_BASE_SECONDS']
@@ -46,10 +53,9 @@ def process_task(app, task_id):
             outcome = ('retry' if temporary and task['attempts'] < task['max_attempts'] else ('dead' if temporary else 'failed')) if saved else 'lease-lost'
         else:
             outcome = 'succeeded' if finish_task(db, task, result) else 'lease-lost'
-        app.logger.info(json.dumps({'event': 'grading', 'skill': 'assignment_grading', 'task_id': task_id,
-            'timestamp': time.time(), 'level': 'INFO',
-            'class_id': task['class_id'], 'user_id': task['user_id'], 'attempt': task['attempts'],
-            'status': outcome, 'duration_ms': round((time.monotonic() - started) * 1000)}, ensure_ascii=False))
+        _emit('skill_invocation', **audit_scope, operation='grading', object=f'task:{task_id}',
+              status=200 if outcome=='succeeded' else 503,
+              duration_ms=round((time.monotonic()-started)*1000,3), usage=None)
         return outcome
 
 

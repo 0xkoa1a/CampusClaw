@@ -45,6 +45,9 @@ def test_monitoring_requires_teacher_and_validates_window(monitor_client):
 
 def test_empty_state_has_no_invented_skill_or_route_lines(monitor_client):
     _login(monitor_client)
+    # Authentication itself is now correctly audited; isolate the empty window.
+    with monitor_client.application.app_context():
+        with get_db(): get_db().execute('DELETE FROM audit_events')
     result = monitor_client.get("/api/monitoring?window=300").json
     assert result["has_skill_data"] is False
     assert result["skills"] == []
